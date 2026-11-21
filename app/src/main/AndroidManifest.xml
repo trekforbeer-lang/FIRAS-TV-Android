@@ -7,6 +7,8 @@
         android:usesCleartextTraffic="false"
         android:hardwareAccelerated="true"
         android:label="FIRAS TV"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:theme="@style/AppTheme"
         android:supportsRtl="true">
         <activity
