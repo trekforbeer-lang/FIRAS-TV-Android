@@ -1,4 +1,4 @@
-name: FIRAS TV 3.0 Android APK
+name: FIRAS TV 3.1 Android APK
 on:
   workflow_dispatch:
   push:
@@ -19,7 +19,7 @@ jobs:
         run: gradle --no-daemon assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: FIRAS-TV-3.0-debug-apk
+          name: FIRAS-TV-3.1-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
