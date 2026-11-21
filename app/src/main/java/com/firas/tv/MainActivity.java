@@ -72,6 +72,8 @@ public class MainActivity extends Activity {
                 if (customView != null) { callback.onCustomViewHidden(); return; }
                 customView = view;
                 customViewCallback = callback;
+                // Keep the app UI portrait outside playback. Only the native video custom view
+                // switches the Activity to landscape; hideCustomView() restores portrait.
                 oldOrientation = getRequestedOrientation();
                 orientationChangedForFullscreen = true;
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
