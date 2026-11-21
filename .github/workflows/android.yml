@@ -2,7 +2,7 @@ name: FIRAS TV 3.0 Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [main, firas-tv-3.0-upgrade]
+    branches: [main, firas-tv-3.0-upgrade, firas-tv-3.1-player-fix]
 jobs:
   build:
     runs-on: ubuntu-latest
