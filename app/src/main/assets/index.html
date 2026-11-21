@@ -40,8 +40,10 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 /* In the floating player overlay, use the entire viewport instead of a centered 16:9 box */
 #ovp #pl{width:100%;height:100%;height:100dvh;max-height:none;aspect-ratio:auto;flex:1 1 auto}
 #ovp #pl video{width:100%;height:100%;object-fit:contain}
+/* In real fullscreen, fill the panel edge-to-edge; crop only the excess, never distort. */
+#ovp #pl:fullscreen video,#ovp #pl:-webkit-full-screen video{width:100%!important;height:100%!important;object-fit:cover!important}
 #pl:fullscreen,#pl:-webkit-full-screen{width:100vw;height:100vh;height:100dvh;max-height:none;aspect-ratio:auto;background:#000}
-#pl:fullscreen video,#pl:-webkit-full-screen video{width:100%;height:100%;object-fit:contain}
+#pl:fullscreen video,#pl:-webkit-full-screen video{width:100%;height:100%;object-fit:cover!important}
 #bk2{position:absolute;top:8px;left:8px;width:36px;height:36px;padding:5px;z-index:4;color:#fff}
 #bk2 svg{width:100%;height:100%;fill:#fff}
 .sq{display:block;width:calc(100% - 32px);margin:10px 16px 14px;padding:13px 16px;border-radius:14px;border:1px solid #2a2a2a;background:#141414;color:#fff;font-size:16px;outline:none;direction:auto}
