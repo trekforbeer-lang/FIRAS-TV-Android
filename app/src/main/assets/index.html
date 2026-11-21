@@ -1278,10 +1278,22 @@ function drawAdm(){
 
   /* backup + account */
   a.appendChild(el('h4','','النسخ الاحتياطي والحساب'));
-  a.appendChild(btn('📋 نسخ البيانات',function(){var j=JSON.stringify({ch:ch,cats:cats,favs:favs});if(navigator.clipboard)navigator.clipboard.writeText(j).then(function(){toast('تم النسخ')},function(){prompt('انسخ البيانات',j)});else prompt('انسخ البيانات',j)},'g'));
-  a.appendChild(btn('📥 استعادة',function(){
-    var t=prompt('الصق البيانات المنسوخة');if(!t)return;
-    try{var d=JSON.parse(t);if(!Array.isArray(d.ch)||!Array.isArray(d.cats))throw 0;ch=d.ch;cats=d.cats;favs=Array.isArray(d.favs)?d.favs:[];save();toast('تمت الاستعادة');drawNav();drawAdm()}catch(e){toast('البيانات غير صالحة')}
+  a.appendChild(btn('📋 نسخ نسخة احتياطية كاملة',function(){
+    var j=JSON.stringify({app:'FIRAS TV',backupVersion:2,createdAt:new Date().toISOString(),ch:ch,cats:cats,favs:favs,hist:hist,cfg:cfg});
+    if(navigator.clipboard)navigator.clipboard.writeText(j).then(function(){toast('تم نسخ النسخة الاحتياطية كاملة')},function(){prompt('انسخ النسخة الاحتياطية',j)});
+    else prompt('انسخ النسخة الاحتياطية',j);
+  },'g'));
+  a.appendChild(btn('📥 استعادة نسخة احتياطية',function(){
+    var t=prompt('الصق النسخة الاحتياطية');if(!t)return;
+    try{
+      var d=JSON.parse(t);
+      if(!Array.isArray(d.ch)||!Array.isArray(d.cats))throw 0;
+      ch=d.ch;cats=d.cats;
+      if(Array.isArray(d.favs))favs=d.favs;
+      if(Array.isArray(d.hist))hist=d.hist;
+      if(d.cfg&&typeof d.cfg==='object'&&!Array.isArray(d.cfg))cfg=d.cfg;
+      save();toast('تمت استعادة البيانات');drawNav();drawAdm();
+    }catch(e){toast('النسخة الاحتياطية غير صالحة')}
   },'g'));
   a.appendChild(btn('🔑 تغيير كلمة المرور',function(){
     askPw('كلمة المرور الحالية',false,function(cur0){chkPw(cur0,ld('fr_pw',null)).then(function(ok){
