@@ -1,10 +1,8 @@
-name: FIRAS TV APK
-
+name: FIRAS TV 3.0 Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [main]
-
+    branches: [main, firas-tv-3.0-upgrade]
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,13 +13,11 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Check project files
-        run: |
-          ls -la
-          test -f gradlew
-          chmod +x gradlew
-          ./gradlew assembleDebug
+      - name: Build debug APK
+        run: gradle --no-daemon assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: FIRAS-TV-APK
+          name: FIRAS-TV-3.0-debug-apk
           path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
