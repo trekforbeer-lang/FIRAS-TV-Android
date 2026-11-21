@@ -1051,6 +1051,12 @@ function lockLandscape(){
 }
 function fs(){
   if(plFs())return exitFs();
+  /* Android WebView exposes native immersive video fullscreen through the
+     video element. Prefer it over generic element.requestFullscreen so the
+     native Activity can hide both system bars and rotate the whole display. */
+  if(/Android/i.test(navigator.userAgent)&&typeof v.webkitEnterFullscreen==='function'){
+    try{v.webkitEnterFullscreen();return}catch(e){}
+  }
   var r=pl.requestFullscreen||pl.webkitRequestFullscreen;
   if(r){
     try{
