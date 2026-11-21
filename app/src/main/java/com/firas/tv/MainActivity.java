@@ -89,6 +89,15 @@ public class MainActivity extends Activity {
         else webView.restoreState(savedInstanceState);
     }
 
+    @Override public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        // Android can briefly reveal system bars after rotation or focus changes.
+        // Re-apply immersive mode while the native video surface is active.
+        if (hasFocus && customView != null) {
+            getWindow().getDecorView().post(this::enterImmersiveFullscreen);
+        }
+    }
+
     @Override public void onUserLeaveHint() {
         super.onUserLeaveHint();
         if (Build.VERSION.SDK_INT < 26 || webView == null || isInPictureInPictureMode()) return;
