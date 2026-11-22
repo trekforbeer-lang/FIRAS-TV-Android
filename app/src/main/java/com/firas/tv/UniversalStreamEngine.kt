@@ -164,10 +164,10 @@ object UniversalStreamEngine {
     } catch (e: Exception) { Log.w(TAG, "Legacy channel list unavailable", e); emptyList() }
 
     fun match(configs: List<StreamConfig>, id: String, name: String): StreamConfig? {
-        fun norm(s: String) = s.trim().lowercase()
+        fun norm(s: String) = s.trim().lowercase().replace(Regex("[^\\p{L}\\p{N}]"), "")
+        val keys = setOf(norm(id), norm(name)).filter { it.isNotBlank() }.toSet()
         return configs.firstOrNull { c ->
-            listOf(c.id, c.name).plus(c.aliases).filter { it.isNotBlank() }
-                .any { norm(it) == norm(id) || norm(it) == norm(name) }
+            (listOf(c.id, c.name) + c.aliases).map(::norm).any { it.isNotBlank() && it in keys }
         }
     }
 
@@ -184,7 +184,18 @@ object UniversalStreamEngine {
         return when (config.mode.lowercase()) {
             "resolver" -> {
                 val endpoint = config.resolverUrl.ifBlank { config.url }
-                val body = requestText(endpoint, headers) ?: return listOf(config.fallbackUrl).filter { it.isNotBlank() }
+                val requestUrl = try {
+                    val parsed = endpoint.toHttpUrl()
+                    val parameter = config.resolverParam.ifBlank { "url" }
+                    val value = config.url.ifBlank { config.id }
+                    if (value.isBlank() || parsed.queryParameterNames.contains(parameter)) parsed
+                    else parsed.newBuilder().addQueryParameter(parameter, value).build()
+                } catch (e: Exception) {
+                    Log.w(TAG, "Invalid resolver endpoint", e)
+                    return listOf(config.fallbackUrl).filter { it.isNotBlank() }
+                }
+                val body = requestText(requestUrl.toString(), headers)
+                    ?: return listOf(config.fallbackUrl).filter { it.isNotBlank() }
                 val resolved = extractResolverValue(body, config)
                 listOf(resolved, config.fallbackUrl).filter { it.isNotBlank() }.distinct()
             }
@@ -220,11 +231,13 @@ object UniversalStreamEngine {
         if (pattern.isBlank()) return (config.urls + config.url + config.fallbackUrl).filter { it.isNotBlank() }.distinct()
         val regex = try { Regex(pattern) } catch (_: Exception) { return emptyList() }
         val template = config.url
-        val match = regex.find(template) ?: return listOf(template, config.fallbackUrl).filter { it.isNotBlank() }
-        val current = match.groupValues.getOrNull(1)?.toLongOrNull() ?: config.sequenceStart
+        val match = regex.find(template) ?: return (config.urls + template + config.fallbackUrl).filter { it.isNotBlank() }.distinct()
+        val numberGroup = match.groups.getOrNull(1)
+        val current = numberGroup?.value?.toLongOrNull() ?: config.sequenceStart
         val start = maxOf(config.sequenceStart, current - config.sequenceCount + 1)
         val result = (current downTo start).map { n ->
-            template.replaceRange(match.range, match.value.replace(match.groupValues.getOrNull(1) ?: "", n.toString()))
+            if (numberGroup != null) template.replaceRange(numberGroup.range, n.toString())
+            else template.replaceRange(match.range, n.toString())
         }.toMutableList()
         result.addAll(config.urls)
         if (config.fallbackUrl.isNotBlank()) result.add(config.fallbackUrl)
