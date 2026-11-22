@@ -252,7 +252,8 @@ object UniversalStreamEngine {
         val regex = try { Regex(pattern) } catch (_: Exception) { return emptyList() }
         val template = config.url
         val match = regex.find(template) ?: return (config.urls + template + config.fallbackUrl).filter { it.isNotBlank() }.distinct()
-        val numberGroup = match.groups.getOrNull(1)
+        // Kotlin's MatchGroupCollection supports indexed access; getOrNull is unavailable here.
+        val numberGroup = if (match.groups.size > 1) match.groups[1] else null
         val current = numberGroup?.value?.toLongOrNull() ?: config.sequenceStart
         val start = maxOf(config.sequenceStart, current - config.sequenceCount + 1)
         val result = (current downTo start).map { n ->
