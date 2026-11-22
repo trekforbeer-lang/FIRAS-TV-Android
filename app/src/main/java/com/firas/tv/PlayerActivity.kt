@@ -27,6 +27,7 @@ private data class DisplayChannel(
     val id: String,
     val name: String,
     val legacyUrl: String,
+    val legacyHeaders: Map<String, String>,
     val advanced: StreamConfig?
 )
 
@@ -72,7 +73,7 @@ class PlayerActivity : AppCompatActivity() {
 
         val advanced = UniversalStreamEngine.load(this)
         channels = UniversalStreamEngine.loadLegacy(this).map { legacy ->
-            DisplayChannel(legacy.id, legacy.name, legacy.stream,
+            DisplayChannel(legacy.id, legacy.name, legacy.stream, legacy.headers,
                 UniversalStreamEngine.match(advanced, legacy.id, legacy.name))
         }
         list.layoutManager = LinearLayoutManager(this, RecyclerView.HORIZONTAL, false)
@@ -104,7 +105,8 @@ class PlayerActivity : AppCompatActivity() {
             DefaultMediaSourceFactory(this).setDataSourceFactory(UniversalStreamEngine.okhttpFactory(channel.advanced))
         } else {
             DefaultMediaSourceFactory(this).setDataSourceFactory(
-                DefaultHttpDataSource.Factory().setUserAgent("FIRAS-TV/3.0.2").setAllowCrossProtocolRedirects(true)
+                DefaultHttpDataSource.Factory().setUserAgent(channel.legacyHeaders["User-Agent"] ?: "FIRAS-TV/3.0.2")
+                    .setDefaultRequestProperties(channel.legacyHeaders).setAllowCrossProtocolRedirects(true)
             )
         }
         player = ExoPlayer.Builder(this)
