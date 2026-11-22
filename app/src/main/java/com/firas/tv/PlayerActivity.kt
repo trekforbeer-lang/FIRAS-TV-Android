@@ -170,18 +170,21 @@ class PlayerActivity : AppCompatActivity() {
             runOnUiThread {
                 if (current?.id != channel.id) return@runOnUiThread
                 if (updated != null) {
+                    val changed = updated != currentAdvanced
+                    val position = player?.currentPosition ?: 0L
                     currentAdvanced = updated
-                    resolveAndPlay(channel, keepPosition = true)
+                    if (changed) ensurePlayer(channel)
+                    resolveAndPlay(channel, keepPosition = !changed, resumePosition = if (changed) position else null)
                 }
             }
         }
     }
 
-    private fun resolveAndPlay(channel: DisplayChannel, keepPosition: Boolean) {
+    private fun resolveAndPlay(channel: DisplayChannel, keepPosition: Boolean, resumePosition: Long? = null) {
         val config = currentAdvanced ?: return
         if (resolving) return
         resolving = true
-        val oldPosition = if (keepPosition) player?.currentPosition ?: 0L else 0L
+        val oldPosition = resumePosition ?: if (keepPosition) player?.currentPosition ?: 0L else 0L
         status.text = "جارٍ تحديث رابط البث..."
         worker.execute {
             val urls = UniversalStreamEngine.resolve(config)
