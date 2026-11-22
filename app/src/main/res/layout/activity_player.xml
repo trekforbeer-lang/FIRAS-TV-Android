@@ -5,7 +5,7 @@
     android:orientation="vertical" android:background="#080808">
     <LinearLayout android:id="@+id/topBar" android:layout_width="match_parent"
         android:layout_height="56dp" android:gravity="center_vertical"
-        android:paddingHorizontal="@dimen/player_side_padding" android:background="#111111">
+        android:paddingLeft="@dimen/player_side_padding" android:paddingRight="@dimen/player_side_padding" android:background="#111111">
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="FIRAS TV" android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="20sp"/>
         <TextView android:id="@+id/channelTitle" android:layout_width="0dp" android:layout_height="wrap_content"
