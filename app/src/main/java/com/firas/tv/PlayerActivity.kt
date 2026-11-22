@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView
 
 class PlayerActivity : AppCompatActivity() {
     private var player: ExoPlayer? = null
+    private var httpFactory: OkHttpDataSource.Factory? = null
     private lateinit var playerView: PlayerView
     private lateinit var title: TextView
     private lateinit var status: TextView
@@ -38,9 +39,9 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun initializePlayer() {
         if (player != null) return
-        val dataSource = OkHttpDataSource.Factory(UniversalStreamEngine.client)
+        httpFactory = OkHttpDataSource.Factory(UniversalStreamEngine.client)
             .setUserAgent("FIRAS-TV/3.0.2")
-        val mediaSourceFactory = DefaultMediaSourceFactory(this).setDataSourceFactory(dataSource)
+        val mediaSourceFactory = DefaultMediaSourceFactory(this).setDataSourceFactory(httpFactory!!)
         player = ExoPlayer.Builder(this).setMediaSourceFactory(mediaSourceFactory).build().also {
             playerView.player = it
             it.addListener(object : Player.Listener {
@@ -65,9 +66,12 @@ class PlayerActivity : AppCompatActivity() {
         initializePlayer()
         title.text = config.name
         val headers = UniversalStreamEngine.mergedHeaders(config)
-        val item = MediaItem.Builder().setUri(urls.first())
-            .setMediaId(config.id).build()
-        player?.apply { stop(); clearMediaItems(); setMediaItem(item); prepare(); playWhenReady = true }
+        httpFactory?.setDefaultRequestProperties(headers)
+        val queue = if (config.mode.equals("sequential", true)) urls else listOf(urls.first())
+        val items = queue.mapIndexed { index, url ->
+            MediaItem.Builder().setUri(url).setMediaId("${config.id}-$index").build()
+        }
+        player?.apply { stop(); clearMediaItems(); setMediaItems(items); prepare(); playWhenReady = true }
         status.text = "جارٍ الاتصال..."
     }
 
