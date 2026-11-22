@@ -213,7 +213,7 @@ object UniversalStreamEngine {
         val jsonPath = config.resolverJsonPath
         if (jsonPath.isNotBlank()) {
             try {
-                var value: Any? = JSONObject(body)
+                var value: Any? = org.json.JSONTokener(body).nextValue()
                 jsonPath.split(".").forEach { key ->
                     value = when (value) {
                         is JSONObject -> (value as JSONObject).opt(key)
@@ -221,7 +221,7 @@ object UniversalStreamEngine {
                         else -> null
                     }
                 }
-                if (value is String && (value as String).isNotBlank()) return value as String
+                if (value is String && (value as String).isNotBlank()) return (value as String).trim()
             } catch (_: Exception) { }
         }
         val key = Regex.escape(config.resolverParam.ifBlank { "url" })
