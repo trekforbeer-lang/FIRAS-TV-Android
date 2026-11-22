@@ -70,8 +70,7 @@ object UniversalStreamEngine {
         }
 
     fun candidates(config: StreamConfig): List<String> = when (config.mode.lowercase()) {
-        "sequential" -> (config.urls + config.url).filter { it.isNotBlank() }.distinct()
-        "resolver" -> (config.urls + config.url).filter { it.isNotBlank() }.distinct()
+        "sequential", "resolver" -> (config.urls + config.url).filter { it.isNotBlank() }.distinct()
         else -> listOf(config.url).filter { it.isNotBlank() }
     }
 
