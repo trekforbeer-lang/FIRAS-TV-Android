@@ -1,0 +1,29 @@
+{
+  "appName": "FIRAS TV",
+  "sections": [
+    {
+      "title": "beIN SPORTS",
+      "items": [
+        {"name": "beIN SPORTS 1", "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/BeIN_Sports_1_logo.svg/512px-BeIN_Sports_1_logo.svg.png", "url": "https://baila-lentoo.pages.dev/beinxmq/bein-sports-3.m3u8", "referer": "https://baila-lentoo.pages.dev/"},
+        {"name": "beIN SPORTS 2", "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/BeIN_Sports_2_logo.svg/512px-BeIN_Sports_2_logo.svg.png", "url": "https://baila-lentoo.pages.dev/beinxmq/bein-sports-3.m3u8", "referer": "https://baila-lentoo.pages.dev/"},
+        {"name": "beIN SPORTS 3", "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/BeIN_Sports_3_logo.svg/512px-BeIN_Sports_3_logo.svg.png", "url": "https://baila-lentoo.pages.dev/beinxmq/bein-sports-3.m3u8", "referer": "https://baila-lentoo.pages.dev/"}
+      ]
+    },
+    {
+      "title": "MBC CHANNELS",
+      "items": [
+        {"name": "MBC 1", "logo": "https://i.imgur.com/8QeK5Xj.png", "url": "https://shls-mbcmasr.shahid.net/out/v1/a24d081f9a0c4f82a5a54344cb800201/index.m3u8", "referer": ""},
+        {"name": "MBC 3", "logo": "https://i.imgur.com/vP0mF2L.png", "url": "https://shls-mbc3.shahid.net/out/v1/d5bbe570e1514d3d9a142657d33d85e6/index.m3u8", "referer": ""},
+        {"name": "MBC 4", "logo": "https://i.imgur.com/3y4c5Rk.png", "url": "https://shls-mbc4.shahid.net/out/v1/c08681f81775496ab4afa2bac7be7638/index.m3u8", "referer": ""}
+      ]
+    },
+    {
+      "title": "ARABIC CHANNELS",
+      "items": [
+        {"name": "EGYPT", "logo": "https://flagcdn.com/w320/eg.png", "url": "https://shls-mbcmasr.shahid.net/out/v1/a24d081f9a0c4f82a5a54344cb800201/index.m3u8", "referer": ""},
+        {"name": "ALGERIA", "logo": "https://flagcdn.com/w320/dz.png", "url": "https://shls-mbcmasr.shahid.net/out/v1/a24d081f9a0c4f82a5a54344cb800201/index.m3u8", "referer": ""},
+        {"name": "MOROCCO", "logo": "https://flagcdn.com/w320/ma.png", "url": "https://shls-mbcmasr.shahid.net/out/v1/a24d081f9a0c4f82a5a54344cb800201/index.m3u8", "referer": ""}
+      ]
+    }
+  ]
+}
