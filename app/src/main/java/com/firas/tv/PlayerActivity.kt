@@ -9,6 +9,7 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -19,6 +20,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import androidx.media3.ui.TrackSelectionDialogBuilder
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import java.util.concurrent.Executors
@@ -41,6 +43,8 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var fullscreen: Button
     private lateinit var zoom: Button
     private lateinit var retry: Button
+    private lateinit var server: Button
+    private lateinit var quality: Button
     private var channels: List<DisplayChannel> = emptyList()
     private var current: DisplayChannel? = null
     private var currentUrls: List<String> = emptyList()
@@ -52,9 +56,7 @@ class PlayerActivity : AppCompatActivity() {
     private val refreshTask = object : Runnable {
         override fun run() {
             val channel = current
-            if (channel?.advanced != null && channel.advanced.mode.equals("resolver", true)) {
-                resolveAndPlay(channel, keepPosition = true)
-            }
+            if (channel?.advanced != null) resolveAndPlay(channel, keepPosition = true)
             handler.postDelayed(this, 5 * 60 * 1000L)
         }
     }
@@ -70,6 +72,8 @@ class PlayerActivity : AppCompatActivity() {
         fullscreen = findViewById(R.id.fullscreenButton)
         zoom = findViewById(R.id.zoomButton)
         retry = findViewById(R.id.retryButton)
+        server = findViewById(R.id.serverButton)
+        quality = findViewById(R.id.qualityButton)
 
         val advanced = UniversalStreamEngine.load(this)
         channels = UniversalStreamEngine.loadLegacy(this).map { legacy ->
@@ -89,6 +93,12 @@ class PlayerActivity : AppCompatActivity() {
             zoom.text = if (zoomed) "ملاءمة" else "زووم"
         }
         retry.setOnClickListener { current?.let { play(it) } }
+        server.setOnClickListener { nextCandidateOrRetry() }
+        quality.setOnClickListener {
+            val active = player
+            if (active == null) Toast.makeText(this, "شغّل قناة أولاً", Toast.LENGTH_SHORT).show()
+            else TrackSelectionDialogBuilder(this, "اختيار الجودة", active, C.TRACK_TYPE_VIDEO).build().show()
+        }
         if (channels.isNotEmpty()) play(channels.first())
         else status.text = "لا توجد قنوات في ملف channels.json"
     }
