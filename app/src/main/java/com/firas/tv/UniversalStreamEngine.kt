@@ -31,7 +31,7 @@ data class StreamConfig(
     val fallbackUrl: String = ""
 )
 
-data class LegacyChannel(val id: String, val name: String, val category: String, val logo: String, val stream: String)
+data class LegacyChannel(val id: String, val name: String, val category: String, val logo: String, val stream: String, val headers: Map<String, String> = emptyMap())
 
 object UniversalStreamEngine {
     private const val TAG = "FIRASStream"
@@ -97,14 +97,36 @@ object UniversalStreamEngine {
 
     fun loadLegacy(context: Context): List<LegacyChannel> = try {
         val raw = context.assets.open(LEGACY).bufferedReader().use { it.readText() }
-        val arr = JSONArray(raw)
-        (0 until arr.length()).mapNotNull { i ->
-            val o = arr.optJSONObject(i) ?: return@mapNotNull null
-            val stream = o.optString("stream")
-            if (stream.isBlank()) null else LegacyChannel(
-                o.optString("id", "legacy-$i"), o.optString("name", "Channel $i"),
-                o.optString("category"), o.optString("logo"), stream
-            )
+        val root = JSONObject(raw)
+        val sections = root.optJSONArray("sections")
+        if (sections != null) {
+            val result = mutableListOf<LegacyChannel>()
+            for (i in 0 until sections.length()) {
+                val section = sections.optJSONObject(i) ?: continue
+                val category = section.optString("title")
+                val items = section.optJSONArray("items") ?: continue
+                for (j in 0 until items.length()) {
+                    val item = items.optJSONObject(j) ?: continue
+                    val stream = item.optString("url")
+                    if (stream.isBlank()) continue
+                    val headers = linkedMapOf<String, String>()
+                    item.optString("referer").takeIf { it.isNotBlank() }?.let { headers["Referer"] = it }
+                    item.optString("userAgent").takeIf { it.isNotBlank() }?.let { headers["User-Agent"] = it }
+                    result += LegacyChannel(item.optString("id", "legacy-$i-$j"), item.optString("name", "Channel $j"),
+                        category, item.optString("logo"), stream, headers)
+                }
+            }
+            result
+        } else {
+            val arr = root.optJSONArray("channels") ?: JSONArray()
+            (0 until arr.length()).mapNotNull { i ->
+                val item = arr.optJSONObject(i) ?: return@mapNotNull null
+                val stream = item.optString("stream", item.optString("url"))
+                if (stream.isBlank()) null else LegacyChannel(
+                    item.optString("id", "legacy-$i"), item.optString("name", "Channel $i"),
+                    item.optString("category"), item.optString("logo"), stream
+                )
+            }
         }
     } catch (e: Exception) { Log.w(TAG, "Legacy channel list unavailable", e); emptyList() }
 
