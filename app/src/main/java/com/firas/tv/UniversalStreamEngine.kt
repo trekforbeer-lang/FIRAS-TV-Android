@@ -199,7 +199,12 @@ object UniversalStreamEngine {
                 val resolved = extractResolverValue(body, config)
                 listOf(resolved, config.fallbackUrl).filter { it.isNotBlank() }.distinct()
             }
-            "sequential" -> sequentialCandidates(config)
+            "sequential" -> {
+                val candidates = sequentialCandidates(config)
+                val liveEdge = candidates.firstOrNull { probe(it, headers) }
+                if (liveEdge != null) listOf(liveEdge) + candidates.filter { it != liveEdge }
+                else candidates
+            }
             else -> listOf(config.url, config.fallbackUrl).filter { it.isNotBlank() }.distinct()
         }
     }
@@ -244,8 +249,25 @@ object UniversalStreamEngine {
         return result.distinct()
     }
 
-    fun okhttpFactory(config: StreamConfig): OkHttpDataSource.Factory =
-        OkHttpDataSource.Factory(client).setDefaultRequestProperties(mergedHeaders(config))
+    fun okhttpFactory(config: StreamConfig): OkHttpDataSource.Factory {
+        val configured = mergedHeaders(config)
+        val staticCookie = configured.entries.firstOrNull { it.key.equals("Cookie", true) }?.value.orEmpty()
+        val requestHeaders = configured.filterKeys { !it.equals("Cookie", true) }
+        val channelClient = client.newBuilder().addInterceptor { chain ->
+            val original = chain.request()
+            val jarCookies = client.cookieJar.loadForRequest(original.url).map { it.name + "=" + it.value }
+            val supplied = original.header("Cookie").orEmpty()
+            val combined = (listOf(supplied, staticCookie) + jarCookies)
+                .flatMap { it.split(";") }.map { it.trim() }
+                .filter { it.isNotBlank() }.distinct()
+            val request = original.newBuilder().apply {
+                removeHeader("Cookie")
+                if (combined.isNotEmpty()) header("Cookie", combined.joinToString("; "))
+            }.build()
+            chain.proceed(request)
+        }.build()
+        return OkHttpDataSource.Factory(channelClient).setDefaultRequestProperties(requestHeaders)
+    }
 
     fun requestText(url: String, headers: Map<String, String> = emptyMap()): String? = try {
         val request = Request.Builder().url(url).get().apply { headers.forEach { (k, v) -> header(k, v) } }.build()
