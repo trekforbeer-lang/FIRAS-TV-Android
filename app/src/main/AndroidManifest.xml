@@ -6,11 +6,13 @@
         android:label="FIRAS TV"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
-        <!-- The integrated Media3 player is the single launcher screen. -->
         <activity
             android:name=".PlayerActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:screenOrientation="unspecified"
+            android:exported="false" />
+        <activity
+            android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
