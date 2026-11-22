@@ -25,6 +25,7 @@ data class StreamConfig(
     val aliases: List<String> = emptyList(),
     val resolverUrl: String = "",
     val resolverParam: String = "",
+    val resolverValue: String = "",
     val resolverJsonPath: String = "",
     val sequenceRegex: String = "",
     val sequenceStart: Long = 0L,
@@ -97,7 +98,8 @@ object UniversalStreamEngine {
                         mode = o.optString("mode", "direct"), url = o.optString("url"),
                         headers = headers, urls = urls, cookie = o.optString("cookie"),
                         aliases = aliases, resolverUrl = o.optString("resolver_url"),
-                        resolverParam = o.optString("resolver_param", "url"),
+                        resolverParam = o.optString("resolver_param", "id"),
+                        resolverValue = o.optString("resolver_value"),
                         resolverJsonPath = o.optString("resolver_json_path"),
                         sequenceRegex = o.optString("sequence_regex"),
                         sequenceStart = o.optLong("sequence_start", 0L),
@@ -187,17 +189,29 @@ object UniversalStreamEngine {
                 val endpoint = config.resolverUrl.ifBlank { config.url }
                 val requestUrl = try {
                     val parsed = endpoint.toHttpUrl()
-                    val parameter = config.resolverParam.ifBlank { "url" }
-                    val value = config.url.ifBlank { config.id }
-                    if (value.isBlank() || parsed.queryParameterNames.contains(parameter)) parsed
-                    else parsed.newBuilder().addQueryParameter(parameter, value).build()
+                    val parameter = config.resolverParam.ifBlank { "id" }
+                    val value = config.resolverValue.ifBlank {
+                        when (parameter.lowercase()) {
+                            "name", "channel", "channel_name" -> config.name
+                            "slug" -> config.id.ifBlank { config.name.trim().lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-') }
+                            "url", "stream", "source" -> config.url
+                            else -> config.id.ifBlank { config.name }
+                        }
+                    }
+                    if (value.isBlank()) parsed
+                    else parsed.newBuilder().removeAllQueryParameters(parameter).addQueryParameter(parameter, value).build()
                 } catch (e: Exception) {
                     Log.w(TAG, "Invalid resolver endpoint", e)
                     return listOf(config.fallbackUrl).filter { it.isNotBlank() }
                 }
-                val body = requestText(requestUrl.toString(), headers)
-                    ?: return listOf(config.fallbackUrl).filter { it.isNotBlank() }
-                val resolved = extractResolverValue(body, config)
+                var body: String? = null
+                repeat(2) { attempt ->
+                    if (body.isNullOrBlank()) {
+                        body = requestText(requestUrl.toString(), headers)
+                        if (body.isNullOrBlank() && attempt == 0) Thread.sleep(350)
+                    }
+                }
+                val resolved = body?.let { extractResolverValue(it, config) }.orEmpty()
                 listOf(resolved, config.fallbackUrl).filter { it.isNotBlank() }.distinct()
             }
             "sequential" -> {
