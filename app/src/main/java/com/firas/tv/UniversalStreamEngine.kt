@@ -82,11 +82,11 @@ object UniversalStreamEngine {
 
     fun requestText(url: String, headers: Map<String, String> = emptyMap()): String? = try {
         val request = Request.Builder().url(url).get().apply { headers.forEach { (k,v) -> header(k,v) } }.build()
-        client.newCall(request).execute().use(Response::body)?.string()
+        client.newCall(request).execute().use { response -> response.body?.string() }
     } catch (e: Exception) { Log.w(TAG, "Request failed", e); null }
 
     fun rememberSetCookie(url: HttpUrl, response: Response) {
-        val values = response.headers("Set-Cookie")
-        if (values.isNotEmpty()) cookieJar.saveFromResponse(url, Cookie.parseAll(url, values))
+        val parsed = Cookie.parseAll(url, response.headers)
+        if (parsed.isNotEmpty()) cookieJar.saveFromResponse(url, parsed)
     }
 }
