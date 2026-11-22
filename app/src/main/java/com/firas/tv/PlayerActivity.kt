@@ -93,7 +93,9 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun ensurePlayer(channel: DisplayChannel) {
-        if (player != null) return
+        playerView.player = null
+        player?.release()
+        player = null
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(1500, 12000, 500, 1000)
             .setPrioritizeTimeOverSizeThresholds(true)
