@@ -64,35 +64,53 @@ object UniversalStreamEngine {
     }
 
     fun load(context: Context): List<StreamConfig> {
-        val raw = readConfig(context) ?: return emptyList()
-        return try {
-            val root = JSONObject(raw)
-            val arr = root.optJSONArray("channels") ?: JSONArray()
-            (0 until arr.length()).mapNotNull { i ->
-                val o = arr.optJSONObject(i) ?: return@mapNotNull null
-                val headers = linkedMapOf<String, String>()
-                val global = root.optJSONObject("default_headers") ?: JSONObject()
-                val own = o.optJSONObject("headers") ?: JSONObject()
-                global.keys().forEach { headers[it] = global.optString(it) }
-                own.keys().forEach { headers[it] = own.optString(it) }
-                val urls = mutableListOf<String>()
-                o.optJSONArray("urls")?.let { a -> for (j in 0 until a.length()) a.optString(j).takeIf { it.isNotBlank() }?.let(urls::add) }
-                val aliases = mutableListOf<String>()
-                o.optJSONArray("aliases")?.let { a -> for (j in 0 until a.length()) a.optString(j).takeIf { it.isNotBlank() }?.let(aliases::add) }
-                StreamConfig(
-                    id = o.optString("id"), name = o.optString("name"),
-                    mode = o.optString("mode", "direct"), url = o.optString("url"),
-                    headers = headers, urls = urls, cookie = o.optString("cookie"),
-                    aliases = aliases, resolverUrl = o.optString("resolver_url"),
-                    resolverParam = o.optString("resolver_param", "url"),
-                    resolverJsonPath = o.optString("resolver_json_path"),
-                    sequenceRegex = o.optString("sequence_regex"),
-                    sequenceStart = o.optLong("sequence_start", 0L),
-                    sequenceCount = o.optInt("sequence_count", 8).coerceIn(1, 30),
-                    fallbackUrl = o.optString("fallback_url")
-                )
+        val overrideFile = File(context.filesDir, CONFIG)
+        val assetRaw = try {
+            context.assets.open(CONFIG).bufferedReader().use { it.readText() }
+        } catch (e: Exception) {
+            Log.w(TAG, "Bundled stream config unavailable", e)
+            null
+        }
+        fun parse(raw: String?): List<StreamConfig> {
+            if (raw.isNullOrBlank()) return emptyList()
+            return try {
+                val root = JSONObject(raw)
+                val arr = root.optJSONArray("channels") ?: JSONArray()
+                (0 until arr.length()).mapNotNull { i ->
+                    val o = arr.optJSONObject(i) ?: return@mapNotNull null
+                    val headers = linkedMapOf<String, String>()
+                    val global = root.optJSONObject("default_headers") ?: JSONObject()
+                    val own = o.optJSONObject("headers") ?: JSONObject()
+                    global.keys().forEach { headers[it] = global.optString(it) }
+                    own.keys().forEach { headers[it] = own.optString(it) }
+                    val urls = mutableListOf<String>()
+                    o.optJSONArray("urls")?.let { a ->
+                        for (j in 0 until a.length()) a.optString(j).takeIf { it.isNotBlank() }?.let(urls::add)
+                    }
+                    val aliases = mutableListOf<String>()
+                    o.optJSONArray("aliases")?.let { a ->
+                        for (j in 0 until a.length()) a.optString(j).takeIf { it.isNotBlank() }?.let(aliases::add)
+                    }
+                    StreamConfig(
+                        id = o.optString("id"), name = o.optString("name"),
+                        mode = o.optString("mode", "direct"), url = o.optString("url"),
+                        headers = headers, urls = urls, cookie = o.optString("cookie"),
+                        aliases = aliases, resolverUrl = o.optString("resolver_url"),
+                        resolverParam = o.optString("resolver_param", "url"),
+                        resolverJsonPath = o.optString("resolver_json_path"),
+                        sequenceRegex = o.optString("sequence_regex"),
+                        sequenceStart = o.optLong("sequence_start", 0L),
+                        sequenceCount = o.optInt("sequence_count", 8).coerceIn(1, 30),
+                        fallbackUrl = o.optString("fallback_url")
+                    )
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Invalid stream config; trying bundled defaults", e)
+                emptyList()
             }
-        } catch (e: Exception) { Log.e(TAG, "Invalid stream config", e); emptyList() }
+        }
+        val overrideConfigs = if (overrideFile.isFile) parse(try { overrideFile.readText() } catch (_: Exception) { null }) else emptyList()
+        return if (overrideConfigs.isNotEmpty()) overrideConfigs else parse(assetRaw)
     }
 
     fun loadLegacy(context: Context): List<LegacyChannel> = try {
