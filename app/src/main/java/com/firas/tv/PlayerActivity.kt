@@ -47,6 +47,8 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var quality: Button
     private var channels: List<DisplayChannel> = emptyList()
     private var current: DisplayChannel? = null
+    private var currentAdvanced: StreamConfig? = null
+    private var resolving = false
     private var currentUrls: List<String> = emptyList()
     private var currentUrlIndex = 0
     private var isFullscreen = false
@@ -56,7 +58,7 @@ class PlayerActivity : AppCompatActivity() {
     private val refreshTask = object : Runnable {
         override fun run() {
             val channel = current
-            if (channel?.advanced != null) resolveAndPlay(channel, keepPosition = true)
+            if (channel != null && channel.advanced != null) refreshAdvancedAndPlay(channel)
             handler.postDelayed(this, 5 * 60 * 1000L)
         }
     }
@@ -111,8 +113,8 @@ class PlayerActivity : AppCompatActivity() {
             .setBufferDurationsMs(1500, 12000, 500, 1000)
             .setPrioritizeTimeOverSizeThresholds(true)
             .build()
-        val sourceFactory = if (channel.advanced != null) {
-            DefaultMediaSourceFactory(this).setDataSourceFactory(UniversalStreamEngine.okhttpFactory(channel.advanced))
+        val sourceFactory = if (currentAdvanced != null) {
+            DefaultMediaSourceFactory(this).setDataSourceFactory(UniversalStreamEngine.okhttpFactory(currentAdvanced!!))
         } else {
             DefaultMediaSourceFactory(this).setDataSourceFactory(
                 DefaultHttpDataSource.Factory().setUserAgent(channel.legacyHeaders["User-Agent"] ?: "FIRAS-TV/3.0.2")
@@ -147,10 +149,11 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun play(channel: DisplayChannel) {
         current = channel
+        currentAdvanced = channel.advanced
         currentUrlIndex = 0
         title.text = channel.name
         ensurePlayer(channel)
-        if (channel.advanced == null) {
+        if (currentAdvanced == null) {
             // Preserve the original Media3 HTTP playback path for channels without an advanced config match.
             currentUrls = listOf(channel.legacyUrl)
             playUrl(channel.legacyUrl)
@@ -160,13 +163,30 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
+    private fun refreshAdvancedAndPlay(channel: DisplayChannel) {
+        worker.execute {
+            val latest = UniversalStreamEngine.load(this@PlayerActivity)
+            val updated = UniversalStreamEngine.match(latest, channel.id, channel.name) ?: channel.advanced
+            runOnUiThread {
+                if (current?.id != channel.id) return@runOnUiThread
+                if (updated != null) {
+                    currentAdvanced = updated
+                    resolveAndPlay(channel, keepPosition = true)
+                }
+            }
+        }
+    }
+
     private fun resolveAndPlay(channel: DisplayChannel, keepPosition: Boolean) {
-        val config = channel.advanced ?: return
+        val config = currentAdvanced ?: return
+        if (resolving) return
+        resolving = true
         val oldPosition = if (keepPosition) player?.currentPosition ?: 0L else 0L
         status.text = "جارٍ تحديث رابط البث..."
         worker.execute {
             val urls = UniversalStreamEngine.resolve(config)
             runOnUiThread {
+                resolving = false
                 if (current?.id != channel.id) return@runOnUiThread
                 currentUrls = urls
                 currentUrlIndex = 0
@@ -194,13 +214,13 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun nextCandidateOrRetry() {
         val channel = current ?: return
-        if (channel.advanced == null) return
+        val config = currentAdvanced ?: return
         if (currentUrlIndex + 1 < currentUrls.size) {
             currentUrlIndex++
             playUrl(currentUrls[currentUrlIndex])
         } else {
             worker.execute {
-                val refreshed = UniversalStreamEngine.resolve(channel.advanced)
+                val refreshed = UniversalStreamEngine.resolve(config)
                 runOnUiThread {
                     if (current?.id == channel.id && refreshed.isNotEmpty()) {
                         currentUrls = refreshed
