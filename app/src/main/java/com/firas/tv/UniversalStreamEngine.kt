@@ -191,9 +191,9 @@ object UniversalStreamEngine {
             } catch (_: Exception) { }
         }
         val key = Regex.escape(config.resolverParam.ifBlank { "url" })
-        val jsonMatch = Regex("""["']?$key["']?\\s*[:=]\\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE).find(body)
+        val jsonMatch = Regex("""["']?$key["']?\s*[:=]\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE).find(body)
         if (jsonMatch != null) return jsonMatch.groupValues[1]
-        val urlMatch = Regex("""https?://[^\\s"'<>]+""").find(body)
+        val urlMatch = Regex("""https?://[^\s"'<>]+""").find(body)
         return urlMatch?.value?.trimEnd(',', ';', ')') ?: ""
     }
 
