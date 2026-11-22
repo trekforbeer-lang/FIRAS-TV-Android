@@ -17,7 +17,7 @@
         <androidx.media3.ui.PlayerView android:id="@+id/playerView"
             android:layout_width="match_parent" android:layout_height="match_parent"
             app:use_controller="true" app:show_buffering="when_playing"
-            app:resize_mode="fit" app:controller_auto_show="true"/>
+            app:resize_mode="fit"/>
     </FrameLayout>
     <TextView android:id="@+id/statusText" android:layout_width="match_parent"
         android:layout_height="wrap_content" android:padding="12dp"
