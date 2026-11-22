@@ -9,8 +9,8 @@ android {
         applicationId = "com.firas.tv"
         minSdk = 21
         targetSdk = 35
-        versionCode = 302
-        versionName = "3.0.2"
+        versionCode = 303
+        versionName = "3.0.3"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -18,7 +18,12 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
     buildTypes {
-        release { isMinifyEnabled = false }
+        debug { }
+        release {
+            isMinifyEnabled = false
+            // Produce an installable APK for this public test build.
+            signingConfig = signingConfigs.getByName("debug")
+        }
     }
 }
 dependencies {
