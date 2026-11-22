@@ -1,0 +1,6 @@
+<resources>
+    <dimen name="player_side_padding">32dp</dimen>
+    <dimen name="player_title_size">26sp</dimen>
+    <dimen name="player_control_size">64dp</dimen>
+    <dimen name="player_content_max_width">1200dp</dimen>
+</resources>
