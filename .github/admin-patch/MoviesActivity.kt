@@ -33,15 +33,87 @@ class MoviesActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(12, 12, 12, 8); setBackgroundColor(0xFF08090D.toInt()) }
-        root.addView(TextView(this).apply { text = "الأفلام"; textSize = 27f; setTextColor(-1); typeface = android.graphics.Typeface.DEFAULT_BOLD; setPadding(8, 8, 8, 2) })
-        root.addView(TextView(this).apply { text = "أفلام مختارة • اكتشف وشاهد مباشرة"; textSize = 13f; setTextColor(0xFFB8BAC4.toInt()); setPadding(8, 0, 8, 12) })
-        val search = EditText(this).apply { hint = "ابحث عن فيلم..."; setSingleLine(true); setTextColor(-1); setHintTextColor(0xFFAAAAAA.toInt()) }
-        root.addView(search, LinearLayout.LayoutParams(-1, 52))
-        status = TextView(this).apply { text = "جارٍ تحميل الأفلام..."; setTextColor(0xFFCCCCCC.toInt()); setPadding(4, 8, 4, 8) }
+        window.statusBarColor = 0xFF090A0F.toInt()
+        window.navigationBarColor = 0xFF15161D.toInt()
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(14, 8, 14, 8)
+            setBackgroundColor(0xFF090A0F.toInt())
+        }
+        val toolbar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            layoutDirection = ViewGroup.LAYOUT_DIRECTION_RTL
+            setPadding(2, 4, 2, 10)
+        }
+        val back = TextView(this).apply {
+            text = "‹"
+            textSize = 34f
+            gravity = android.view.Gravity.CENTER
+            setTextColor(-1)
+            setPadding(8, 0, 14, 0)
+            setOnClickListener { finish() }
+        }
+        toolbar.addView(back, LinearLayout.LayoutParams(48, 48))
+        val titleBlock = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutDirection = ViewGroup.LAYOUT_DIRECTION_RTL }
+        titleBlock.addView(TextView(this).apply {
+            text = "مكتبة الأفلام"; textSize = 22f; setTextColor(-1)
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+        })
+        titleBlock.addView(TextView(this).apply {
+            text = "اكتشف أفلاماً مجانية متاحة للمشاهدة"; textSize = 11f
+            setTextColor(0xFF9B9EAA.toInt())
+        })
+        toolbar.addView(titleBlock, LinearLayout.LayoutParams(0, -2, 1f))
+        toolbar.addView(TextView(this).apply {
+            text = "FIRAS"; textSize = 14f; typeface = android.graphics.Typeface.DEFAULT_BOLD
+            setTextColor(0xFFF0445E.toInt())
+        })
+        root.addView(toolbar)
+
+        val hero = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            setPadding(18, 12, 18, 12)
+            background = android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,
+                intArrayOf(0xFF512039.toInt(), 0xFF242033.toInt(), 0xFF171820.toInt())
+            ).apply { cornerRadius = 22f * resources.displayMetrics.density }
+        }
+        hero.addView(TextView(this).apply {
+            text = "ليلتك السينمائية تبدأ هنا"; textSize = 18f
+            setTextColor(-1); typeface = android.graphics.Typeface.DEFAULT_BOLD
+        })
+        hero.addView(TextView(this).apply {
+            text = "تصفّح الملصقات واختر الفيلم الذي يناسبك"; textSize = 11f
+            setTextColor(0xFFD0CCD5.toInt()); setPadding(0, 4, 0, 0)
+        })
+        root.addView(hero, LinearLayout.LayoutParams(-1, 104).apply { bottomMargin = 10 })
+
+        val search = EditText(this).apply {
+            hint = "ابحث عن فيلم..."
+            setSingleLine(true)
+            setTextColor(-1)
+            setHintTextColor(0xFF9295A2.toInt())
+            textSize = 14f
+            setPadding(16, 0, 16, 0)
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(0xFF1A1B23.toInt())
+                cornerRadius = 14f * resources.displayMetrics.density
+                setStroke((resources.displayMetrics.density).toInt().coerceAtLeast(1), 0xFF343541.toInt())
+            }
+        }
+        root.addView(search, LinearLayout.LayoutParams(-1, 48).apply { bottomMargin = 6 })
+        status = TextView(this).apply {
+            text = "جارٍ تحميل الأفلام..."
+            setTextColor(0xFFB8BAC4.toInt())
+            textSize = 11f
+            setPadding(4, 5, 4, 7)
+        }
         root.addView(status)
         val list = RecyclerView(this)
         list.layoutManager = GridLayoutManager(this, 2)
+        list.setHasFixedSize(true)
         adapter = FilmAdapter()
         list.adapter = adapter
         root.addView(list, LinearLayout.LayoutParams(-1, 0, 1f))
