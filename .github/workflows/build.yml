@@ -26,6 +26,7 @@ jobs:
           cp .github/admin-patch/UniversalStreamEngine.kt app/src/main/java/com/firas/tv/UniversalStreamEngine.kt
           cp .github/admin-patch/ChannelAdapter.kt app/src/main/java/com/firas/tv/ChannelAdapter.kt
           cp .github/admin-patch/activity_main.xml app/src/main/res/layout/activity_main.xml
+          cp .github/admin-patch/activity_player.xml app/src/main/res/layout/activity_player.xml
           mkdir -p app/src/main/res/drawable
           cp .github/admin-patch/home_hero_bg.xml app/src/main/res/drawable/home_hero_bg.xml
           cp .github/admin-patch/AndroidManifest.xml app/src/main/AndroidManifest.xml
