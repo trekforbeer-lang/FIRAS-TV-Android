@@ -62,6 +62,9 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var retry: Button
     private lateinit var server: Button
     private lateinit var quality: Button
+    private lateinit var centerControls: View
+    private lateinit var lockButton: Button
+    private var controlsLocked = false
     private var channels: List<DisplayChannel> = emptyList()
     private var current: DisplayChannel? = null
     private var currentAdvanced: StreamConfig? = null
@@ -99,6 +102,16 @@ class PlayerActivity : AppCompatActivity() {
         retry = findViewById(R.id.retryButton)
         server = findViewById(R.id.serverButton)
         quality = findViewById(R.id.qualityButton)
+        centerControls = findViewById(R.id.centerControls)
+        lockButton = findViewById(R.id.lockButton)
+        findViewById<Button>(R.id.playerBackButton).setOnClickListener { finish() }
+        lockButton.setOnClickListener { controlsLocked = !controlsLocked; setOverlayVisible(!controlsLocked); lockButton.text = if (controlsLocked) "🔒" else "♙" }
+        findViewById<Button>(R.id.castButton).setOnClickListener { Toast.makeText(this, "ميزة Google Cast تحتاج ربط جهاز البث، ولم يتم تفعيلها بعد.", Toast.LENGTH_LONG).show() }
+        findViewById<Button>(R.id.channelListButton).setOnClickListener { list.visibility = if (list.visibility == View.VISIBLE) View.GONE else View.VISIBLE }
+        findViewById<Button>(R.id.subtitleButton).setOnClickListener { val active = player; if (active == null) Toast.makeText(this, "شغّل قناة أولاً", Toast.LENGTH_SHORT).show() else TrackSelectionDialogBuilder(this, "الترجمة", active, C.TRACK_TYPE_TEXT).build().show() }
+        findViewById<Button>(R.id.previousChannelButton).setOnClickListener { changeChannel(-1) }
+        findViewById<Button>(R.id.nextChannelButton).setOnClickListener { changeChannel(1) }
+        playerView.setOnClickListener { if (controlsLocked) { controlsLocked = false; lockButton.text = "♙"; setOverlayVisible(true) } else { setOverlayVisible(findViewById<View>(R.id.topBar).visibility != View.VISIBLE) } }
 
         val advanced = UniversalStreamEngine.load(this)
         channels = UniversalStreamEngine.loadLegacy(this).map { legacy ->
@@ -226,7 +239,7 @@ class PlayerActivity : AppCompatActivity() {
 
         val headers = requestHeaders(channel).toMutableMap()
         val userAgentKey = headers.keys.firstOrNull { it.equals("User-Agent", true) }
-        val userAgent = userAgentKey?.let { headers.remove(it) } ?: "FIRAS-TV/4.0"
+        val userAgent = userAgentKey?.let { headers.remove(it) } ?: "RAHMANI/1.0"
 
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(2500, 15000, 750, 1500)
@@ -295,16 +308,16 @@ class PlayerActivity : AppCompatActivity() {
                                 recoveryAttempts = 0
                                 recoveryTask?.let(handler::removeCallbacks)
                                 recoveryTask = null
-                                "FIRAS TV • البث جاهز"
+                                "RAHMANI • البث جاهز"
                             }
                             Player.STATE_ENDED -> "انتهى البث"
-                            else -> "FIRAS TV • بث مباشر"
+                            else -> "RAHMANI • بث مباشر"
                         }
-                        playPause.text = if (exo.isPlaying) "إيقاف مؤقت" else "تشغيل"
+                        playPause.text = if (exo.isPlaying) "Ⅱ" else "▶"
                     }
 
                     override fun onIsPlayingChanged(isPlaying: Boolean) {
-                        playPause.text = if (isPlaying) "إيقاف مؤقت" else "تشغيل"
+                        playPause.text = if (isPlaying) "Ⅱ" else "▶"
                     }
                 })
             }
@@ -374,7 +387,7 @@ class PlayerActivity : AppCompatActivity() {
                 currentUrls = validUrls
                 currentUrlIndex = 0
                 if (keepPosition && previousUrl == validUrls.first()) {
-                    status.text = "FIRAS TV • البث مستمر"
+                    status.text = "RAHMANI • البث مستمر"
                     return@runOnUiThread
                 }
                 playUrl(validUrls.first(), oldPosition)
@@ -496,9 +509,24 @@ class PlayerActivity : AppCompatActivity() {
             View.SYSTEM_UI_FLAG_VISIBLE
         }
         window.decorView.systemUiVisibility = flags
-        findViewById<View>(R.id.topBar).visibility = if (isFullscreen) View.GONE else View.VISIBLE
-        findViewById<View>(R.id.bottomPanel).visibility = if (isFullscreen) View.GONE else View.VISIBLE
-        fullscreen.text = if (isFullscreen) "تصغير" else "ملء الشاشة"
+        // Keep the overlay controls visible over the video in fullscreen mode.
+        fullscreen.text = "⛶"
+    }
+
+
+    private fun setOverlayVisible(visible: Boolean) {
+        val value = if (visible) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.topBar).visibility = value
+        findViewById<View>(R.id.bottomPanel).visibility = value
+        centerControls.visibility = value
+    }
+
+    private fun changeChannel(direction: Int) {
+        if (channels.isEmpty()) return
+        val currentIndex = channels.indexOfFirst { it.id == current?.id }
+        val start = if (currentIndex < 0) 0 else currentIndex
+        val nextIndex = (start + direction).coerceIn(0, channels.lastIndex)
+        if (nextIndex != currentIndex) play(channels[nextIndex])
     }
 
     override fun onResume() {
