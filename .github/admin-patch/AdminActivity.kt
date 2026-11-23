@@ -779,7 +779,7 @@ class AdminActivity : Activity() {
     private fun readAssetRoot() = JSONObject(assets.open("channels.json").bufferedReader(Charsets.UTF_8).use { it.readText() })
 
     private fun checkChannels() {
-        Toast.makeText(this, "جارٍ فحص روابط القنوات...", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "جارٍ فحص استجابة روابط القنوات...", Toast.LENGTH_SHORT).show()
         Thread {
             var good = 0
             var bad = 0
@@ -790,24 +790,52 @@ class AdminActivity : Activity() {
                     val item = arr.optJSONObject(j) ?: continue
                     val stream = item.optString("url")
                     if (!safe(stream)) continue
-                    val ok = probe(stream)
+                    val ok = probe(item)
                     item.put("ok", ok).put("chk", System.currentTimeMillis())
                     if (ok) good++ else bad++
                 }
             }
-            runOnUiThread { save(); Toast.makeText(this, "الفحص انتهى: تعمل $good • لا تعمل $bad", Toast.LENGTH_LONG).show(); render() }
+            runOnUiThread {
+                save()
+                Toast.makeText(this, "انتهى فحص استجابة الخوادم: ناجح $good • فاشل $bad. هذا ليس اختبار تشغيل فيديو.", Toast.LENGTH_LONG).show()
+                render()
+            }
         }.start()
     }
 
-    private fun probe(url: String): Boolean = try {
-        val connection = URL(url).openConnection() as HttpURLConnection
-        connection.connectTimeout = 7000
-        connection.readTimeout = 7000
-        connection.requestMethod = "HEAD"
-        val code = connection.responseCode
-        connection.disconnect()
-        code in 200..399 || code == 405
-    } catch (_: Exception) { false }
+    // Use GET rather than HEAD: many HLS/CDN endpoints reject HEAD requests.
+    // Send the channel's own headers so authenticated streams are not falsely marked offline.
+    private fun probe(channel: JSONObject): Boolean {
+        var connection: HttpURLConnection? = null
+        return try {
+            connection = URL(channel.optString("url")).openConnection() as HttpURLConnection
+            connection.connectTimeout = 9000
+            connection.readTimeout = 9000
+            connection.instanceFollowRedirects = true
+            connection.requestMethod = "GET"
+            connection.setRequestProperty("User-Agent",
+                channel.optString("userAgent").ifBlank { "RAHMANI/1.0" })
+            connection.setRequestProperty("Accept", "*/*")
+            connection.setRequestProperty("Range", "bytes=0-1023")
+            channel.optString("referer").takeIf { it.isNotBlank() }?.let {
+                connection.setRequestProperty("Referer", it)
+            }
+            readStreamCookie(channel).takeIf { it.isNotBlank() }?.let {
+                connection.setRequestProperty("Cookie", it)
+            }
+            val code = connection.responseCode
+            val body = if (code in 200..399) connection.inputStream else connection.errorStream
+            body?.use { input ->
+                val buffer = ByteArray(1024)
+                input.read(buffer)
+            }
+            code in 200..399
+        } catch (_: Exception) {
+            false
+        } finally {
+            connection?.disconnect()
+        }
+    }
 
     private fun deleteBrokenAdded() {
         AlertDialog.Builder(this).setTitle("حذف القنوات المعطلة")
