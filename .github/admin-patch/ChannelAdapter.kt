@@ -135,7 +135,7 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
                             if (type.contains("svg") || prefix.startsWith("<svg") || prefix.startsWith("<?xml") && prefix.contains("<svg")) {
                                 val svg = SVG.getFromString(bytes.toString(Charsets.UTF_8))
                                 val rendered = Bitmap.createBitmap(192, 192, Bitmap.Config.ARGB_8888)
-                                svg.renderToCanvas(Canvas(rendered), 192, 192)
+                                svg.renderToCanvas(Canvas(rendered))
                                 rendered
                             } else BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                         } finally { connection.disconnect() }
