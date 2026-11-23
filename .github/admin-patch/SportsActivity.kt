@@ -212,5 +212,4 @@ class SportsActivity : AppCompatActivity() {
         setColor(color); cornerRadius = dp(radius).toFloat()
     }
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
-    override fun onDestroy() { io.shutdownNow(); super.onDestroy() }
 }
