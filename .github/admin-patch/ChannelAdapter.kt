@@ -53,11 +53,11 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
             minimumHeight = dp(145)
             elevation = dp(2).toFloat()
             background = android.graphics.drawable.RippleDrawable(
-                android.content.res.ColorStateList.valueOf(Color.rgb(55, 72, 105)),
+                android.content.res.ColorStateList.valueOf(Color.rgb(105, 43, 61)),
                 GradientDrawable().apply {
-                    setColor(Color.rgb(19, 27, 43))
+                    setColor(Color.rgb(28, 18, 24))
                     cornerRadius = dp(16).toFloat()
-                    setStroke(dp(1), Color.rgb(47, 59, 82))
+                    setStroke(dp(1), Color.rgb(78, 43, 53))
                 },
                 null
             )
