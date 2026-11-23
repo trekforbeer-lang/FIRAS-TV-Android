@@ -180,6 +180,7 @@ class MainActivity : AppCompatActivity() {
         val list = sections.filter { selected.isEmpty() || it.title == selected }.flatMap { it.items }
             .filter { query.isEmpty() || it.name.contains(query, ignoreCase = true) }
         adapter.submitList(list)
+        findViewById<TextView>(R.id.channelCount)?.text = "${list.size} قناة"
         empty.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
     }
 
