@@ -47,7 +47,8 @@ class MainActivity : AppCompatActivity() {
                     .putExtra(PlayerActivity.EXTRA_NAME, c.name)
                     .putExtra(PlayerActivity.EXTRA_URL, c.url)
                     .putExtra(PlayerActivity.EXTRA_REFERER, c.referer)
-                    .putExtra(PlayerActivity.EXTRA_CHANNEL_ID, c.id))
+                    .putExtra(PlayerActivity.EXTRA_CHANNEL_ID, c.id)
+                    .putExtra(PlayerActivity.EXTRA_LOGO, c.logo))
             }
         }
         val rv = findViewById<RecyclerView>(R.id.list)
