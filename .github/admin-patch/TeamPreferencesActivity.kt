@@ -181,18 +181,68 @@ class TeamPreferencesActivity : AppCompatActivity() {
                 setPadding(dp(4), dp(10), dp(4), dp(4))
             })
             for (name in names) {
+                val row = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    layoutDirection = View.LAYOUT_DIRECTION_RTL
+                    setPadding(dp(8), dp(3), dp(10), dp(3))
+                    background = rounded(0xFF121C2D.toInt(), 12)
+                    contentDescription = "اختيار الفريق $name"
+                    isClickable = true
+                    isFocusable = true
+                }
                 val check = CheckBox(this).apply {
-                    text = name
-                    textSize = 13f
-                    setTextColor(Color.WHITE)
-                    buttonTintList = android.content.res.ColorStateList.valueOf(0xFFFF6687.toInt())
+                    text = ""
                     isChecked = selectedTeams.contains(name)
+                    buttonTintList = android.content.res.ColorStateList.valueOf(0xFFFF6687.toInt())
+                    isClickable = false
+                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
                     setOnCheckedChangeListener { _, checked ->
                         if (checked) selectedTeams.add(name) else selectedTeams.remove(name)
                     }
                 }
-                teamContainer.addView(check, LinearLayout.LayoutParams(-1, dp(42)))
+                val badgeColors = intArrayOf(
+                    0xFF294C78.toInt(), 0xFF6B315B.toInt(), 0xFF315F58.toInt(),
+                    0xFF74502C.toInt(), 0xFF45417B.toInt(), 0xFF36566A.toInt()
+                )
+                val badgeColor = badgeColors[Math.floorMod(name.hashCode(), badgeColors.size)]
+                val badge = TextView(this).apply {
+                    text = teamMonogram(name)
+                    textSize = 11f
+                    typeface = Typeface.DEFAULT_BOLD
+                    gravity = Gravity.CENTER
+                    setTextColor(Color.WHITE)
+                    background = GradientDrawable().apply {
+                        shape = GradientDrawable.OVAL
+                        setColor(badgeColor)
+                        setStroke(dp(1), 0x667FFFFFFF)
+                    }
+                    contentDescription = "شارة مختصرة للفريق"
+                }
+                val label = text(name, 13, Color.WHITE, true).apply {
+                    gravity = Gravity.CENTER_VERTICAL or Gravity.START
+                    setPadding(dp(10), 0, dp(4), 0)
+                }
+                row.addView(check, LinearLayout.LayoutParams(dp(34), dp(40)))
+                row.addView(badge, LinearLayout.LayoutParams(dp(34), dp(34)).apply {
+                    marginStart = dp(8)
+                })
+                row.addView(label, LinearLayout.LayoutParams(0, -1, 1f))
+                row.setOnClickListener { check.isChecked = !check.isChecked }
+                teamContainer.addView(row, LinearLayout.LayoutParams(-1, dp(48)).apply {
+                    bottomMargin = dp(5)
+                })
             }
+        }
+    }
+
+    // A compact text monogram is used instead of pretending it is an official club crest.
+    private fun teamMonogram(name: String): String {
+        val words = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+        return when {
+            words.isEmpty() -> "FC"
+            words.size == 1 -> words[0].take(2).uppercase(Locale.ROOT)
+            else -> words.take(3).joinToString("") { it.take(1).uppercase(Locale.ROOT) }
         }
     }
 
