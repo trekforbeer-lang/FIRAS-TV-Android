@@ -111,7 +111,22 @@ class PlayerActivity : AppCompatActivity() {
         lockButton.setOnClickListener { controlsLocked = !controlsLocked; setOverlayVisible(!controlsLocked); lockButton.text = if (controlsLocked) "🔒" else "♙" }
         findViewById<Button>(R.id.castButton).setOnClickListener { Toast.makeText(this, "ميزة Google Cast تحتاج ربط جهاز البث، ولم يتم تفعيلها بعد.", Toast.LENGTH_LONG).show() }
         findViewById<Button>(R.id.channelListButton).setOnClickListener { list.visibility = if (list.visibility == View.VISIBLE) View.GONE else View.VISIBLE }
-        findViewById<Button>(R.id.subtitleButton).setOnClickListener { val active = player; if (active == null) Toast.makeText(this, "شغّل قناة أولاً", Toast.LENGTH_SHORT).show() else TrackSelectionDialogBuilder(this, "الترجمة", active, C.TRACK_TYPE_TEXT).build().show() }
+        findViewById<Button>(R.id.subtitleButton).setOnClickListener {
+            val active = player
+            if (active == null) {
+                Toast.makeText(this, "شغّل قناة أولاً", Toast.LENGTH_SHORT).show()
+            } else {
+                androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("الصوت والترجمة")
+                    .setItems(arrayOf("اختيار الترجمة", "اختيار مسار الصوت")) { _, which ->
+                        val trackType = if (which == 0) C.TRACK_TYPE_TEXT else C.TRACK_TYPE_AUDIO
+                        val dialogTitle = if (which == 0) "الترجمة" else "مسار الصوت"
+                        TrackSelectionDialogBuilder(this, dialogTitle, active, trackType).build().show()
+                    }
+                    .setNegativeButton("إغلاق", null)
+                    .show()
+            }
+        }
         findViewById<Button>(R.id.previousChannelButton).setOnClickListener { changeChannel(-1) }
         findViewById<Button>(R.id.nextChannelButton).setOnClickListener { changeChannel(1) }
         playerView.setOnClickListener { if (controlsLocked) { controlsLocked = false; lockButton.text = "♙"; setOverlayVisible(true) } else { setOverlayVisible(findViewById<View>(R.id.topBar).visibility != View.VISIBLE) } }
