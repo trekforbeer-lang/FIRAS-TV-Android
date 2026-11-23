@@ -42,6 +42,7 @@ class AdminActivity : Activity() {
     private var selectedSection = -1
     private var authenticated = false
     private var pendingLogoField: EditText? = null
+    private var showOnlyMissingUrls = false
     private val logoPickerRequest = 7314
     private val autoLogout = Runnable {
         if (authenticated) {
@@ -303,7 +304,7 @@ class AdminActivity : Activity() {
         for (i in 0 until groups.length()) {
             val list = groups.optJSONObject(i)?.optJSONArray("items") ?: continue
             total += list.length()
-            for (j in 0 until list.length()) {
+            for (j in visibleItems) {
                 val channel = list.optJSONObject(j) ?: continue
                 if (channel.optString("url").isBlank()) missing++
                 else if (channel.has("ok")) {
@@ -363,6 +364,10 @@ class AdminActivity : Activity() {
         panel.addView(action("نسخ نسخة احتياطية آمنة") { backup() })
         panel.addView(action("استعادة نسخة احتياطية") { restore() })
         panel.addView(action("حذف القنوات المضافة التي فشل فحصها") { deleteBrokenAdded() })
+        panel.addView(action(if (showOnlyMissingUrls) "عرض جميع القنوات" else "عرض القنوات التي بلا رابط") {
+            showOnlyMissingUrls = !showOnlyMissingUrls
+            render()
+        })
         panel.addView(TextView(this).apply {
             text = "القنوات والتصنيفات"; textSize = 15f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
@@ -371,6 +376,11 @@ class AdminActivity : Activity() {
         for (i in 0 until groups.length()) {
             val section = groups.optJSONObject(i) ?: continue
             val list = items(i)
+            val visibleItems = (0 until list.length()).filter { index ->
+                val item = list.optJSONObject(index) ?: return@filter false
+                !showOnlyMissingUrls || item.optString("url").isBlank()
+            }
+            if (visibleItems.isEmpty()) continue
             val sectionBox = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL; setPadding(12, 9, 12, 10)
                 background = android.graphics.drawable.GradientDrawable().apply {
@@ -387,7 +397,7 @@ class AdminActivity : Activity() {
                 setTextColor(0xFFE4E4E7.toInt())
             }, LinearLayout.LayoutParams(0, -2, 1f))
             heading.addView(TextView(this@AdminActivity).apply {
-                text = list.length().toString().padStart(2, '0')
+                text = if (showOnlyMissingUrls) "${visibleItems.size}/${list.length()}" else list.length().toString().padStart(2, '0')
                 textSize = 11f; typeface = android.graphics.Typeface.MONOSPACE
                 setTextColor(0xFF8B8B95.toInt())
             })
