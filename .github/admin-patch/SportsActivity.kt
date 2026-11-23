@@ -76,7 +76,7 @@ class SportsActivity : AppCompatActivity() {
                 cornerRadius = dp(22).toFloat()
             }
         }
-        hero.addView(label("FIRAS SPORTS", 11, 0xFFFFC7D7.toInt(), true))
+        hero.addView(label("RAHMANI SPORTS", 11, 0xFFFFC7D7.toInt(), true))
         hero.addView(label("كل المباريات في مكان واحد", 20, -1, true).apply { setPadding(0, dp(6), 0, dp(4)) })
         hero.addView(label("نتائج مباشرة • مباريات اليوم • جدول القادم", 11, 0xFFE0DCEB.toInt(), false))
         root.addView(hero, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14); bottomMargin = dp(12) })
@@ -103,7 +103,7 @@ class SportsActivity : AppCompatActivity() {
                     val url = URL("https://site.api.espn.com/apis/site/v2/sports/soccer/$code/scoreboard?dates=$date")
                     val conn = (url.openConnection() as HttpURLConnection).apply {
                         connectTimeout = 12000; readTimeout = 15000
-                        setRequestProperty("User-Agent", "FIRAS-TV/4.1")
+                        setRequestProperty("User-Agent", "RAHMANI/1.0")
                     }
                     val json = try { conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() } }
                         finally { conn.disconnect() }
