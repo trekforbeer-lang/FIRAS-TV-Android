@@ -56,7 +56,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
         val rv = findViewById<RecyclerView>(R.id.list)
-        rv.layoutManager = GridLayoutManager(this, if (resources.configuration.screenWidthDp >= 600) 4 else 3)
+        rv.layoutManager = GridLayoutManager(this, if (resources.configuration.screenWidthDp >= 600) 4 else 2)
         rv.adapter = adapter
         rv.setHasFixedSize(true)
         empty = findViewById(R.id.empty)
@@ -78,6 +78,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.navHome).setOnClickListener { selected = ""; rebuildChips(chips); refresh(); rv.smoothScrollToPosition(0) }
         findViewById<TextView>(R.id.navChannels).setOnClickListener { rv.smoothScrollToPosition(0) }
         findViewById<TextView>(R.id.navMovies).setOnClickListener { startActivity(Intent(this, MoviesActivity::class.java)) }
+        findViewById<TextView>(R.id.navSports).setOnClickListener { startActivity(Intent(this, SportsActivity::class.java)) }
         findViewById<TextView>(R.id.navAdmin).setOnClickListener { returningFromAdmin = true; startActivity(Intent(this, AdminActivity::class.java)) }
         restoreButton.setOnClickListener { restoreOriginalLists() }
         refresh()
