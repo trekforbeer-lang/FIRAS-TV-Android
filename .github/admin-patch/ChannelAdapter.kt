@@ -16,6 +16,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.caverock.androidsvg.SVG
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
@@ -102,9 +103,22 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
                     connection.connectTimeout = 5000
                     connection.readTimeout = 5000
                     connection.instanceFollowRedirects = true
-                    connection.setRequestProperty("User-Agent", "FIRAS-TV/4.0")
-                    bitmap = try { connection.inputStream.use { BitmapFactory.decodeStream(it) } }
-                    finally { connection.disconnect() }
+                    connection.setRequestProperty("User-Agent", "RAHMANI/1.0")
+                    connection.setRequestProperty("Accept", "image/avif,image/webp,image/svg+xml,image/png,image/*;q=0.9,*/*;q=0.5")
+                    bitmap = try {
+                        val bytes = connection.inputStream.use { it.readBytes() }
+                        val type = connection.contentType.orEmpty().lowercase()
+                        val prefix = bytes.take(512).toByteArray().toString(Charsets.UTF_8).trimStart()
+                        if (type.contains("svg") || prefix.startsWith("<svg") || prefix.startsWith("<?xml") && prefix.contains("<svg")) {
+                            val svg = SVG.getFromString(bytes.toString(Charsets.UTF_8))
+                            val rendered = Bitmap.createBitmap(192, 192, Bitmap.Config.ARGB_8888)
+                            val canvas = Canvas(rendered)
+                            svg.renderToCanvas(canvas, 192, 192)
+                            rendered
+                        } else {
+                            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                        }
+                    } finally { connection.disconnect() }
                     if (bitmap != null) synchronized(cache) { cache[channel.logo] = bitmap!! }
                 } catch (_: Exception) { }
                 val result = bitmap
