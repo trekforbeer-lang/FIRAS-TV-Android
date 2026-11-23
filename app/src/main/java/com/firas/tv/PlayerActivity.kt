@@ -58,6 +58,7 @@ class PlayerActivity : AppCompatActivity() {
     private var current: DisplayChannel? = null
     private var currentAdvanced: StreamConfig? = null
     private var resolving = false
+    private var retryAttempts = 0
     private var currentUrls: List<String> = emptyList()
     private var currentUrlIndex = 0
     private var isFullscreen = false
@@ -171,13 +172,15 @@ class PlayerActivity : AppCompatActivity() {
                 playerView.player = exo
                 exo.addListener(object : Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {
-                        status.text = "تعذر تشغيل البث، جارٍ تجربة رابط آخر..."
-                        nextCandidateOrRetry()
+                        scheduleRecovery()
                     }
                     override fun onPlaybackStateChanged(state: Int) {
                         status.text = when (state) {
                             Player.STATE_BUFFERING -> "جارٍ تحميل البث..."
-                            Player.STATE_READY -> "FIRAS TV • البث جاهز"
+                            Player.STATE_READY -> {
+                                retryAttempts = 0
+                                "FIRAS TV • البث جاهز"
+                            }
                             Player.STATE_ENDED -> "انتهى البث"
                             else -> "FIRAS TV • بث مباشر"
                         }
@@ -191,6 +194,8 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun play(channel: DisplayChannel) {
+        handler.removeCallbacksAndMessages(null)
+        retryAttempts = 0
         current = channel
         currentAdvanced = channel.advanced
         showChannelLogo(channel)
@@ -257,6 +262,83 @@ class PlayerActivity : AppCompatActivity() {
             playWhenReady = true
         }
         status.text = "جارٍ الاتصال..."
+    }
+
+    private fun scheduleRecovery() {
+        if (retryAttempts >= 3) {
+            status.text = "تعذر تشغيل القناة. تحقق من الرابط أو صلاحية Cookie."
+            return
+        }
+        val attempt = ++retryAttempts
+        val delayMs = 1500L * (1L shl (attempt - 1))
+        status.text = "انقطع البث، إعادة المحاولة ${'
+        val channel = current ?: return
+        val config = currentAdvanced ?: return
+        if (currentUrlIndex + 1 < currentUrls.size) {
+            currentUrlIndex++
+            playUrl(currentUrls[currentUrlIndex])
+        } else {
+            worker.execute {
+                val refreshed = UniversalStreamEngine.resolve(config)
+                runOnUiThread {
+                    if (current?.id == channel.id && refreshed.isNotEmpty()) {
+                        currentUrls = refreshed
+                        currentUrlIndex = 0
+                        playUrl(refreshed.first())
+                    } else status.text = "تعذر الوصول إلى البث"
+                }
+            }
+        }
+    }
+
+    private fun toggleFullscreen() {
+        isFullscreen = !isFullscreen
+        requestedOrientation = if (isFullscreen) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            else ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        val flags = if (isFullscreen) (View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY) else View.SYSTEM_UI_FLAG_VISIBLE
+        window.decorView.systemUiVisibility = flags
+        findViewById<View>(R.id.topBar).visibility = if (isFullscreen) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.bottomPanel).visibility = if (isFullscreen) View.GONE else View.VISIBLE
+        fullscreen.text = if (isFullscreen) "تصغير" else "ملء الشاشة"
+    }
+
+    override fun onResume() { super.onResume(); player?.playWhenReady = true; handler.postDelayed(refreshTask, 5 * 60 * 1000L) }
+    override fun onPause() { handler.removeCallbacks(refreshTask); player?.pause(); super.onPause() }
+    override fun onDestroy() {
+        handler.removeCallbacks(refreshTask)
+        playerView.player = null
+        player?.release()
+        player = null
+        worker.shutdownNow()
+        logoRequestId++
+        logoWorker.shutdownNow()
+        super.onDestroy()
+    }
+
+    private class ChannelAdapter(
+        private val items: List<DisplayChannel>, private val click: (DisplayChannel) -> Unit
+    ) : RecyclerView.Adapter<ChannelHolder>() {
+        override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): ChannelHolder {
+            val button = Button(parent.context).apply {
+                isAllCaps = false
+                textSize = 14f
+                minHeight = 52
+                setPadding(20, 8, 20, 8)
+            }
+            return ChannelHolder(button)
+        }
+        override fun getItemCount() = items.size
+        override fun onBindViewHolder(holder: ChannelHolder, position: Int) {
+            (holder.itemView as Button).text = items[position].name
+            holder.itemView.setOnClickListener { click(items[position]) }
+        }
+    }
+    private class ChannelHolder(view: View) : RecyclerView.ViewHolder(view)
+}
+}{attempt}/3..."
+        handler.postDelayed({
+            if (!isFinishing && current != null) nextCandidateOrRetry()
+        }, delayMs)
     }
 
     private fun nextCandidateOrRetry() {
