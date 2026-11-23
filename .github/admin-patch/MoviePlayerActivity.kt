@@ -93,7 +93,14 @@ class MoviePlayerActivity : AppCompatActivity() {
                 distanceY: Float
             ): Boolean {
                 if (playerView.width <= 0 || playerView.height <= 0) return false
-                val progress = ((gestureStartY - current.y) / playerView.height).coerceIn(-1f, 1f)
+                val verticalDistance = gestureStartY - current.y
+                val horizontalDistance = gestureStartX - current.x
+                // Ignore horizontal swipes so seeking/controller gestures do not
+                // unexpectedly change brightness or volume.
+                if (kotlin.math.abs(verticalDistance) <= kotlin.math.abs(horizontalDistance) * 1.15f) {
+                    return false
+                }
+                val progress = (verticalDistance / playerView.height).coerceIn(-1f, 1f)
                 if (gestureStartX < playerView.width / 2f) {
                     val params = window.attributes
                     params.screenBrightness = (gestureStartBrightness + progress).coerceIn(0.05f, 1f)
