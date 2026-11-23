@@ -52,9 +52,7 @@
 
     <FrameLayout android:layout_width="match_parent" android:layout_height="164dp"
         android:layout_marginStart="16dp" android:layout_marginEnd="16dp" android:layout_marginTop="4dp"
-        android:layout_marginBottom="10dp" android:background="#24202B">
-        <View android:layout_width="match_parent" android:layout_height="match_parent"
-            android:background="#302338"/>
+        android:layout_marginBottom="10dp" android:background="@drawable/home_hero_bg">
         <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
             android:orientation="vertical" android:gravity="center_vertical"
             android:paddingStart="20dp" android:paddingEnd="20dp">
