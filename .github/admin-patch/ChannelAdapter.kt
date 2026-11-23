@@ -238,7 +238,7 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
                 lower.contains("xtra") -> "XTRA " + (Regex("\\d+").find(normalized)?.value ?: "")
                 lower.contains("news") -> "NEWS"
                 Regex("\\ben\\b").containsMatchIn(lower) -> "EN " + (Regex("\\d+").find(normalized)?.value ?: "")
-                else -> Regex("\\d+").find(normalized)?.value?.let { "SPORTS $it" } ?: "SPORTS"
+                else -> Regex("\\d+").find(normalized)?.value ?: "SPORTS"
             }
             white.textSize = if (variant.length > 9) 14f else 17f
             canvas.drawText(variant, 80f, 126f, white)
