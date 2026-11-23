@@ -5,6 +5,7 @@ import android.app.AlertDialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -39,6 +40,8 @@ class AdminActivity : Activity() {
     private var root = JSONObject()
     private var selectedSection = -1
     private var authenticated = false
+    private var pendingLogoField: EditText? = null
+    private val logoPickerRequest = 7314
     private val autoLogout = Runnable {
         if (authenticated) {
             authenticated = false
@@ -71,6 +74,36 @@ class AdminActivity : Activity() {
     override fun onDestroy() {
         handler.removeCallbacks(autoLogout)
         super.onDestroy()
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != logoPickerRequest || resultCode != RESULT_OK) return
+        val uri = data?.data ?: return
+        val targetField = pendingLogoField ?: return
+        try {
+            val folder = File(filesDir, "rahmani-logos").apply { mkdirs() }
+            val target = File(folder, "channel-${System.currentTimeMillis()}.img")
+            contentResolver.openInputStream(uri)?.use { input ->
+                target.outputStream().use { output ->
+                    val buffer = ByteArray(8192)
+                    var total = 0
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        total += count
+                        if (total > 5 * 1024 * 1024) throw IllegalStateException("Logo exceeds 5 MB")
+                        output.write(buffer, 0, count)
+                    }
+                }
+            } ?: throw IllegalStateException("Cannot open selected image")
+            targetField.setText(target.absolutePath)
+            Toast.makeText(this, "تم اختيار الشعار وحفظه داخل التطبيق", Toast.LENGTH_SHORT).show()
+        } catch (_: Exception) {
+            Toast.makeText(this, "تعذر حفظ الصورة. اختر صورة أصغر من 5 MB.", Toast.LENGTH_LONG).show()
+        } finally {
+            pendingLogoField = null
+        }
     }
 
     private fun authenticate() {
@@ -468,8 +501,18 @@ class AdminActivity : Activity() {
         val name = field("اسم القناة", old?.optString("name").orEmpty())
         val url = field("رابط البث (الصق رابط M3U8 أو MP4)", old?.optString("url").orEmpty())
         form.addView(action("لصق الرابط من الحافظة") { pasteInto(url) })
-        val logo = field("رابط الشعار", old?.optString("logo").orEmpty())
-        form.addView(action("لصق رابط الشعار من الحافظة") { pasteInto(logo) })
+        val logo = field("رابط الشعار أو مسار صورة محفوظة", old?.optString("logo").orEmpty())
+        val logoActions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        logoActions.addView(action("اختيار شعار من الهاتف") {
+            pendingLogoField = logo
+            val pick = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "image/*"
+            }
+            startActivityForResult(pick, logoPickerRequest)
+        }, LinearLayout.LayoutParams(0, -2, 1f))
+        logoActions.addView(action("لصق رابط") { pasteInto(logo) }, LinearLayout.LayoutParams(0, -2, 1f))
+        form.addView(logoActions)
         val referer = field("Referer", old?.optString("referer").orEmpty())
         val userAgent = field("User-Agent", old?.optString("userAgent").orEmpty())
         val cookie = field("Cookie (بيانات وصول خاصة بالقناة)", old?.let { readStreamCookie(it) }.orEmpty()).apply {
@@ -486,7 +529,7 @@ class AdminActivity : Activity() {
                 val channelName = name.text.toString().trim()
                 val stream = url.text.toString().trim()
                 val logoUrl = logo.text.toString().trim()
-                if (channelName.isBlank() || (stream.isNotBlank() && !safe(stream)) || (logoUrl.isNotBlank() && !safe(logoUrl))) {
+                if (channelName.isBlank() || (stream.isNotBlank() && !safe(stream)) || (logoUrl.startsWith("http", true) && !safe(logoUrl))) {
                     Toast.makeText(this, "تحقق من الاسم والروابط", Toast.LENGTH_LONG).show(); return@setPositiveButton
                 }
                 val altValues = alts.text.toString().lineSequence().map { it.trim() }.filter { it.isNotBlank() }.toList()
