@@ -47,6 +47,7 @@ class MoviePlayerActivity : AppCompatActivity() {
     private var speedBoostActive = false
     private var topBarView: View? = null
     private var restorePositionMs: Long = C.TIME_UNSET
+    private var movieUrl: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,6 +65,7 @@ class MoviePlayerActivity : AppCompatActivity() {
             finish()
             return
         }
+        movieUrl = url
 
         val root = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
         playerView = PlayerView(this).apply {
@@ -207,6 +209,13 @@ class MoviePlayerActivity : AppCompatActivity() {
             setOnClickListener { enterMoviePictureInPicture() }
         }
         topBar.addView(pipButton, LinearLayout.LayoutParams(dp(72), dp(42)))
+        val retryButton = Button(this).apply {
+            text = "إعادة"
+            isAllCaps = false
+            textSize = 11f
+            setOnClickListener { retryMoviePlayback() }
+        }
+        topBar.addView(retryButton, LinearLayout.LayoutParams(dp(68), dp(42)))
         topBarView = topBar
         root.addView(topBar, FrameLayout.LayoutParams(-1, dp(54), Gravity.TOP))
         setContentView(root)
@@ -247,6 +256,19 @@ class MoviePlayerActivity : AppCompatActivity() {
                 exo.prepare()
                 exo.playWhenReady = true
             }
+    }
+
+    private fun retryMoviePlayback() {
+        val active = player ?: return
+        val url = movieUrl ?: return
+        val position = active.currentPosition.coerceAtLeast(0L)
+        active.stop()
+        active.clearMediaItems()
+        active.setMediaItem(MediaItem.fromUri(url))
+        active.prepare()
+        if (position > 0L) active.seekTo(position)
+        active.playWhenReady = true
+        Toast.makeText(this, "إعادة محاولة تشغيل الفيلم", Toast.LENGTH_SHORT).show()
     }
 
     private fun toggleResize() {
