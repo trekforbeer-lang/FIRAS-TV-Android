@@ -217,7 +217,9 @@ class MoviesActivity : AppCompatActivity() {
     }
 
     private inner class FilmAdapter : RecyclerView.Adapter<FilmHolder>() {
-        private val cache = mutableMapOf<String, android.graphics.Bitmap>()
+        private val cache = java.util.Collections.synchronizedMap(mutableMapOf<String, android.graphics.Bitmap>())
+        private val loading = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<String, Boolean>())
+
         override fun onCreateViewHolder(parent: ViewGroup, type: Int): FilmHolder {
             val box = LinearLayout(parent.context).apply { orientation = LinearLayout.VERTICAL; setPadding(5, 5, 5, 10) }
             val image = ImageView(parent.context).apply { scaleType = ImageView.ScaleType.CENTER_CROP; setBackgroundColor(0xFF242630.toInt()) }
@@ -226,21 +228,44 @@ class MoviesActivity : AppCompatActivity() {
             box.addView(title)
             return FilmHolder(box, image, title)
         }
+
         override fun getItemCount() = films.size
+
         override fun onBindViewHolder(holder: FilmHolder, position: Int) {
-            val f = films[position]
-            holder.title.text = f.title; holder.image.tag = f.id
-            holder.image.setImageBitmap(cache[f.id])
-            if (cache[f.id] == null) io.execute {
-                try {
-                    val bmp = URL("https://archive.org/services/img/" + URLEncoder.encode(f.id, "UTF-8")).openStream().use { BitmapFactory.decodeStream(it) }
-                    if (bmp != null) {
-                        cache[f.id] = bmp
-                        runOnUiThread { if (holder.image.tag == f.id) holder.image.setImageBitmap(bmp) }
+            val film = films[position]
+            holder.title.text = film.title
+            holder.image.tag = film.id
+            val cached = cache[film.id]
+            holder.image.setImageBitmap(cached)
+            if (cached == null && loading.add(film.id)) {
+                io.execute {
+                    var bitmap: android.graphics.Bitmap? = null
+                    try {
+                        val address = "https://archive.org/services/img/" + URLEncoder.encode(film.id, "UTF-8")
+                        val connection = URL(address).openConnection() as HttpURLConnection
+                        connection.connectTimeout = 8000
+                        connection.readTimeout = 10000
+                        connection.instanceFollowRedirects = true
+                        connection.setRequestProperty("User-Agent", "RAHMANI/1.0")
+                        try {
+                            if (connection.responseCode in 200..299) {
+                                connection.inputStream.use { bitmap = BitmapFactory.decodeStream(it) }
+                            }
+                        } finally {
+                            connection.disconnect()
+                        }
+                        bitmap?.let { cache[film.id] = it }
+                    } catch (_: Exception) {
+                    } finally {
+                        loading.remove(film.id)
                     }
-                } catch (_: Exception) {}
+                    val result = bitmap
+                    if (result != null) runOnUiThread {
+                        if (!isFinishing && holder.image.tag == film.id) holder.image.setImageBitmap(result)
+                    }
+                }
             }
-            holder.itemView.setOnClickListener { play(f) }
+            holder.itemView.setOnClickListener { play(film) }
         }
     }
     private class FilmHolder(v: android.view.View, val image: ImageView, val title: TextView) : RecyclerView.ViewHolder(v)
