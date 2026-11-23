@@ -536,9 +536,15 @@ class AdminActivity : Activity() {
     }
 
     private fun backup() {
+        val streamFile = File(filesDir, "channels_stream_config.json")
+        val streamConfig = try {
+            if (streamFile.isFile) JSONObject(streamFile.readText(Charsets.UTF_8))
+            else JSONObject(assets.open("channels_stream_config.json").bufferedReader(Charsets.UTF_8).use { it.readText() })
+        } catch (_: Exception) { JSONObject().put("channels", JSONArray()) }
+        val bundle = JSONObject().put("channels", root).put("streamConfig", streamConfig)
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        clipboard.setPrimaryClip(ClipData.newPlainText("FIRAS TV backup", root.toString(2)))
-        Toast.makeText(this, "تم نسخ النسخة الاحتياطية إلى الحافظة", Toast.LENGTH_LONG).show()
+        clipboard.setPrimaryClip(ClipData.newPlainText("FIRAS TV backup", bundle.toString(2)))
+        Toast.makeText(this, "تم نسخ النسخة الاحتياطية. تحتوي بيانات Cookie سرية؛ لا تشاركها مع أحد.", Toast.LENGTH_LONG).show()
     }
 
     private fun restore() {
@@ -547,8 +553,15 @@ class AdminActivity : Activity() {
             .setPositiveButton("استعادة") { _, _ ->
                 try {
                     val restored = JSONObject(input.text.toString())
-                    if (restored.optJSONArray("sections") == null) throw IllegalArgumentException()
-                    root = preserveOriginalChannels(restored)
+                    val channelData = restored.optJSONObject("channels") ?: restored
+                    if (channelData.optJSONArray("sections") == null) throw IllegalArgumentException()
+                    root = preserveOriginalChannels(channelData)
+                    restored.optJSONObject("streamConfig")?.let { streamConfig ->
+                        val target = File(filesDir, "channels_stream_config.json")
+                        val temp = File(filesDir, "channels_stream_config.json.tmp")
+                        temp.writeText(streamConfig.toString(2), Charsets.UTF_8)
+                        if (!temp.renameTo(target)) { temp.copyTo(target, overwrite = true); temp.delete() }
+                    }
                     save(); render()
                 } catch (_: Exception) {
                     Toast.makeText(this, "النسخة الاحتياطية غير صالحة", Toast.LENGTH_LONG).show()
