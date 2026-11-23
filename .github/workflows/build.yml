@@ -32,6 +32,8 @@ jobs:
           cp .github/admin-patch/activity_player.xml app/src/main/res/layout/activity_player.xml
           mkdir -p app/src/main/res/drawable
           cp .github/admin-patch/home_hero_bg.xml app/src/main/res/drawable/home_hero_bg.xml
+          cp .github/admin-patch/rahmani_nav_capsule.xml app/src/main/res/drawable/rahmani_nav_capsule.xml
+          cp .github/admin-patch/rahmani_card_stroke.xml app/src/main/res/drawable/rahmani_card_stroke.xml
           cp .github/admin-patch/AndroidManifest.xml app/src/main/AndroidManifest.xml
           cp .github/admin-patch/MoviesActivity.kt app/src/main/java/com/firas/tv/MoviesActivity.kt
           cp .github/admin-patch/SportsActivity.kt app/src/main/java/com/firas/tv/SportsActivity.kt
