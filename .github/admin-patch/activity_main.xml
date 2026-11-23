@@ -140,6 +140,8 @@
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:text="اختر قناتك وابدأ المشاهدة" android:textColor="#8492A9" android:textSize="9sp"/>
         </LinearLayout>
+        <TextView android:id="@+id/channelCount" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp" android:text="0 قناة" android:textColor="#FF91A8" android:textStyle="bold" android:textSize="10sp"/>
         <Button android:id="@+id/restoreChannelsButton" android:layout_width="wrap_content"
             android:layout_height="32dp" android:minHeight="32dp"
             android:text="تحديث القوائم" android:textAllCaps="false" android:textSize="9sp"
