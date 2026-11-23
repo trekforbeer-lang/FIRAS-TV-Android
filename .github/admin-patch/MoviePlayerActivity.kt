@@ -6,6 +6,7 @@ import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
@@ -29,6 +30,7 @@ class MoviePlayerActivity : AppCompatActivity() {
     private lateinit var playerView: PlayerView
     private lateinit var resizeButton: Button
     private var zoomed = false
+    private var resumePlaybackOnStart = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -121,7 +123,13 @@ class MoviePlayerActivity : AppCompatActivity() {
                 playerView.player = exo
                 exo.addListener(object : Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {
+                        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                         Toast.makeText(this@MoviePlayerActivity, "تعذر تشغيل الفيلم. قد يكون الرابط غير متاح.", Toast.LENGTH_LONG).show()
+                    }
+
+                    override fun onIsPlayingChanged(isPlaying: Boolean) {
+                        if (isPlaying) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     }
                 })
                 exo.setMediaItem(MediaItem.fromUri(url))
@@ -150,11 +158,20 @@ class MoviePlayerActivity : AppCompatActivity() {
     }
 
     override fun onStop() {
+        resumePlaybackOnStart = player?.isPlaying == true
         player?.pause()
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         super.onStop()
     }
 
+    override fun onStart() {
+        super.onStart()
+        if (resumePlaybackOnStart) player?.playWhenReady = true
+        resumePlaybackOnStart = false
+    }
+
     override fun onDestroy() {
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         playerView.player = null
         player?.release()
         player = null
