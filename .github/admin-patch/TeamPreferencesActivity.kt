@@ -72,15 +72,15 @@ class TeamPreferencesActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = Color.rgb(8, 11, 20)
-        window.navigationBarColor = Color.rgb(16, 21, 34)
+        window.statusBarColor = Color.rgb(9, 9, 13)
+        window.navigationBarColor = Color.rgb(23, 17, 22)
         selectedTeams.addAll(prefs.getStringSet("favorite_teams", emptySet()) ?: emptySet())
         customTeams.addAll(prefs.getStringSet("custom_teams", emptySet()) ?: emptySet())
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(12), dp(16), dp(16))
-            setBackgroundColor(Color.rgb(8, 11, 20))
+            setBackgroundColor(Color.rgb(9, 9, 13))
             layoutDirection = View.LAYOUT_DIRECTION_RTL
         }
         val header = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
@@ -93,10 +93,10 @@ class TeamPreferencesActivity : AppCompatActivity() {
             LinearLayout.LayoutParams(0, -2, 1f))
         root.addView(header)
 
-        root.addView(text("اختر فرقك المفضلة", 19, Color.rgb(255, 145, 168), true).apply {
+        root.addView(text("اختر فرقك المفضلة", 19, Color.rgb(232, 73, 111), true).apply {
             setPadding(0, dp(14), 0, dp(5))
         })
-        root.addView(text("يمكنك اختيار أكثر من فريق، وستظهر تنبيهات المباريات الخاصة بالفرق التي تحددها فقط.", 12, 0xFFB6C3D9.toInt(), false))
+        root.addView(text("يمكنك اختيار أكثر من فريق، وستظهر تنبيهات المباريات الخاصة بالفرق التي تحددها فقط.", 12, 0xFFB8B2B7.toInt(), false))
 
         val customRow = LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
@@ -107,8 +107,8 @@ class TeamPreferencesActivity : AppCompatActivity() {
             textSize = 13f
             setSingleLine(true)
             setTextColor(Color.WHITE)
-            setHintTextColor(0xFF8795AC.toInt())
-            background = rounded(0xFF182235.toInt(), 12)
+            setHintTextColor(0xFF91878E.toInt())
+            background = rounded(0xFF1B151B.toInt(), 12)
             setPadding(dp(12), 0, dp(12), 0)
         }
         customRow.addView(customInput, LinearLayout.LayoutParams(0, dp(48), 1f))
@@ -156,7 +156,7 @@ class TeamPreferencesActivity : AppCompatActivity() {
         }
         root.addView(matchStartSwitch)
         root.addView(scoreSwitch)
-        root.addView(text("تعمل متابعة المباريات في الخلفية عند توفر الإنترنت. قد تتأخر التنبيهات بسبب قيود تحديث الخلفية في أندرويد.", 11, 0xFF8795AC.toInt(), false).apply {
+        root.addView(text("تعمل متابعة المباريات في الخلفية عند توفر الإنترنت. قد تتأخر التنبيهات بسبب قيود تحديث الخلفية في أندرويد.", 11, 0xFF91878E.toInt(), false).apply {
             setPadding(0, dp(7), 0, dp(8))
         })
         val save = Button(this).apply {
@@ -177,7 +177,7 @@ class TeamPreferencesActivity : AppCompatActivity() {
         val groups = LinkedHashMap(teamGroups)
         if (customTeams.isNotEmpty()) groups["فرق أضفتها"] = customTeams.toList()
         for ((title, names) in groups) {
-            teamContainer.addView(text(title, 13, 0xFFFFC7D7.toInt(), true).apply {
+            teamContainer.addView(text(title, 13, 0xFFFFB6C8.toInt(), true).apply {
                 setPadding(dp(4), dp(10), dp(4), dp(4))
             })
             for (name in names) {
@@ -186,7 +186,7 @@ class TeamPreferencesActivity : AppCompatActivity() {
                     gravity = Gravity.CENTER_VERTICAL
                     layoutDirection = View.LAYOUT_DIRECTION_RTL
                     setPadding(dp(8), dp(3), dp(10), dp(3))
-                    background = rounded(0xFF121C2D.toInt(), 12)
+                    background = rounded(0xFF171116.toInt(), 12)
                     contentDescription = "اختيار الفريق $name"
                     isClickable = true
                     isFocusable = true
@@ -194,7 +194,7 @@ class TeamPreferencesActivity : AppCompatActivity() {
                 val check = CheckBox(this).apply {
                     text = ""
                     isChecked = selectedTeams.contains(name)
-                    buttonTintList = android.content.res.ColorStateList.valueOf(0xFFFF6687.toInt())
+                    buttonTintList = android.content.res.ColorStateList.valueOf(0xFFE8496F.toInt())
                     isClickable = false
                     importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
                     setOnCheckedChangeListener { _, checked ->
