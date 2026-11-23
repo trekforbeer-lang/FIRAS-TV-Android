@@ -31,6 +31,7 @@ jobs:
           cp .github/admin-patch/home_hero_bg.xml app/src/main/res/drawable/home_hero_bg.xml
           cp .github/admin-patch/AndroidManifest.xml app/src/main/AndroidManifest.xml
           cp .github/admin-patch/MoviesActivity.kt app/src/main/java/com/firas/tv/MoviesActivity.kt
+          cp .github/admin-patch/PlayerActivity.kt app/src/main/java/com/firas/tv/PlayerActivity.kt
           cp .github/admin-patch/MoviePlayerActivity.kt app/src/main/java/com/firas/tv/MoviePlayerActivity.kt
           grep -q 'minSdk = 21' app/build.gradle.kts
           grep -q 'okhttp:4.12.0' app/build.gradle.kts
