@@ -109,6 +109,8 @@ class MainActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.navAdmin).setOnClickListener { returningFromAdmin = true; startActivity(Intent(this, AdminActivity::class.java)) }
         restoreButton.setOnClickListener { restoreOriginalLists() }
         refresh()
+        FanMatchWorker.schedule(this)
+        findViewById<View>(R.id.fanPreferencesButton).setOnClickListener { startActivity(Intent(this, TeamPreferencesActivity::class.java)) }
         showWelcomeScreen()
     }
 
