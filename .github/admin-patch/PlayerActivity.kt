@@ -248,9 +248,15 @@ class PlayerActivity : AppCompatActivity() {
                 playerView.player = exo
                 exo.addListener(object : Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {
-                        val responseCode = generateSequence(error as Throwable?) { it.cause }
-                            .filterIsInstance<HttpDataSource.InvalidResponseCodeException>()
-                            .firstOrNull()?.responseCode
+                        var responseCode: Int? = null
+                        var cause: Throwable? = error
+                        while (cause != null) {
+                            if (cause is HttpDataSource.InvalidResponseCodeException) {
+                                responseCode = cause.responseCode
+                                break
+                            }
+                            cause = cause.cause
+                        }
                         status.text = when (responseCode) {
                             401, 403 -> "رفض المصدر الوصول (HTTP $responseCode). تحقق من Cookie وبيانات القناة في لوحة الإدارة."
                             else -> "تعذر تشغيل البث، جارٍ إعادة الاتصال..."
