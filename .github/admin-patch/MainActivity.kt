@@ -33,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var empty: TextView
     private lateinit var chips: ChipGroup
     private lateinit var restoreButton: Button
+    private lateinit var channelRecycler: RecyclerView
     private val homePrefs by lazy { getSharedPreferences("rahmani_home_preferences", MODE_PRIVATE) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,6 +59,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
         val rv = findViewById<RecyclerView>(R.id.list)
+        channelRecycler = rv
         rv.layoutManager = GridLayoutManager(this, if (resources.configuration.screenWidthDp >= 600) 4 else 2)
         rv.adapter = adapter
         rv.setHasFixedSize(true)
@@ -113,8 +115,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showHomePreferences() {
-        val options = arrayOf("عرض بانر الأعمال المميزة", "عرض قسم المباريات الرياضية", "عرض القنوات المباشرة", "عرض شريط البحث")
-        val keys = arrayOf("hero", "sports", "channels", "search")
+        val options = arrayOf("عرض بانر الأعمال المميزة", "عرض قسم المباريات الرياضية", "عرض القنوات المباشرة", "عرض شريط البحث", "عرض القنوات بثلاثة أعمدة على الهاتف")
+        val keys = arrayOf("hero", "sports", "channels", "search", "compact_grid")
         val checked = BooleanArray(keys.size) { i -> homePrefs.getBoolean(keys[i], true) }
         AlertDialog.Builder(this)
             .setTitle("تخصيص واجهة RAHMANI")
@@ -139,6 +141,9 @@ class MainActivity : AppCompatActivity() {
         val showSports = homePrefs.getBoolean("sports", true) && mode != "live" && mode != "movies"
         val showChannels = homePrefs.getBoolean("channels", true) && mode != "sports" && mode != "movies"
         val showSearch = homePrefs.getBoolean("search", true)
+        val compactGrid = homePrefs.getBoolean("compact_grid", false)
+        val columns = if (resources.configuration.screenWidthDp >= 600) 4 else if (compactGrid) 3 else 2
+        (channelRecycler.layoutManager as? GridLayoutManager)?.spanCount = columns
         findViewById<View>(R.id.homeHeroSection)?.visibility = if (showHero) View.VISIBLE else View.GONE
         findViewById<View>(R.id.homeSportsSection)?.visibility = if (showSports) View.VISIBLE else View.GONE
         findViewById<View>(R.id.homeChannelsSection)?.visibility = if (showChannels) View.VISIBLE else View.GONE
