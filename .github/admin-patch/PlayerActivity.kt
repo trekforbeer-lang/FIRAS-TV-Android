@@ -450,7 +450,7 @@ class PlayerActivity : AppCompatActivity() {
                 val connection = URL(url).openConnection() as HttpURLConnection
                 connection.connectTimeout = 6000
                 connection.readTimeout = 6000
-                connection.setRequestProperty("User-Agent", "FIRAS-TV/4.0")
+                connection.setRequestProperty("User-Agent", "RAHMANI/1.0")
                 bitmap = try {
                     connection.inputStream.use { BitmapFactory.decodeStream(it) }
                 } finally {
