@@ -11,7 +11,7 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.firas.tv.stream.StreamConfigStore
 import com.google.android.material.chip.Chip
@@ -51,7 +51,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
         val rv = findViewById<RecyclerView>(R.id.list)
-        rv.layoutManager = LinearLayoutManager(this)
+        rv.layoutManager = GridLayoutManager(this, if (resources.configuration.screenWidthDp >= 600) 4 else 3)
         rv.adapter = adapter
         rv.setHasFixedSize(true)
         empty = findViewById(R.id.empty)
