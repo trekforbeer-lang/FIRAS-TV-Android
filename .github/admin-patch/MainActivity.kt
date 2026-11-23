@@ -77,6 +77,19 @@ class MainActivity : AppCompatActivity() {
         })
         findViewById<Button>(R.id.moviesButton).setOnClickListener { startActivity(Intent(this, MoviesActivity::class.java)) }
         findViewById<Button>(R.id.featuredMoviesButton).setOnClickListener { startActivity(Intent(this, MoviesActivity::class.java)) }
+        findViewById<View>(R.id.quickLiveButton).setOnClickListener {
+            homePrefs.edit().putString("home_mode", "live").apply()
+            selected = ""
+            applyHomePreferences()
+            refresh()
+            channelRecycler.smoothScrollToPosition(0)
+        }
+        findViewById<View>(R.id.quickSportsButton).setOnClickListener { startActivity(Intent(this, SportsActivity::class.java)) }
+        findViewById<View>(R.id.quickMoviesButton).setOnClickListener { startActivity(Intent(this, MoviesActivity::class.java)) }
+        findViewById<View>(R.id.quickAdminButton).setOnClickListener {
+            returningFromAdmin = true
+            startActivity(Intent(this, AdminActivity::class.java))
+        }
         findViewById<Button>(R.id.adminButton).setOnClickListener { returningFromAdmin = true; startActivity(Intent(this, AdminActivity::class.java)) }
         findViewById<TextView>(R.id.homeTab).setOnClickListener { selected = ""; rebuildChips(chips); refresh(); rv.smoothScrollToPosition(0) }
         findViewById<TextView>(R.id.channelsTab).setOnClickListener { rv.smoothScrollToPosition(0) }
