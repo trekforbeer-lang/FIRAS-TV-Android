@@ -3,8 +3,8 @@ package com.firas.tv
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
-import android.graphics.Paint
 import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
@@ -41,68 +41,76 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
         val context = parent.context
         val card = LinearLayout(context).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            layoutDirection = View.LAYOUT_DIRECTION_LTR
-            setPadding(dp(14), dp(10), dp(14), dp(10))
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            setPadding(dp(7), dp(10), dp(7), dp(9))
             background = GradientDrawable().apply {
-                setColor(Color.rgb(23, 24, 29))
-                cornerRadius = dp(16).toFloat()
-                setStroke(dp(1), Color.rgb(43, 44, 52))
+                setColor(Color.rgb(23, 24, 31))
+                cornerRadius = dp(15).toFloat()
+                setStroke(dp(1), Color.rgb(43, 45, 56))
+            }
+        }
+        val logoFrame = LinearLayout(context).apply {
+            gravity = Gravity.CENTER
+            background = GradientDrawable().apply {
+                setColor(Color.WHITE)
+                cornerRadius = dp(13).toFloat()
             }
         }
         val logo = ImageView(context).apply {
             scaleType = ImageView.ScaleType.FIT_CENTER
-            setPadding(dp(5), dp(5), dp(5), dp(5))
-            background = GradientDrawable().apply {
-                setColor(Color.WHITE)
-                cornerRadius = dp(10).toFloat()
-            }
+            setPadding(dp(7), dp(7), dp(7), dp(7))
+            contentDescription = "شعار القناة"
         }
-        card.addView(logo, LinearLayout.LayoutParams(dp(58), dp(58)))
-        val texts = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_VERTICAL
-            layoutDirection = View.LAYOUT_DIRECTION_RTL
-            setPadding(dp(14), 0, 0, 0)
-        }
+        logoFrame.addView(logo, LinearLayout.LayoutParams(dp(66), dp(66)))
+        card.addView(logoFrame, LinearLayout.LayoutParams(dp(78), dp(78)))
         val title = TextView(context).apply {
-            setTextColor(Color.WHITE); textSize = 15f; typeface = Typeface.DEFAULT_BOLD
-            maxLines = 1; ellipsize = android.text.TextUtils.TruncateAt.END
+            setTextColor(Color.WHITE)
+            textSize = 12.5f
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            maxLines = 2
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            setPadding(dp(2), dp(7), dp(2), 0)
         }
+        card.addView(title, LinearLayout.LayoutParams(-1, -2))
         val subtitle = TextView(context).apply {
-            setTextColor(Color.LTGRAY); textSize = 11f; maxLines = 1
+            setTextColor(Color.rgb(157, 160, 172))
+            textSize = 9f
+            gravity = Gravity.CENTER
+            text = "مباشر"
+            setPadding(0, dp(3), 0, 0)
         }
-        texts.addView(title)
-        texts.addView(subtitle)
-        card.addView(texts, LinearLayout.LayoutParams(0, -2, 1f))
+        card.addView(subtitle, LinearLayout.LayoutParams(-1, -2))
+        card.setOnClickListener { }
         return Holder(card, logo, title, subtitle)
     }
 
     override fun onBindViewHolder(holder: Holder, position: Int) {
         val channel = getItem(position)
         holder.title.text = channel.name
-        holder.subtitle.text = "قناة مباشرة  •  اضغط للمشاهدة"
         holder.card.setOnClickListener { onClick(channel) }
         holder.logo.tag = channel.logo
         val cached = synchronized(cache) { cache[channel.logo] }
         holder.logo.setImageBitmap(cached ?: fallbackLogo(channel.name))
         if (cached == null && channel.logo.startsWith("http", true)) {
             io.execute {
+                var bitmap: Bitmap? = null
                 try {
                     val connection = URL(channel.logo).openConnection() as HttpURLConnection
-                    connection.connectTimeout = 7000
-                    connection.readTimeout = 7000
+                    connection.connectTimeout = 5000
+                    connection.readTimeout = 5000
+                    connection.instanceFollowRedirects = true
                     connection.setRequestProperty("User-Agent", "FIRAS-TV/4.0")
-                    val bitmap = try { connection.inputStream.use { BitmapFactory.decodeStream(it) } }
+                    bitmap = try { connection.inputStream.use { BitmapFactory.decodeStream(it) } }
                     finally { connection.disconnect() }
-                    if (bitmap != null) {
-                        synchronized(cache) { cache[channel.logo] = bitmap }
-                        holder.logo.post {
-                            if (holder.logo.tag == channel.logo) holder.logo.setImageBitmap(bitmap)
-                        }
-                    }
+                    if (bitmap != null) synchronized(cache) { cache[channel.logo] = bitmap!! }
                 } catch (_: Exception) { }
+                val result = bitmap
+                if (result != null) holder.logo.post {
+                    if (holder.logo.tag == channel.logo) holder.logo.setImageBitmap(result)
+                }
             }
         }
     }
@@ -111,13 +119,13 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
         val size = 160
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(55, 34, 75) }
+        val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(63, 35, 75) }
         canvas.drawRoundRect(0f, 0f, size.toFloat(), size.toFloat(), 24f, 24f, bg)
-        val clean = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+        val parts = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
         val label = when {
-            clean.isEmpty() -> "TV"
-            clean.size >= 2 -> clean.take(2).joinToString("") { it.take(1) }.uppercase()
-            else -> clean[0].take(3).uppercase()
+            parts.isEmpty() -> "TV"
+            parts.size > 1 -> parts.take(2).joinToString("") { it.take(1) }.uppercase()
+            else -> parts[0].take(3).uppercase()
         }
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
@@ -129,5 +137,6 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
         return bitmap
     }
 
-    private fun dp(value: Int) = (value * android.content.res.Resources.getSystem().displayMetrics.density).toInt()
+    private fun dp(value: Int): Int =
+        (value * android.content.res.Resources.getSystem().displayMetrics.density).toInt()
 }
