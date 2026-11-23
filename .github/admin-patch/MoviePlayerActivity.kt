@@ -1,6 +1,7 @@
 package com.firas.tv
 
 import android.content.pm.ActivityInfo
+import android.media.AudioManager
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
@@ -33,6 +34,10 @@ class MoviePlayerActivity : AppCompatActivity() {
     private lateinit var resizeButton: Button
     private var zoomed = false
     private var resumePlaybackOnStart = false
+    private var gestureStartY = 0f
+    private var gestureStartX = 0f
+    private var gestureStartVolume = 0
+    private var gestureStartBrightness = 0.5f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,8 +63,35 @@ class MoviePlayerActivity : AppCompatActivity() {
             setKeepContentOnPlayerReset(true)
         }
         root.addView(playerView, FrameLayout.LayoutParams(-1, -1))
+        val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
         val seekGesture = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onDown(event: MotionEvent): Boolean = true
+            override fun onDown(event: MotionEvent): Boolean {
+                gestureStartX = event.x
+                gestureStartY = event.y
+                gestureStartVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+                gestureStartBrightness = window.attributes.screenBrightness.takeIf { it >= 0f } ?: 0.5f
+                return true
+            }
+
+            override fun onScroll(
+                first: MotionEvent?,
+                current: MotionEvent,
+                distanceX: Float,
+                distanceY: Float
+            ): Boolean {
+                if (playerView.width <= 0 || playerView.height <= 0) return false
+                val progress = ((gestureStartY - current.y) / playerView.height).coerceIn(-1f, 1f)
+                if (gestureStartX < playerView.width / 2f) {
+                    val params = window.attributes
+                    params.screenBrightness = (gestureStartBrightness + progress).coerceIn(0.05f, 1f)
+                    window.attributes = params
+                } else {
+                    val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                    val volume = (gestureStartVolume + progress * maxVolume).toInt().coerceIn(0, maxVolume)
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, volume, 0)
+                }
+                return true
+            }
 
             override fun onDoubleTap(event: MotionEvent): Boolean {
                 val active = player ?: return false
