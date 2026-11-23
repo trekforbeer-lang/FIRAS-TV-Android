@@ -10,6 +10,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
+import android.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -32,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var empty: TextView
     private lateinit var chips: ChipGroup
     private lateinit var restoreButton: Button
+    private val homePrefs by lazy { getSharedPreferences("rahmani_home_preferences", MODE_PRIVATE) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,6 +64,8 @@ class MainActivity : AppCompatActivity() {
         empty = findViewById(R.id.empty)
         chips = findViewById(R.id.chips)
         restoreButton = findViewById(R.id.restoreChannelsButton)
+        applyHomePreferences()
+        findViewById<TextView>(R.id.customizeButton).setOnClickListener { showHomePreferences() }
         rebuildChips(chips)
         findViewById<EditText>(R.id.search).addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) { query = s?.toString()?.trim().orEmpty(); refresh() }
@@ -87,6 +91,39 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         if (returningFromAdmin) { returningFromAdmin = false; recreate() }
+    }
+
+
+    private fun showHomePreferences() {
+        val options = arrayOf("عرض بانر الأعمال المميزة", "عرض قسم المباريات الرياضية", "عرض القنوات المباشرة", "عرض شريط البحث")
+        val keys = arrayOf("hero", "sports", "channels", "search")
+        val checked = BooleanArray(keys.size) { i -> homePrefs.getBoolean(keys[i], true) }
+        AlertDialog.Builder(this)
+            .setTitle("تخصيص واجهة RAHMANI")
+            .setMessage("اختر الأقسام التي تريد ظهورها في الصفحة الرئيسية. سيتم حفظ اختياراتك على هذا الجهاز.")
+            .setMultiChoiceItems(options, checked) { _, which, isChecked -> checked[which] = isChecked }
+            .setPositiveButton("حفظ") { _, _ ->
+                keys.forEachIndexed { i, key -> homePrefs.edit().putBoolean(key, checked[i]).apply() }
+                applyHomePreferences()
+                Toast.makeText(this, "تم حفظ تفضيلات الصفحة الرئيسية", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("إلغاء", null)
+            .setNeutralButton("إظهار الكل") { _, _ ->
+                keys.forEach { homePrefs.edit().putBoolean(it, true).apply() }
+                applyHomePreferences()
+            }
+            .show()
+    }
+
+    private fun applyHomePreferences() {
+        findViewById<View>(R.id.homeHeroSection)?.visibility =
+            if (homePrefs.getBoolean("hero", true)) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.homeSportsSection)?.visibility =
+            if (homePrefs.getBoolean("sports", true)) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.homeChannelsSection)?.visibility =
+            if (homePrefs.getBoolean("channels", true)) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.search)?.visibility =
+            if (homePrefs.getBoolean("search", true)) View.VISIBLE else View.GONE
     }
 
     private fun selectCategory(keyword: String) {
