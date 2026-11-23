@@ -1,6 +1,13 @@
 package com.firas.tv
 
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
+import android.view.Gravity
+import android.view.ViewGroup
+import android.widget.FrameLayout
+import android.widget.LinearLayout
 import android.os.Bundle
 import android.os.SystemClock
 import android.text.Editable
@@ -102,7 +109,120 @@ class MainActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.navAdmin).setOnClickListener { returningFromAdmin = true; startActivity(Intent(this, AdminActivity::class.java)) }
         restoreButton.setOnClickListener { restoreOriginalLists() }
         refresh()
+        showWelcomeScreen()
     }
+
+    private fun showWelcomeScreen() {
+        if (homePrefs.getBoolean("welcome_seen", false)) return
+        val root = findViewById<FrameLayout>(android.R.id.content)
+        val overlay = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(26), dp(28), dp(26), dp(28))
+            setBackgroundColor(Color.rgb(7, 10, 20))
+            isClickable = true
+            isFocusable = true
+        }
+
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(24), dp(34), dp(24), dp(28))
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                intArrayOf(Color.rgb(76, 31, 59), Color.rgb(37, 39, 67), Color.rgb(18, 35, 56))
+            ).apply {
+                cornerRadius = dp(26).toFloat()
+                setStroke(dp(1), Color.rgb(103, 78, 111))
+            }
+            elevation = dp(8).toFloat()
+        }
+        val mark = TextView(this).apply {
+            text = "R"
+            gravity = Gravity.CENTER
+            textSize = 38f
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(Color.WHITE)
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(Color.rgb(232, 73, 111))
+                setStroke(dp(3), Color.rgb(255, 181, 199))
+            }
+        }
+        panel.addView(mark, LinearLayout.LayoutParams(dp(82), dp(82)))
+
+        fun addWelcomeText(value: String, size: Float, color: Int, bold: Boolean, top: Int) {
+            val label = TextView(this).apply {
+                text = value
+                textSize = size
+                setTextColor(color)
+                gravity = Gravity.CENTER
+                if (bold) setTypeface(typeface, Typeface.BOLD)
+            }
+            panel.addView(label, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(top) })
+        }
+        addWelcomeText("RAHMANI", 29f, Color.WHITE, true, 17)
+        addWelcomeText("مرحباً بك في عالم الترفيه", 19f, Color.rgb(255, 191, 207), true, 9)
+        addWelcomeText("قنوات مباشرة • أفلام • مسلسلات • رياضة", 13f, Color.rgb(218, 224, 238), false, 12)
+        addWelcomeText("كل ما تحب مشاهدته، في مكان واحد", 12f, Color.rgb(169, 182, 204), false, 8)
+
+        val features = TextView(this).apply {
+            text = "● البث المباشر       ⚽ المباريات       ▶ الأفلام"
+            textSize = 11f
+            gravity = Gravity.CENTER
+            setTextColor(Color.WHITE)
+            setPadding(dp(8), dp(13), dp(8), dp(13))
+            background = GradientDrawable().apply {
+                setColor(Color.argb(55, 255, 255, 255))
+                cornerRadius = dp(14).toFloat()
+            }
+        }
+        panel.addView(features, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = dp(25) })
+
+        fun finishWelcome() {
+            homePrefs.edit().putBoolean("welcome_seen", true).apply()
+            root.removeView(overlay)
+        }
+        val start = Button(this).apply {
+            text = "ابدأ المشاهدة"
+            isAllCaps = false
+            textSize = 15f
+            setTextColor(Color.WHITE)
+            backgroundTintList = android.content.res.ColorStateList.valueOf(Color.rgb(232, 73, 111))
+            setOnClickListener {
+                finishWelcome()
+                channelRecycler.smoothScrollToPosition(0)
+            }
+        }
+        panel.addView(start, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, dp(50)
+        ).apply { topMargin = dp(24) })
+
+        val explore = TextView(this).apply {
+            text = "استكشف التطبيق"
+            textSize = 13f
+            gravity = Gravity.CENTER
+            setTextColor(Color.rgb(255, 205, 216))
+            setPadding(dp(12), dp(14), dp(12), dp(8))
+            setOnClickListener { finishWelcome() }
+        }
+        panel.addView(explore, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ))
+        overlay.addView(panel, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ))
+        root.addView(overlay, FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+        ))
+    }
+
+    private fun dp(value: Int): Int =
+        (value * resources.displayMetrics.density + 0.5f).toInt()
 
     override fun onResume() {
         super.onResume()
