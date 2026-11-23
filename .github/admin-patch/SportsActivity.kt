@@ -48,11 +48,11 @@ class SportsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = 0xFF080B14.toInt()
-        window.navigationBarColor = 0xFF101522.toInt()
+        window.statusBarColor = 0xFF09090D.toInt()
+        window.navigationBarColor = 0xFF171116.toInt()
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(0xFF080B14.toInt())
+            setBackgroundColor(0xFF09090D.toInt())
             layoutDirection = View.LAYOUT_DIRECTION_RTL
             setPadding(dp(16), dp(10), dp(16), dp(8))
         }
@@ -64,11 +64,11 @@ class SportsActivity : AppCompatActivity() {
         top.addView(back, LinearLayout.LayoutParams(dp(42), dp(48)))
         val heading = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         heading.addView(label("المباريات والنتائج", 21, -1, true))
-        heading.addView(label("تابع مباريات اليوم والبطولات", 11, 0xFF9CA8BD.toInt(), false))
+        heading.addView(label("تابع مباريات اليوم والبطولات", 11, 0xFFAAA0A5.toInt(), false))
         top.addView(heading, LinearLayout.LayoutParams(0, -2, 1f))
         val refresh = label("تحديث", 12, 0xFFFFFFFF.toInt(), true).apply {
             gravity = Gravity.CENTER
-            background = rounded(0xFF242E43.toInt(), 14)
+            background = rounded(0xFF38202A.toInt(), 14)
             setPadding(dp(14), dp(9), dp(14), dp(9))
             setOnClickListener { loadMatches() }
         }
@@ -79,16 +79,16 @@ class SportsActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(18), dp(16), dp(18), dp(16))
             background = GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                intArrayOf(0xFF6D315D.toInt(), 0xFF30264C.toInt(), 0xFF18263B.toInt())).apply {
+                intArrayOf(0xFF6A2438.toInt(), 0xFF321B27.toInt(), 0xFF171419.toInt())).apply {
                 cornerRadius = dp(22).toFloat()
             }
         }
-        hero.addView(label("RAHMANI SPORTS", 11, 0xFFFFC7D7.toInt(), true))
+        hero.addView(label("RAHMANI SPORTS", 11, 0xFFFFC1CC.toInt(), true))
         hero.addView(label("كل المباريات في مكان واحد", 20, -1, true).apply { setPadding(0, dp(6), 0, dp(4)) })
-        hero.addView(label("نتائج مباشرة • مباريات اليوم • جدول القادم", 11, 0xFFE0DCEB.toInt(), false))
+        hero.addView(label("نتائج مباشرة • مباريات اليوم • جدول القادم", 11, 0xFFE7DDE0.toInt(), false))
         root.addView(hero, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14); bottomMargin = dp(12) })
 
-        status = label("جارٍ تحميل المباريات...", 12, 0xFFB7C2D5.toInt(), false)
+        status = label("جارٍ تحميل المباريات...", 12, 0xFFC5B8BE.toInt(), false)
         root.addView(status, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
         val scroll = ScrollView(this).apply { isFillViewport = true }
         content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
@@ -169,7 +169,7 @@ class SportsActivity : AppCompatActivity() {
         status.text = if (ordered.isEmpty()) "لا توجد مباريات مسجلة اليوم حالياً • جرّب التحديث لاحقاً"
             else "مباريات اليوم: ${ordered.size} • يتم تحديث البيانات عند الضغط على تحديث"
         if (ordered.isEmpty()) {
-            val empty = label("لا توجد مباريات في تغذية النتائج لهذا اليوم", 14, 0xFF9CA8BD.toInt(), false)
+            val empty = label("لا توجد مباريات في تغذية النتائج لهذا اليوم", 14, 0xFFAAA0A5.toInt(), false)
             empty.gravity = Gravity.CENTER
             content.addView(empty, LinearLayout.LayoutParams(-1, dp(130)))
             return
@@ -178,13 +178,13 @@ class SportsActivity : AppCompatActivity() {
             val card = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(dp(15), dp(13), dp(15), dp(13))
-                background = rounded(0xFF151D2C.toInt(), 18)
+                background = rounded(0xFF1B151A.toInt(), 18)
             }
             val leagueRow = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
-            leagueRow.addView(label(m.league, 11, 0xFFB6C3D9.toInt(), true), LinearLayout.LayoutParams(0, -2, 1f))
+            leagueRow.addView(label(m.league, 11, 0xFFD0C3C8.toInt(), true), LinearLayout.LayoutParams(0, -2, 1f))
             val live = m.isLive
             leagueRow.addView(label(if (live) "● مباشر" else m.status, 10,
-                if (live) 0xFFFF657A.toInt() else 0xFF8EA2C0.toInt(), true))
+                if (live) 0xFFFF536D.toInt() else 0xFFB39CA5.toInt(), true))
             card.addView(leagueRow)
             val teams = LinearLayout(this).apply {
                 gravity = Gravity.CENTER
@@ -193,12 +193,12 @@ class SportsActivity : AppCompatActivity() {
             teams.addView(label(m.home, 14, -1, true).apply { gravity = Gravity.CENTER; maxLines = 2 },
                 LinearLayout.LayoutParams(0, -2, 1f))
             val score = if (m.homeScore.isNotBlank() || m.awayScore.isNotBlank()) "${m.homeScore}  -  ${m.awayScore}" else m.time
-            teams.addView(label(score, 18, 0xFFFFD166.toInt(), true).apply { gravity = Gravity.CENTER })
+            teams.addView(label(score, 18, 0xFFFFC1A8.toInt(), true).apply { gravity = Gravity.CENTER })
             teams.addView(label(m.away, 14, -1, true).apply { gravity = Gravity.CENTER; maxLines = 2 },
                 LinearLayout.LayoutParams(0, -2, 1f))
             card.addView(teams)
-            card.addView(label("القناة الناقلة: ${m.channel}", 11, 0xFFB6C3D9.toInt(), false))
-            card.addView(label("المعلّق: ${m.commentator}", 11, 0xFF8795AC.toInt(), false).apply { setPadding(0, dp(5), 0, 0) })
+            card.addView(label("القناة الناقلة: ${m.channel}", 11, 0xFFD0C3C8.toInt(), false))
+            card.addView(label("المعلّق: ${m.commentator}", 11, 0xFFA8959D.toInt(), false).apply { setPadding(0, dp(5), 0, 0) })
             content.addView(card, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
         }
     }
