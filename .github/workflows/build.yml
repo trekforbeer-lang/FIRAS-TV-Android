@@ -1,4 +1,4 @@
-name: FIRAS TV Android Build
+name: FIRAS TV v4 Build APK
 on:
   push:
     branches: [kotlin-v3]
@@ -11,6 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Restore FIRAS TV v4 source
+        shell: bash
+        run: |
+          cat .github/workflows/v4-source-*.b64 | base64 --decode | tar -xJf -
+          rm -rf app/src/main
+          cp -a FIRAS_TV_ULTIMATE/. .
+          rm -rf FIRAS_TV_ULTIMATE
+          rm -f .github/workflows/v4-source-*.b64
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -19,18 +27,18 @@ jobs:
         with:
           gradle-version: '8.7'
       - name: Build installable APKs
-        run: gradle --no-daemon clean assembleDebug assembleRelease
-      - name: Upload single installable APK
+        run: gradle --no-daemon clean assembleDebug assembleRelease --stacktrace
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FIRAS-TV-APK-v3.0.3
-          path: app/build/outputs/apk/release/app-release.apk
+          name: FIRAS-TV-APK-v4
+          path: app/build/outputs/apk/**/*.apk
           if-no-files-found: error
           retention-days: 14
       - name: Publish direct APK download
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: firas-tv-v3.0.3-build-${{ github.run_number }}
-          name: FIRAS TV v3.0.3 (Build ${{ github.run_number }})
+          tag_name: firas-tv-v4.0.0-build-${{ github.run_number }}
+          name: FIRAS TV v4.0.0 (Build ${{ github.run_number }})
           files: app/build/outputs/apk/release/app-release.apk
           generate_release_notes: true

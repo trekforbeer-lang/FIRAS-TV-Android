@@ -1,9 +1,14 @@
-# FIRAS TV Kotlin
+# FIRAS TV v4.0.0-universal
 
-Android streaming client built with Kotlin, AndroidX Media3, and OkHttp 4.12.0. Minimum Android API: 21.
+مشروع Android أصلي بلغة Kotlin، موجه للهواتف ذات الشاشات اللمسية. يستخدم Media3/ExoPlayer لتشغيل البث، مع واجهة عربية RTL ووضع أفقي وملء الشاشة وخيارات تكبير الصورة.
 
-The launcher opens the lightweight FIRAS TV home screen first; the player is opened explicitly from its button. This keeps player initialization out of the app's initial launch path.
+## البناء
 
-Build: `gradle assembleDebug assembleRelease`. GitHub Actions uploads debug and release APKs as `FIRAS-TV-Kotlin-APK`.
+يُبنى المشروع عبر GitHub Actions من الفرع `kotlin-v3` باستخدام Java 17 وGradle 8.7. بعد نجاح التشغيل ستجد APK في Artifacts باسم `FIRAS-TV-APK-v4`، كما يُنشأ GitHub Release يحتوي على `app-release.apk` للتنزيل المباشر.
 
-Channel entries are configured in `app/src/main/assets/channels_stream_config.json`; a writable copy under the app's `filesDir` takes precedence.
+## ملاحظات
+
+- `minSdk = 21`.
+- `applicationId = com.firas.tv`.
+- نسخة Release موقعة بمفتاح Android debug للاختبار والتثبيت؛ ليست مفتاح نشر نهائياً.
+- يجب اختبار APK على الجهاز قبل اعتباره إصداراً مستقراً.
