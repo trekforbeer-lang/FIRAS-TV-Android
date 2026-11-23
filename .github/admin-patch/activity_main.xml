@@ -5,32 +5,38 @@
     android:orientation="vertical" android:background="#080B14"
     android:layoutDirection="rtl" android:fitsSystemWindows="true">
 
-    <LinearLayout android:layout_width="match_parent" android:layout_height="58dp"
+    <LinearLayout android:layout_width="match_parent" android:layout_height="64dp"
         android:orientation="horizontal" android:gravity="center_vertical"
-        android:paddingStart="18dp" android:paddingEnd="16dp">
+        android:paddingStart="14dp" android:paddingEnd="10dp">
         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:orientation="vertical">
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="RAHMANI" android:textColor="#FF6687" android:textSize="25sp"
+                android:text="RAHMANI" android:textColor="#FF6687" android:textSize="23sp"
                 android:textStyle="bold" android:letterSpacing="0.05" android:layoutDirection="ltr"/>
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:text="ترفيه • رياضة • بث مباشر" android:textColor="#9AA8C0" android:textSize="10sp"/>
         </LinearLayout>
-        <TextView android:layout_width="38dp" android:layout_height="38dp"
-            android:gravity="center" android:text="✦" android:textSize="20sp"
-            android:textColor="#FFD166" android:background="@drawable/search_bg"/>
-        <TextView android:id="@+id/homeModeButton" android:layout_width="wrap_content"
-            android:layout_height="48dp" android:minWidth="64dp" android:gravity="center" android:contentDescription="اختيار نمط الصفحة الرئيسية" android:paddingStart="10dp"
-            android:paddingEnd="10dp" android:text="نمط العرض" android:textColor="#FFFFFF"
-            android:textSize="11sp" android:background="#29344B" android:clickable="true" android:focusable="true"/>
-        <TextView android:id="@+id/customizeButton" android:layout_width="wrap_content"
-            android:layout_height="38dp" android:gravity="center" android:paddingStart="10dp"
-            android:paddingEnd="10dp" android:text="تخصيص" android:textColor="#FFFFFF"
-            android:textSize="11sp" android:background="#25252A" android:clickable="true" android:focusable="true"/>
-        <Button android:id="@+id/adminButton" android:layout_width="wrap_content"
-            android:layout_height="38dp" android:minHeight="38dp" android:layout_marginStart="8dp"
-            android:text="الإدارة" android:textAllCaps="false" android:textSize="11sp"
-            android:backgroundTint="#29344B" android:textColor="#FFFFFF"/>
+        <HorizontalScrollView android:layout_width="0dp" android:layout_height="match_parent"
+            android:layout_weight="1" android:scrollbars="none" android:fillViewport="false"
+            android:gravity="center_vertical">
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="match_parent"
+                android:orientation="horizontal" android:gravity="center_vertical">
+                <TextView android:id="@+id/homeModeButton" android:layout_width="wrap_content"
+                    android:layout_height="48dp" android:minWidth="64dp" android:gravity="center"
+                    android:contentDescription="اختيار نمط الصفحة الرئيسية" android:paddingStart="10dp"
+                    android:paddingEnd="10dp" android:text="نمط العرض" android:textColor="#FFFFFF"
+                    android:textSize="11sp" android:background="#29344B" android:clickable="true" android:focusable="true"/>
+                <TextView android:id="@+id/customizeButton" android:layout_width="wrap_content"
+                    android:layout_height="48dp" android:minWidth="58dp" android:gravity="center"
+                    android:paddingStart="9dp" android:paddingEnd="9dp" android:text="تخصيص"
+                    android:textColor="#FFFFFF" android:textSize="11sp" android:background="#25252A"
+                    android:clickable="true" android:focusable="true"/>
+                <Button android:id="@+id/adminButton" android:layout_width="wrap_content"
+                    android:layout_height="44dp" android:minHeight="44dp" android:minWidth="62dp"
+                    android:layout_marginStart="6dp" android:text="الإدارة" android:textAllCaps="false"
+                    android:textSize="11sp" android:backgroundTint="#29344B" android:textColor="#FFFFFF"/>
+            </LinearLayout>
+        </HorizontalScrollView>
     </LinearLayout>
 
     <HorizontalScrollView android:layout_width="match_parent" android:layout_height="42dp"
