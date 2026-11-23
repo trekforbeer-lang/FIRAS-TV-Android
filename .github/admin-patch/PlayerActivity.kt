@@ -560,7 +560,7 @@ class PlayerActivity : AppCompatActivity() {
     private fun scheduleOverlayHide() {
         handler.removeCallbacks(hideOverlayTask)
         if (!controlsLocked && player?.isPlaying == true) {
-            handler.postDelayed(hideOverlayTask, 5000L)
+            handler.postDelayed(hideOverlayTask, 3000L)
         }
     }
 
