@@ -402,7 +402,13 @@ class AdminActivity : Activity() {
             for (i in 0 until arr.length()) {
                 val item = arr.optJSONObject(i) ?: continue
                 if ((channel.optString("id").isNotBlank() && item.optString("id") == channel.optString("id")) ||
-                    item.optString("name").equals(channel.optString("name"), true)) return item.optString("cookie")
+                    item.optString("name").equals(channel.optString("name"), true)) {
+                    val saved = item.optString("cookie")
+                    if (saved.isNotBlank()) return saved
+                    val headers = item.optJSONObject("headers") ?: JSONObject()
+                    val cookieKey = headers.keys().asSequence().firstOrNull { it.equals("Cookie", true) }
+                    return cookieKey?.let { headers.optString(it) }.orEmpty()
+                }
             }
             ""
         } catch (_: Exception) { "" }
