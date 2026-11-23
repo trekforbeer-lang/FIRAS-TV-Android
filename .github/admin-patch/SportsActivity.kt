@@ -127,13 +127,13 @@ class SportsActivity : AppCompatActivity() {
                         }
                         val iso = event.optString("date")
                         val time = try {
-                            val parsed = SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'", Locale.US).parse(iso)
+                            val parsed = SimpleDateFormat("yyyy-MM-dd'T'HH:mmX", Locale.US).parse(iso)
                             if (parsed != null) SimpleDateFormat("HH:mm", Locale.getDefault()).format(parsed) else "--:--"
                         } catch (_: Exception) { "--:--" }
                         val broadcasts = comp.optJSONArray("broadcasts")
                         val channel = if (broadcasts != null && broadcasts.length() > 0) {
                             val b = broadcasts.optJSONObject(0)
-                            b?.optString("names")?.takeIf { !it.isNullOrBlank() } ?: "متاحة في تفاصيل البث"
+                            ((b?.optJSONArray("names")?.optString(0))?.takeIf { !it.isNullOrBlank() }) ?: "متاحة في تفاصيل البث"
                         } else "غير متاحة من المصدر"
                         val commentator = comp.optJSONArray("commentators")?.optJSONObject(0)?.optString("name")
                             ?.takeIf { !it.isNullOrBlank() } ?: "غير متاح من المصدر"
