@@ -104,7 +104,7 @@ class PlayerActivity : AppCompatActivity() {
         quality = findViewById(R.id.qualityButton)
         centerControls = findViewById(R.id.centerControls)
         lockButton = findViewById(R.id.lockButton)
-        findViewById<Button>(R.id.playerBackButton).setOnClickListener { finish() }
+        findViewById<Button>(R.id.playerBackButton).setOnClickListener { handleBackAction() }
         lockButton.setOnClickListener { controlsLocked = !controlsLocked; setOverlayVisible(!controlsLocked); lockButton.text = if (controlsLocked) "🔒" else "♙" }
         findViewById<Button>(R.id.castButton).setOnClickListener { Toast.makeText(this, "ميزة Google Cast تحتاج ربط جهاز البث، ولم يتم تفعيلها بعد.", Toast.LENGTH_LONG).show() }
         findViewById<Button>(R.id.channelListButton).setOnClickListener { list.visibility = if (list.visibility == View.VISIBLE) View.GONE else View.VISIBLE }
@@ -521,16 +521,20 @@ class PlayerActivity : AppCompatActivity() {
         fullscreen.text = if (isFullscreen) "⤡" else "⛶"
     }
 
-    @Suppress("DEPRECATION")
-    override fun onBackPressed() {
+    private fun handleBackAction() {
         if (isFullscreen) {
             isFullscreen = false
-            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
             window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
             fullscreen.text = "⛶"
         } else {
-            super.onBackPressed()
+            finish()
         }
+    }
+
+    @Suppress("DEPRECATION")
+    override fun onBackPressed() {
+        handleBackAction()
     }
 
     private fun setOverlayVisible(visible: Boolean) {
