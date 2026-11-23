@@ -41,6 +41,7 @@ jobs:
           grep -q 'minSdk = 21' app/build.gradle.kts
           grep -q 'okhttp:4.12.0' app/build.gradle.kts
           # Render SVG channel logos natively on Android (PNG/JPEG remain supported).
+          # Admin-picked logo files are stored in app-private storage and decoded locally.
           sed -i '/^dependencies[[:space:]]*{/a\    implementation("com.caverock:androidsvg-aar:1.4")' app/build.gradle.kts
           grep -q 'com.caverock:androidsvg-aar:1.4' app/build.gradle.kts
           # The archived v4 source still declares Media3 1.3.1. Align every
