@@ -72,6 +72,7 @@ class PlayerActivity : AppCompatActivity() {
     private var currentUrls: List<String> = emptyList()
     private var currentUrlIndex = 0
     private var isFullscreen = false
+    private var resumePlaybackOnResume = false
     private var recoveryAttempts = 0
     private var zoomed = false
     private var recoveryTask: Runnable? = null
@@ -629,13 +630,17 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (player != null) player?.playWhenReady = true
+        // Resume only if playback was active before the Activity was paused.
+        if (resumePlaybackOnResume) player?.playWhenReady = true
+        resumePlaybackOnResume = false
         handler.removeCallbacks(refreshTask)
         handler.postDelayed(refreshTask, 5 * 60 * 1000L)
     }
 
     override fun onPause() {
         handler.removeCallbacks(refreshTask)
+        // Remember the viewer's intent so a manually paused video stays paused on return.
+        resumePlaybackOnResume = player?.playWhenReady == true
         player?.pause()
         // Defensive cleanup: never keep the device awake after leaving the player screen.
         window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
