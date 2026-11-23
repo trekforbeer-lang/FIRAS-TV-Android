@@ -18,6 +18,7 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.HttpDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
@@ -196,8 +197,14 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun requestHeaders(channel: DisplayChannel): Map<String, String> {
         val result = linkedMapOf<String, String>()
-        result.putAll(channel.legacyHeaders)
-        currentAdvanced?.let { result.putAll(UniversalStreamEngine.mergedHeaders(it)) }
+        fun putHeader(name: String, value: String) {
+            result.keys.firstOrNull { it.equals(name, ignoreCase = true) }?.let(result::remove)
+            result[name] = value
+        }
+        channel.legacyHeaders.forEach { (name, value) -> putHeader(name, value) }
+        currentAdvanced?.let { config ->
+            UniversalStreamEngine.mergedHeaders(config).forEach { (name, value) -> putHeader(name, value) }
+        }
         return result
     }
 
@@ -241,7 +248,13 @@ class PlayerActivity : AppCompatActivity() {
                 playerView.player = exo
                 exo.addListener(object : Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {
-                        status.text = "تعذر تشغيل البث، جارٍ إعادة الاتصال..."
+                        val responseCode = generateSequence(error as Throwable?) { it.cause }
+                            .filterIsInstance<HttpDataSource.InvalidResponseCodeException>()
+                            .firstOrNull()?.responseCode
+                        status.text = when (responseCode) {
+                            401, 403 -> "رفض المصدر الوصول (HTTP $responseCode). تحقق من Cookie وبيانات القناة في لوحة الإدارة."
+                            else -> "تعذر تشغيل البث، جارٍ إعادة الاتصال..."
+                        }
                         scheduleRecovery()
                     }
 
