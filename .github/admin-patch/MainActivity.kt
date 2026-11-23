@@ -143,8 +143,8 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.homeSportsSection)?.visibility = if (showSports) View.VISIBLE else View.GONE
         findViewById<View>(R.id.homeChannelsSection)?.visibility = if (showChannels) View.VISIBLE else View.GONE
         (findViewById<View>(R.id.chips)?.parent as? View)?.visibility = if (showChannels) View.VISIBLE else View.GONE
-        findViewById<View>(R.id.list)?.visibility = if (showChannels) View.VISIBLE else View.GONE
-        findViewById<View>(R.id.restoreChannelsButton)?.visibility = if (showChannels) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.channelListSectionHeader)?.visibility = if (showChannels) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.channelListContainer)?.visibility = if (showChannels) View.VISIBLE else View.GONE
         findViewById<View>(R.id.search)?.visibility = if (showSearch) View.VISIBLE else View.GONE
         findViewById<View>(R.id.empty)?.visibility =
             if (showChannels && adapter.currentList.isEmpty()) View.VISIBLE else View.GONE
