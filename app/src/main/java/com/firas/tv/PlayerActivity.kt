@@ -1,6 +1,11 @@
 package com.firas.tv
 
 import android.content.pm.ActivityInfo
+import android.graphics.BitmapFactory
+import android.view.ViewGroup
+import android.widget.ImageView
+import java.net.HttpURLConnection
+import java.net.URL
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -30,12 +35,16 @@ private data class DisplayChannel(
     val name: String,
     val legacyUrl: String,
     val legacyHeaders: Map<String, String>,
+    val logo: String,
     val advanced: StreamConfig?
 )
 
 class PlayerActivity : AppCompatActivity() {
     private var player: ExoPlayer? = null
     private lateinit var playerView: PlayerView
+    private lateinit var channelLogo: ImageView
+    private val logoWorker = Executors.newSingleThreadExecutor()
+    private var logoRequestId = 0
     private lateinit var title: TextView
     private lateinit var status: TextView
     private lateinit var list: RecyclerView
@@ -67,6 +76,7 @@ class PlayerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_player)
         playerView = findViewById(R.id.playerView)
+        channelLogo = findViewById(R.id.channelLogo)
         title = findViewById(R.id.channelTitle)
         status = findViewById(R.id.statusText)
         list = findViewById(R.id.channelList)
@@ -79,7 +89,7 @@ class PlayerActivity : AppCompatActivity() {
 
         val advanced = UniversalStreamEngine.load(this)
         channels = UniversalStreamEngine.loadLegacy(this).map { legacy ->
-            DisplayChannel(legacy.id, legacy.name, legacy.stream, legacy.headers,
+            DisplayChannel(legacy.id, legacy.name, legacy.stream, legacy.headers, legacy.logo,
                 UniversalStreamEngine.match(advanced, legacy.id, legacy.name))
         }
         list.layoutManager = LinearLayoutManager(this, RecyclerView.HORIZONTAL, false)
@@ -103,6 +113,39 @@ class PlayerActivity : AppCompatActivity() {
         }
         if (channels.isNotEmpty()) play(channels.first())
         else status.text = "لا توجد قنوات في ملف channels.json"
+    }
+
+    private fun showChannelLogo(channel: DisplayChannel) {
+        val requestId = ++logoRequestId
+        channelLogo.setImageDrawable(null)
+        val logoUrl = channel.logo.trim()
+        channelLogo.visibility = View.GONE
+        if (logoUrl.isBlank()) return
+        logoWorker.execute {
+            var connection: HttpURLConnection? = null
+            try {
+                connection = (URL(logoUrl).openConnection() as HttpURLConnection).apply {
+                    connectTimeout = 8000
+                    readTimeout = 10000
+                    instanceFollowRedirects = true
+                }
+                connection.inputStream.use { input ->
+                    val bitmap = BitmapFactory.decodeStream(input)
+                    runOnUiThread {
+                        if (!isFinishing && requestId == logoRequestId && current?.id == channel.id && bitmap != null) {
+                            channelLogo.setImageBitmap(bitmap)
+                            channelLogo.visibility = View.VISIBLE
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+                runOnUiThread {
+                    if (requestId == logoRequestId) channelLogo.visibility = View.GONE
+                }
+            } finally {
+                connection?.disconnect()
+            }
+        }
     }
 
     private fun ensurePlayer(channel: DisplayChannel) {
@@ -150,6 +193,7 @@ class PlayerActivity : AppCompatActivity() {
     private fun play(channel: DisplayChannel) {
         current = channel
         currentAdvanced = channel.advanced
+        showChannelLogo(channel)
         currentUrlIndex = 0
         title.text = channel.name
         ensurePlayer(channel)
@@ -254,6 +298,8 @@ class PlayerActivity : AppCompatActivity() {
         player?.release()
         player = null
         worker.shutdownNow()
+        logoRequestId++
+        logoWorker.shutdownNow()
         super.onDestroy()
     }
 
