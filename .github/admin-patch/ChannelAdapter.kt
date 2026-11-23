@@ -48,16 +48,15 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
             setPadding(dp(7), dp(10), dp(7), dp(9))
             minimumHeight = dp(145)
             elevation = dp(2).toFloat()
-            foreground = context.obtainStyledAttributes(intArrayOf(android.R.attr.selectableItemBackground)).let { attrs ->
-                val ripple = attrs.getDrawable(0)
-                attrs.recycle()
-                ripple
-            }
-            background = GradientDrawable().apply {
-                setColor(Color.rgb(19, 27, 43))
-                cornerRadius = dp(16).toFloat()
-                setStroke(dp(1), Color.rgb(47, 59, 82))
-            }
+            background = android.graphics.drawable.RippleDrawable(
+                android.content.res.ColorStateList.valueOf(Color.rgb(55, 72, 105)),
+                GradientDrawable().apply {
+                    setColor(Color.rgb(19, 27, 43))
+                    cornerRadius = dp(16).toFloat()
+                    setStroke(dp(1), Color.rgb(47, 59, 82))
+                },
+                null
+            )
         }
         val logoFrame = LinearLayout(context).apply {
             gravity = Gravity.CENTER
