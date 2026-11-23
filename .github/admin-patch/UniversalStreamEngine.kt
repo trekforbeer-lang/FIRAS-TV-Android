@@ -143,6 +143,10 @@ object UniversalStreamEngine {
                     val headers = linkedMapOf<String, String>()
                     item.optString("referer").takeIf { it.isNotBlank() }?.let { headers["Referer"] = it }
                     item.optString("userAgent").takeIf { it.isNotBlank() }?.let { headers["User-Agent"] = it }
+                    item.optString("cookie").takeIf { it.isNotBlank() }?.let { headers["Cookie"] = it }
+                    (item.optJSONObject("headers") ?: JSONObject()).let { extra ->
+                        extra.keys().forEach { key -> headers[key] = extra.optString(key) }
+                    }
                     result += LegacyChannel(item.optString("id", "legacy-$i"), item.optString("name", "Channel $i"),
                         item.optString("category"), item.optString("logo"), stream, headers)
                 }
@@ -171,8 +175,15 @@ object UniversalStreamEngine {
                         val item = arr.optJSONObject(i) ?: continue
                         val stream = item.optString("stream", item.optString("url"))
                         if (stream.isBlank()) continue
+                        val headers = linkedMapOf<String, String>()
+                        item.optString("referer").takeIf { it.isNotBlank() }?.let { headers["Referer"] = it }
+                        item.optString("userAgent").takeIf { it.isNotBlank() }?.let { headers["User-Agent"] = it }
+                        item.optString("cookie").takeIf { it.isNotBlank() }?.let { headers["Cookie"] = it }
+                        (item.optJSONObject("headers") ?: JSONObject()).let { extra ->
+                            extra.keys().forEach { key -> headers[key] = extra.optString(key) }
+                        }
                         result += LegacyChannel(item.optString("id", "legacy-$i"), item.optString("name", "Channel $i"),
-                            item.optString("category"), item.optString("logo"), stream)
+                            item.optString("category"), item.optString("logo"), stream, headers)
                     }
                 }
             }
