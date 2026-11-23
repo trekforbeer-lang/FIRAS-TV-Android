@@ -11,7 +11,7 @@
         <activity android:name=".TeamPreferencesActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".SportsActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".MoviesActivity" android:exported="false" android:screenOrientation="portrait" />
-        <activity android:name=".MoviePlayerActivity" android:exported="false" android:screenOrientation="sensorLandscape" />
+        <activity android:name=".MoviePlayerActivity" android:exported="false" android:screenOrientation="sensorLandscape" android:supportsPictureInPicture="true" android:resizeableActivity="true" android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|uiMode|density" />
         <activity android:name=".MainActivity" android:exported="true" android:screenOrientation="portrait" android:windowSoftInputMode="adjustPan">
             <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity>
