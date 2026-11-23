@@ -5,6 +5,9 @@ import android.app.PictureInPictureParams
 import android.os.Build
 import android.util.Rational
 import android.net.Uri
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkRequest
 import android.os.Bundle
 import android.graphics.BitmapFactory
 import android.graphics.Bitmap
@@ -79,6 +82,8 @@ class PlayerActivity : AppCompatActivity() {
     private var recoveryAttempts = 0
     private var zoomed = false
     private var recoveryTask: Runnable? = null
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    private var networkWasLost = false
     private val worker = Executors.newSingleThreadExecutor()
     private val handler = Handler(Looper.getMainLooper())
     private val hideOverlayTask = Runnable {
@@ -634,6 +639,65 @@ class PlayerActivity : AppCompatActivity() {
         val start = if (currentIndex < 0) 0 else currentIndex
         val nextIndex = (start + direction).coerceIn(0, channels.lastIndex)
         if (nextIndex != currentIndex) play(channels[nextIndex])
+    }
+
+    override fun onStart() {
+        super.onStart()
+        registerPlaybackNetworkCallback()
+    }
+
+    private fun registerPlaybackNetworkCallback() {
+        if (networkCallback != null) return
+        val manager = getSystemService(CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onLost(network: Network) {
+                networkWasLost = true
+                handler.post {
+                    if (!isFinishing && current != null) {
+                        status.text = "انقطع اتصال الإنترنت، ننتظر عودته..."
+                    }
+                }
+            }
+
+            override fun onAvailable(network: Network) {
+                if (!networkWasLost) return
+                networkWasLost = false
+                handler.post {
+                    if (isFinishing || isDestroyed) return@post
+                    val channel = current ?: return@post
+                    recoveryTask?.let(handler::removeCallbacks)
+                    recoveryTask = null
+                    recoveryAttempts = 0
+                    resolving = false
+                    status.text = "عاد الاتصال، جارٍ استئناف البث..."
+                    if (currentAdvanced != null) {
+                        resolveAndPlay(channel, keepPosition = false)
+                    } else if (isHttpUrl(channel.legacyUrl)) {
+                        playUrl(channel.legacyUrl)
+                    }
+                }
+            }
+        }
+        try {
+            manager.registerNetworkCallback(
+                NetworkRequest.Builder().addCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET).build(),
+                callback
+            )
+            networkCallback = callback
+        } catch (_: Exception) {
+            networkCallback = null
+        }
+    }
+
+    override fun onStop() {
+        networkCallback?.let { callback ->
+            try {
+                (getSystemService(CONNECTIVITY_SERVICE) as? ConnectivityManager)?.unregisterNetworkCallback(callback)
+            } catch (_: Exception) {
+            }
+        }
+        networkCallback = null
+        super.onStop()
     }
 
     override fun onResume() {
