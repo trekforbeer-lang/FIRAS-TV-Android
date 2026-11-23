@@ -229,56 +229,181 @@ class AdminActivity : Activity() {
         setOnClickListener { click() }
     }
 
+    private fun metricCard(title: String, value: String, note: String, accent: Int): LinearLayout {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(14, 12, 14, 12)
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(0xFF111114.toInt())
+                setCornerRadius(14f)
+                setStroke(1, 0xFF29292F.toInt())
+            }
+            addView(TextView(this@AdminActivity).apply {
+                text = title; textSize = 11f; setTextColor(0xFFA1A1AA.toInt())
+            })
+            addView(TextView(this@AdminActivity).apply {
+                text = value; textSize = 25f; typeface = android.graphics.Typeface.MONOSPACE
+                setTextColor(accent); setPadding(0, 5, 0, 2)
+            })
+            addView(TextView(this@AdminActivity).apply {
+                text = note; textSize = 10f; setTextColor(0xFF71717A.toInt())
+            })
+        }
+    }
+
     private fun render() {
         panel.removeAllViews()
-        panel.addView(label("لوحة إدارة FIRAS TV", 24f))
-        var count = 0
-        sections().let { groups ->
-            for (i in 0 until groups.length()) count += groups.optJSONObject(i)?.optJSONArray("items")?.length() ?: 0
-        }
-        panel.addView(label("عدد القنوات: $count", 13f))
-        panel.addView(action("＋ إضافة قناة") { editChannel(null, null) })
-        panel.addView(action("＋ إضافة تصنيف") { addCategory() })
-        panel.addView(action("استيراد قائمة M3U / روابط") { importChannels() })
-        panel.addView(action("نسخ نسخة احتياطية") { backup() })
-        panel.addView(action("استعادة نسخة احتياطية") { restore() })
-        panel.addView(action("فحص روابط القنوات") { checkChannels() })
-        panel.addView(action("حذف القنوات المعطلة المضافة فقط") { deleteBrokenAdded() })
-
         val groups = sections()
+        var total = 0
+        var ready = 0
+        var broken = 0
+        var missing = 0
+        for (i in 0 until groups.length()) {
+            val list = groups.optJSONObject(i)?.optJSONArray("items") ?: continue
+            total += list.length()
+            for (j in 0 until list.length()) {
+                val channel = list.optJSONObject(j) ?: continue
+                if (channel.optString("url").isBlank()) missing++
+                else if (channel.has("ok")) {
+                    if (channel.optBoolean("ok")) ready++ else broken++
+                }
+            }
+        }
+        val checked = ready + broken
+        val rate = if (checked == 0) "—" else "${(ready * 100 / checked)}%"
+        panel.addView(TextView(this).apply {
+            text = "RAHMANI"; textSize = 25f; letterSpacing = 0.12f
+            typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.BOLD)
+            setTextColor(0xFFF4F4F5.toInt()); setPadding(2, 8, 2, 0)
+        })
+        panel.addView(TextView(this).apply {
+            text = "CONSOLE  /  إدارة منصة البث"; textSize = 11f
+            letterSpacing = 0.06f; setTextColor(0xFF8B8B95.toInt())
+            setPadding(2, 3, 2, 18)
+        })
+        val status = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            setPadding(11, 9, 11, 9)
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(0xFF151518.toInt()); setCornerRadius(9f)
+                setStroke(1, 0xFF303036.toInt())
+            }
+        }
+        status.addView(TextView(this).apply {
+            text = "●"; textSize = 10f; setTextColor(0xFF34D399.toInt())
+        })
+        status.addView(TextView(this).apply {
+            text = "  يعمل محلياً على هذا الجهاز  ·  البيانات محفوظة محلياً"
+            textSize = 10f; setTextColor(0xFFA1A1AA.toInt())
+        })
+        panel.addView(status, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 16 })
+        val metricsTop = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        metricsTop.addView(metricCard("إجمالي القنوات", total.toString(), "${groups.length()} تصنيف", 0xFFF4F4F5.toInt()),
+            LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = 6 })
+        metricsTop.addView(metricCard("نجاح آخر فحص", rate, "$ready تعمل من $checked مفحوصة", 0xFF34D399.toInt()),
+            LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = 6 })
+        panel.addView(metricsTop)
+        val metricsBottom = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        metricsBottom.addView(metricCard("تحتاج رابطاً", missing.toString(), "قنوات بلا رابط بث", 0xFFFBBF24.toInt()),
+            LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = 6; topMargin = 10 })
+        metricsBottom.addView(metricCard("فشل آخر فحص", broken.toString(), "أعد الفحص قبل الحذف", 0xFFF87171.toInt()),
+            LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = 6; topMargin = 10 })
+        panel.addView(metricsBottom)
+        panel.addView(TextView(this).apply {
+            text = "الإجراءات السريعة"; textSize = 15f
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            setTextColor(0xFFF4F4F5.toInt()); setPadding(2, 22, 2, 7)
+        })
+        panel.addView(action("＋  إضافة قناة جديدة") { editChannel(null, null) })
+        panel.addView(action("＋  إضافة تصنيف") { addCategory() })
+        panel.addView(action("استيراد قائمة M3U / روابط") { importChannels() })
+        panel.addView(action("فحص روابط القنوات") { checkChannels() })
+        panel.addView(action("نسخ نسخة احتياطية آمنة") { backup() })
+        panel.addView(action("استعادة نسخة احتياطية") { restore() })
+        panel.addView(action("حذف القنوات المضافة التي فشل فحصها") { deleteBrokenAdded() })
+        panel.addView(TextView(this).apply {
+            text = "القنوات والتصنيفات"; textSize = 15f
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            setTextColor(0xFFF4F4F5.toInt()); setPadding(2, 24, 2, 7)
+        })
         for (i in 0 until groups.length()) {
             val section = groups.optJSONObject(i) ?: continue
-            panel.addView(label(section.optString("title"), 19f))
+            val list = items(i)
+            val sectionBox = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL; setPadding(12, 9, 12, 10)
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(0xFF111114.toInt()); setCornerRadius(12f)
+                    setStroke(1, 0xFF29292F.toInt())
+                }
+            }
+            val heading = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            }
+            heading.addView(TextView(this@AdminActivity).apply {
+                text = section.optString("title"); textSize = 14f
+                typeface = android.graphics.Typeface.DEFAULT_BOLD
+                setTextColor(0xFFE4E4E7.toInt())
+            }, LinearLayout.LayoutParams(0, -2, 1f))
+            heading.addView(TextView(this@AdminActivity).apply {
+                text = list.length().toString().padStart(2, '0')
+                textSize = 11f; typeface = android.graphics.Typeface.MONOSPACE
+                setTextColor(0xFF8B8B95.toInt())
+            })
+            sectionBox.addView(heading)
             val categoryActions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-            categoryActions.addView(action("تغيير الاسم") { renameCategory(i) }, LinearLayout.LayoutParams(0, -2, 1f))
-            val protected = (0 until items(i).length()).any { j -> items(i).optJSONObject(j)?.let(::isOriginal) == true }
+            categoryActions.addView(action("تعديل الاسم") { renameCategory(i) }, LinearLayout.LayoutParams(0, -2, 1f))
+            val protected = (0 until list.length()).any { j -> list.optJSONObject(j)?.let(::isOriginal) == true }
             categoryActions.addView(action(if (protected) "تصنيف محمي" else "حذف التصنيف") {
                 if (!protected) deleteCategory(i)
-                else Toast.makeText(this, "لا يمكن حذف تصنيف يحتوي قنوات أصلية", Toast.LENGTH_LONG).show()
+                else Toast.makeText(this@AdminActivity, "التصنيف يحتوي قنوات أصلية؛ لن نحذفه.", Toast.LENGTH_LONG).show()
             }, LinearLayout.LayoutParams(0, -2, 1f))
-            panel.addView(categoryActions)
-            val list = items(i)
+            sectionBox.addView(categoryActions)
             for (j in 0 until list.length()) {
                 val channel = list.optJSONObject(j) ?: continue
                 val row = LinearLayout(this).apply {
-                    orientation = LinearLayout.VERTICAL
-                    setPadding(10, 8, 10, 8)
-                    setBackgroundColor(0xFF191B23.toInt())
+                    orientation = LinearLayout.VERTICAL; setPadding(9, 9, 9, 9)
+                    background = android.graphics.drawable.GradientDrawable().apply {
+                        setColor(0xFF18181B.toInt()); setCornerRadius(9f)
+                        setStroke(1, 0xFF27272A.toInt())
+                    }
                 }
-                row.addView(label(channel.optString("name"), 15f))
+                val nameLine = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+                }
+                nameLine.addView(TextView(this@AdminActivity).apply {
+                    text = channel.optString("name"); textSize = 13f
+                    setTextColor(0xFFF4F4F5.toInt())
+                }, LinearLayout.LayoutParams(0, -2, 1f))
+                val state = when {
+                    channel.optString("url").isBlank() -> "بلا رابط"
+                    !channel.has("ok") -> "لم يُفحص"
+                    channel.optBoolean("ok") -> "يعمل"
+                    else -> "فشل"
+                }
+                val stateColor = when (state) {
+                    "يعمل" -> 0xFF34D399.toInt()
+                    "فشل" -> 0xFFF87171.toInt()
+                    "بلا رابط" -> 0xFFFBBF24.toInt()
+                    else -> 0xFFA1A1AA.toInt()
+                }
+                nameLine.addView(TextView(this@AdminActivity).apply {
+                    text = "● $state"; textSize = 10f; setTextColor(stateColor)
+                })
+                row.addView(nameLine)
                 val url = channel.optString("url")
                 row.addView(TextView(this).apply {
-                    text = if (url.isBlank()) "بدون رابط بث" else url
-                    textSize = 10f
-                    setTextColor(0xFFB7BAC5.toInt())
+                    text = if (url.isBlank()) "لم تتم إضافة رابط بث" else url
+                    textSize = 10f; typeface = android.graphics.Typeface.MONOSPACE
+                    setTextColor(0xFF8B8B95.toInt()); maxLines = 2
+                    setPadding(0, 5, 0, 5)
                 })
                 val buttons = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-                val original = isOriginal(channel)
                 buttons.addView(action("تعديل") { editChannel(i, j) }, LinearLayout.LayoutParams(0, -2, 1f))
                 buttons.addView(action("حذف") { deleteChannel(i, j, channel.optString("name")) }, LinearLayout.LayoutParams(0, -2, 1f))
                 row.addView(buttons)
-                panel.addView(row, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 7 })
+                sectionBox.addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 7 })
             }
+            panel.addView(sectionBox, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 10 })
         }
         panel.addView(action("تغيير كلمة مرور الإدارة") { changePassword() })
         panel.addView(action("تسجيل الخروج") { authenticated = false; handler.removeCallbacks(autoLogout); finish() })
@@ -555,7 +680,7 @@ class AdminActivity : Activity() {
         } catch (_: Exception) { JSONObject().put("channels", JSONArray()) }
         val bundle = JSONObject().put("channels", root).put("streamConfig", streamConfig)
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        clipboard.setPrimaryClip(ClipData.newPlainText("FIRAS TV backup", bundle.toString(2)))
+        clipboard.setPrimaryClip(ClipData.newPlainText("RAHMANI backup", bundle.toString(2)))
         Toast.makeText(this, "تم نسخ النسخة الاحتياطية. تحتوي بيانات Cookie سرية؛ لا تشاركها مع أحد.", Toast.LENGTH_LONG).show()
     }
 
@@ -605,7 +730,7 @@ class AdminActivity : Activity() {
                 if (!exists) dest.put(JSONObject(item.toString()))
             }
         }
-        return JSONObject().put("appName", "FIRAS TV").put("sections", incoming)
+        return JSONObject().put("appName", "RAHMANI").put("sections", incoming)
     }
 
     private fun readAssetRoot() = JSONObject(assets.open("channels.json").bufferedReader(Charsets.UTF_8).use { it.readText() })
