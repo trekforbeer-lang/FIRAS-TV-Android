@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:background="#000000">
+    <LinearLayout android:id="@+id/topBar" android:layout_width="match_parent"
+        android:layout_height="42dp" android:gravity="center_vertical"
+        android:paddingStart="14dp" android:paddingEnd="14dp" android:background="#111217">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="FIRAS TV" android:textColor="#F0445E" android:textStyle="bold"
+            android:textSize="17sp"/>
+        <TextView android:id="@+id/channelTitle" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:gravity="end" android:text="اختر قناة"
+            android:textColor="#FFFFFF" android:textSize="14sp" android:maxLines="1"/>
+    </LinearLayout>
+
+    <FrameLayout android:id="@+id/playerFrame" android:layout_width="match_parent"
+        android:layout_height="0dp" android:layout_weight="1" android:background="#000000">
+        <androidx.media3.ui.PlayerView android:id="@+id/playerView"
+            android:layout_width="match_parent" android:layout_height="match_parent"
+            app:use_controller="true" app:show_timeout="3000" app:show_buffering="when_playing"
+            app:resize_mode="zoom" app:show_subtitle_button="true"/>
+    </FrameLayout>
+
+    <LinearLayout android:id="@+id/bottomPanel" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:orientation="vertical" android:background="#101116">
+        <TextView android:id="@+id/statusText" android:layout_width="match_parent"
+            android:layout_height="24dp" android:gravity="center" android:paddingStart="8dp"
+            android:paddingEnd="8dp" android:text="FIRAS TV • بث مباشر"
+            android:textColor="#BDBFC8" android:textSize="10sp"/>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="40dp"
+            android:gravity="center" android:orientation="horizontal" android:paddingStart="6dp" android:paddingEnd="6dp">
+            <Button android:id="@+id/playPauseButton" android:layout_width="0dp" android:layout_height="36dp"
+                android:layout_weight="1" android:minHeight="36dp" android:text="تشغيل" android:textAllCaps="false" android:textSize="11sp"/>
+            <Button android:id="@+id/zoomButton" android:layout_width="0dp" android:layout_height="36dp"
+                android:layout_weight="1" android:minHeight="36dp" android:text="ملاءمة" android:textAllCaps="false" android:textSize="11sp"/>
+            <Button android:id="@+id/fullscreenButton" android:layout_width="0dp" android:layout_height="36dp"
+                android:layout_weight="1" android:minHeight="36dp" android:text="ملء الشاشة" android:textAllCaps="false" android:textSize="11sp"/>
+            <Button android:id="@+id/retryButton" android:layout_width="0dp" android:layout_height="36dp"
+                android:layout_weight="1" android:minHeight="36dp" android:text="تحديث" android:textAllCaps="false" android:textSize="11sp"/>
+            <Button android:id="@+id/serverButton" android:layout_width="0dp" android:layout_height="36dp"
+                android:layout_weight="1" android:minHeight="36dp" android:text="السيرفر" android:textAllCaps="false" android:textSize="11sp"/>
+            <Button android:id="@+id/qualityButton" android:layout_width="0dp" android:layout_height="36dp"
+                android:layout_weight="1" android:minHeight="36dp" android:text="الجودة" android:textAllCaps="false" android:textSize="11sp"/>
+        </LinearLayout>
+        <androidx.recyclerview.widget.RecyclerView android:id="@+id/channelList"
+            android:layout_width="match_parent" android:layout_height="48dp"
+            android:paddingStart="6dp" android:paddingEnd="6dp" android:clipToPadding="false"/>
+    </LinearLayout>
+</LinearLayout>
