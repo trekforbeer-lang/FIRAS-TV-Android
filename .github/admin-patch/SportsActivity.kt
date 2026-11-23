@@ -21,7 +21,7 @@ import java.util.concurrent.Executors
 private data class MatchCard(
     val league: String, val home: String, val away: String,
     val homeScore: String, val awayScore: String, val time: String,
-    val status: String, val channel: String, val commentator: String
+    val status: String, val isLive: Boolean, val channel: String, val commentator: String
 )
 
 class SportsActivity : AppCompatActivity() {
@@ -125,6 +125,8 @@ class SportsActivity : AppCompatActivity() {
                         val statusText = state?.optString("shortDetail").orEmpty().ifBlank {
                             state?.optString("description").orEmpty().ifBlank { "موعد المباراة" }
                         }
+                        // ESPN exposes a machine-readable state: "in" means currently in progress.
+                        val isLive = state?.optString("state").equals("in", ignoreCase = true)
                         val iso = event.optString("date")
                         val time = try {
                             val parsed = SimpleDateFormat("yyyy-MM-dd'T'HH:mmX", Locale.US).parse(iso)
@@ -137,7 +139,7 @@ class SportsActivity : AppCompatActivity() {
                         } else "غير متاحة من المصدر"
                         val commentator = comp.optJSONArray("commentators")?.optJSONObject(0)?.optString("name")
                             ?.takeIf { !it.isNullOrBlank() } ?: "غير متاح من المصدر"
-                        found.add(MatchCard(leagueName, home, away, hs, ascore, time, statusText, channel, commentator))
+                        found.add(MatchCard(leagueName, home, away, hs, ascore, time, statusText, isLive, channel, commentator))
                     }
                     synchronized(matches) { matches.addAll(found) }
                 } catch (_: Exception) { }
@@ -151,7 +153,7 @@ class SportsActivity : AppCompatActivity() {
 
     private fun renderMatches() {
         content.removeAllViews()
-        val ordered = synchronized(matches) { matches.sortedBy { if (it.status.contains("LIVE", true) || it.status.contains("مباشر")) 0 else 1 } }
+        val ordered = synchronized(matches) { matches.sortedBy { if (it.isLive) 0 else 1 } }
         status.text = if (ordered.isEmpty()) "لا توجد مباريات مسجلة اليوم حالياً • جرّب التحديث لاحقاً"
             else "مباريات اليوم: ${ordered.size} • يتم تحديث البيانات عند الضغط على تحديث"
         if (ordered.isEmpty()) {
@@ -168,7 +170,7 @@ class SportsActivity : AppCompatActivity() {
             }
             val leagueRow = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
             leagueRow.addView(label(m.league, 11, 0xFFB6C3D9.toInt(), true), LinearLayout.LayoutParams(0, -2, 1f))
-            val live = m.status.contains("LIVE", true) || m.status.contains("مباشر") || m.status.contains("IN", true)
+            val live = m.isLive
             leagueRow.addView(label(if (live) "● مباشر" else m.status, 10,
                 if (live) 0xFFFF657A.toInt() else 0xFF8EA2C0.toInt(), true))
             card.addView(leagueRow)
