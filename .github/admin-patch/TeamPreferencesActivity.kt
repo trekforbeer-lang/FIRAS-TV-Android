@@ -215,7 +215,7 @@ class TeamPreferencesActivity : AppCompatActivity() {
                     background = GradientDrawable().apply {
                         shape = GradientDrawable.OVAL
                         setColor(badgeColor)
-                        setStroke(dp(1), 0x667FFFFFFF)
+                        setStroke(dp(1), 0x667FFFFFFF.toInt())
                     }
                     contentDescription = "شارة مختصرة للفريق"
                 }
