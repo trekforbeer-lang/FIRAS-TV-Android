@@ -5,6 +5,8 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
+import android.view.GestureDetector
+import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
@@ -56,6 +58,27 @@ class MoviePlayerActivity : AppCompatActivity() {
             setKeepContentOnPlayerReset(true)
         }
         root.addView(playerView, FrameLayout.LayoutParams(-1, -1))
+        val seekGesture = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDown(event: MotionEvent): Boolean = true
+
+            override fun onDoubleTap(event: MotionEvent): Boolean {
+                val active = player ?: return false
+                val delta = if (event.x < playerView.width / 2f) -10_000L else 10_000L
+                val duration = active.duration.takeIf { it > 0L } ?: Long.MAX_VALUE
+                val target = (active.currentPosition + delta).coerceIn(0L, duration)
+                active.seekTo(target)
+                Toast.makeText(
+                    this@MoviePlayerActivity,
+                    if (delta < 0) "رجوع 10 ثوانٍ" else "تقديم 10 ثوانٍ",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return true
+            }
+        })
+        playerView.setOnTouchListener { _, event ->
+            seekGesture.onTouchEvent(event)
+            false
+        }
 
         val topBar = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
