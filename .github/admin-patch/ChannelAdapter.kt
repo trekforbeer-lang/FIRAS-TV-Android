@@ -97,7 +97,7 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
     override fun onBindViewHolder(holder: Holder, position: Int) {
         val channel = getItem(position)
         holder.title.text = channel.name
-        holder.subtitle.text = if (channel.url.isBlank()) "الرابط غير متوفر" else "● متاحة للتشغيل"
+        holder.subtitle.text = if (channel.url.isBlank()) "الرابط غير متوفر" else "● رابط مضاف"
         holder.subtitle.setTextColor(if (channel.url.isBlank()) Color.rgb(235, 170, 105) else Color.rgb(91, 205, 157))
         holder.card.contentDescription = if (channel.url.isBlank()) "${channel.name}، الرابط غير متوفر" else "${channel.name}، جاهزة للتشغيل"
         holder.card.setOnClickListener { onClick(channel) }
