@@ -96,7 +96,7 @@
         <LinearLayout android:layout_width="wrap_content" android:layout_height="match_parent"
             android:orientation="horizontal" android:gravity="center_vertical">
             <TextView android:id="@+id/quickLiveButton" android:layout_width="94dp" android:layout_height="60dp"
-                android:layout_marginEnd="8dp" android:gravity="center" android:orientation="vertical"
+                android:layout_marginEnd="8dp" android:gravity="center"
                 android:text="●  مباشر\nالقنوات الآن" android:textColor="#FFFFFF" android:textStyle="bold"
                 android:textSize="12sp" android:background="#26364F" android:clickable="true" android:focusable="true"/>
             <TextView android:id="@+id/quickSportsButton" android:layout_width="94dp" android:layout_height="60dp"
