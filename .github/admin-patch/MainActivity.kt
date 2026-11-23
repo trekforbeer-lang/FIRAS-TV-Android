@@ -69,7 +69,8 @@ class MainActivity : AppCompatActivity() {
         channelRecycler = rv
         rv.layoutManager = GridLayoutManager(this, if (resources.configuration.screenWidthDp >= 600) 4 else 2)
         rv.adapter = adapter
-        rv.setHasFixedSize(true)
+        // This RecyclerView wraps its content inside a scrolling parent, so its size is not fixed.
+        rv.setHasFixedSize(false)
         empty = findViewById(R.id.empty)
         chips = findViewById(R.id.chips)
         restoreButton = findViewById(R.id.restoreChannelsButton)
