@@ -276,7 +276,7 @@ class MoviePlayerActivity : AppCompatActivity() {
     }
 
     override fun onStop() {
-        if (!isInPictureInPictureMode) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N || !isInPictureInPictureMode) {
             resumePlaybackOnStart = player?.isPlaying == true
             if (speedBoostActive) player?.setPlaybackSpeed(1f)
             speedBoostActive = false
