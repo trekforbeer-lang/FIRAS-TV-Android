@@ -204,8 +204,11 @@ class MainActivity : AppCompatActivity() {
                     val connection = URL(endpoint).openConnection() as HttpURLConnection
                     connection.connectTimeout = 15000; connection.readTimeout = 25000
                     connection.setRequestProperty("User-Agent", "RAHMANI/1.0")
-                    val body = try { connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() } }
-                        finally { connection.disconnect() }
+                    val body = try {
+                        val code = connection.responseCode
+                        if (code !in 200..299) throw java.io.IOException("Playlist HTTP $code")
+                        connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                    } finally { connection.disconnect() }
                     var section: JSONObject? = null
                     for (i in 0 until groups.length()) {
                         val item = groups.optJSONObject(i)
