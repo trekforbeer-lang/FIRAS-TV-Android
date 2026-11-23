@@ -50,6 +50,29 @@
             android:paddingStart="16dp" android:paddingEnd="16dp" android:textSize="14sp"/>
     </LinearLayout>
 
+    <FrameLayout android:layout_width="match_parent" android:layout_height="164dp"
+        android:layout_marginStart="16dp" android:layout_marginEnd="16dp" android:layout_marginTop="4dp"
+        android:layout_marginBottom="10dp" android:background="#24202B">
+        <View android:layout_width="match_parent" android:layout_height="match_parent"
+            android:background="#302338"/>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
+            android:orientation="vertical" android:gravity="center_vertical"
+            android:paddingStart="20dp" android:paddingEnd="20dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="FIRAS ORIGINAL" android:textColor="#F20D35" android:textStyle="bold"
+                android:textSize="11sp" android:letterSpacing="0.12"/>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="عالم من الترفيه بين يديك" android:textColor="#FFFFFF"
+                android:textSize="23sp" android:textStyle="bold" android:layout_marginTop="5dp"/>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="قنوات مباشرة وأفلام في مكان واحد" android:textColor="#D5D0DA"
+                android:textSize="13sp" android:layout_marginTop="4dp"/>
+            <Button android:id="@+id/featuredMoviesButton" android:layout_width="wrap_content"
+                android:layout_height="40dp" android:minHeight="40dp" android:layout_marginTop="8dp"
+                android:text="اكتشف الأفلام  ▶" android:textAllCaps="false" android:textSize="12sp"/>
+        </LinearLayout>
+    </FrameLayout>
+
     <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content"
         android:scrollbars="none" android:paddingTop="2dp" android:paddingBottom="8dp">
         <com.google.android.material.chip.ChipGroup android:id="@+id/chips"
