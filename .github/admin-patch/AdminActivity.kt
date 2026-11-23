@@ -274,14 +274,8 @@ class AdminActivity : Activity() {
                 })
                 val buttons = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
                 val original = isOriginal(channel)
-                buttons.addView(action(if (original) "قناة أصلية" else "تعديل") {
-                    if (!original) editChannel(i, j)
-                    else Toast.makeText(this@AdminActivity, "القنوات الأصلية محمية من التعديل", Toast.LENGTH_SHORT).show()
-                }, LinearLayout.LayoutParams(0, -2, 1f))
-                buttons.addView(action(if (original) "محفوظة" else "حذف") {
-                    if (!original) deleteChannel(i, j, channel.optString("name"))
-                    else Toast.makeText(this@AdminActivity, "لا يمكن حذف قناة أصلية", Toast.LENGTH_SHORT).show()
-                }, LinearLayout.LayoutParams(0, -2, 1f))
+                buttons.addView(action("تعديل") { editChannel(i, j) }, LinearLayout.LayoutParams(0, -2, 1f))
+                buttons.addView(action("حذف") { deleteChannel(i, j, channel.optString("name")) }, LinearLayout.LayoutParams(0, -2, 1f))
                 row.addView(buttons)
                 panel.addView(row, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 7 })
             }
@@ -335,7 +329,7 @@ class AdminActivity : Activity() {
 
     private fun editChannel(sectionIndex: Int?, itemIndex: Int?) {
         val old = if (sectionIndex != null && itemIndex != null) items(sectionIndex).optJSONObject(itemIndex) else null
-        if (old != null && isOriginal(old)) return
+        if (old != null && isOriginal(old)) { /* originals can now be managed by the owner */ }
         val form = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(24, 8, 24, 8) }
         fun field(hintText: String, value: String = "", multiline: Boolean = false): EditText {
             val e = EditText(this).apply {
@@ -347,7 +341,8 @@ class AdminActivity : Activity() {
             return e
         }
         val name = field("اسم القناة", old?.optString("name").orEmpty())
-        val url = field("رابط البث (يمكن تركه فارغاً)", old?.optString("url").orEmpty())
+        val url = field("رابط البث (الصق رابط M3U8 أو MP4)", old?.optString("url").orEmpty())
+        form.addView(action("لصق الرابط من الحافظة") { pasteInto(url) })
         val logo = field("رابط الشعار", old?.optString("logo").orEmpty())
         val referer = field("Referer", old?.optString("referer").orEmpty())
         val country = field("رمز الدولة مثل DZ أو SA", old?.optString("cc").orEmpty())
@@ -389,11 +384,18 @@ class AdminActivity : Activity() {
             }.setNegativeButton("إلغاء", null).show()
     }
 
+    private fun pasteInto(target: EditText) {
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val pasted = clipboard.primaryClip?.getItemAt(0)?.coerceToText(this)?.toString()?.trim().orEmpty()
+        if (safe(pasted)) target.setText(pasted)
+        else Toast.makeText(this, "الحافظة لا تحتوي رابط http أو https صالحاً", Toast.LENGTH_LONG).show()
+    }
+
     private fun deleteChannel(sectionIndex: Int, itemIndex: Int, name: String) {
         AlertDialog.Builder(this).setTitle("حذف القناة").setMessage("هل تريد حذف القناة المضافة «$name»؟")
             .setPositiveButton("حذف") { _, _ ->
                 val channel = items(sectionIndex).optJSONObject(itemIndex)
-                if (channel != null && !isOriginal(channel)) {
+                if (channel != null) {
                     items(sectionIndex).remove(itemIndex); save(); render()
                 }
             }.setNegativeButton("إلغاء", null).show()
