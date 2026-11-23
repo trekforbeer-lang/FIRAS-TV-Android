@@ -4,11 +4,18 @@ import android.content.pm.ActivityInfo
 import android.net.Uri
 import android.os.Bundle
 import android.graphics.BitmapFactory
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Typeface
 import android.os.Handler
 import android.os.Looper
 import android.view.View
+import android.view.Gravity
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -441,8 +448,8 @@ class PlayerActivity : AppCompatActivity() {
             val result = bitmap
             runOnUiThread {
                 if (!isFinishing && current?.logo == expected) {
-                    if (result != null) watermark.setImageBitmap(result)
-                    else watermark.visibility = View.GONE
+                    watermark.setImageBitmap(result ?: makeChannelLogo(current?.name.orEmpty()))
+                    watermark.visibility = View.VISIBLE
                 } else {
                     result?.recycle()
                 }
@@ -517,29 +524,137 @@ class PlayerActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
+    // Draw a compact local brand mark so every channel has a visible logo,
+    // even when its remote image is SVG, unavailable, or blocked by the host.
+    private fun makeChannelLogo(name: String): Bitmap {
+        val size = 128
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val lower = name.lowercase()
+        val isBein = lower.contains("bein")
+        val isMbc = lower.contains("mbc")
+        val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = if (isMbc) Color.WHITE else if (isBein) Color.rgb(24, 28, 58) else Color.rgb(45, 43, 66)
+        }
+        canvas.drawRoundRect(0f, 0f, size.toFloat(), size.toFloat(), 18f, 18f, bg)
+        val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            textAlign = Paint.Align.CENTER
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            color = if (isMbc) Color.DKGRAY else Color.WHITE
+        }
+        if (isBein) {
+            p.textSize = 39f
+            canvas.drawText("beIN", 64f, 61f, p)
+            p.textSize = 17f
+            canvas.drawText("SPORTS", 64f, 86f, p)
+            Regex("\\d+").find(name)?.value?.let {
+                p.textSize = 14f
+                canvas.drawText(it, 64f, 111f, p)
+            }
+        } else if (isMbc) {
+            val letters = listOf("M", "B", "C")
+            val colors = listOf(Color.rgb(0, 145, 205), Color.rgb(224, 62, 105), Color.rgb(238, 148, 38))
+            val xs = listOf(37f, 64f, 91f)
+            p.textSize = 43f
+            letters.forEachIndexed { i, letter ->
+                p.color = colors[i]
+                canvas.drawText(letter, xs[i], 65f, p)
+            }
+            p.color = Color.DKGRAY
+            p.textSize = 13f
+            canvas.drawText(name.substringAfter("MBC").trim().uppercase().take(13), 64f, 94f, p)
+        } else {
+            p.textSize = 24f
+            canvas.drawText(name.take(10).uppercase(), 64f, 72f, p)
+        }
+        return bitmap
+    }
+
     private class PlayerChannelAdapter(
         private val items: List<DisplayChannel>,
         private val click: (DisplayChannel) -> Unit
     ) : RecyclerView.Adapter<ChannelHolder>() {
         override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): ChannelHolder {
-            val button = Button(parent.context).apply {
-                isAllCaps = false
-                textSize = 14f
-                minHeight = 52
-                setPadding(20, 8, 20, 8)
+            val context = parent.context
+            val card = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(10, 4, 12, 4)
+                setBackgroundColor(Color.rgb(31, 32, 40))
+                layoutParams = RecyclerView.LayoutParams(-2, dp(context, 46)).apply {
+                    marginStart = dp(context, 4)
+                    marginEnd = dp(context, 4)
+                }
             }
-            return ChannelHolder(button)
+            val logo = ImageView(context).apply {
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                setImageBitmap(makeStaticLogo("TV"))
+            }
+            card.addView(logo, LinearLayout.LayoutParams(dp(context, 36), dp(context, 36)))
+            val label = TextView(context).apply {
+                setTextColor(Color.WHITE)
+                textSize = 12f
+                typeface = Typeface.DEFAULT_BOLD
+                maxLines = 1
+                setPadding(dp(context, 7), 0, 0, 0)
+            }
+            card.addView(label, LinearLayout.LayoutParams(-2, -2))
+            return ChannelHolder(card, logo, label)
         }
 
         override fun getItemCount() = items.size
 
         override fun onBindViewHolder(holder: ChannelHolder, position: Int) {
-            (holder.itemView as Button).text = items[position].name
-            holder.itemView.setOnClickListener { click(items[position]) }
+            val channel = items[position]
+            holder.label.text = channel.name
+            holder.logo.setImageBitmap(makeStaticLogo(channel.name))
+            holder.itemView.setOnClickListener { click(channel) }
         }
+
+        private fun makeStaticLogo(name: String): Bitmap {
+            val size = 128
+            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            val lower = name.lowercase()
+            val isBein = lower.contains("bein")
+            val isMbc = lower.contains("mbc")
+            val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = if (isMbc) Color.WHITE else if (isBein) Color.rgb(24, 28, 58) else Color.rgb(45, 43, 66)
+            }
+            canvas.drawRoundRect(0f, 0f, 128f, 128f, 18f, 18f, bg)
+            val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                textAlign = Paint.Align.CENTER
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                color = if (isMbc) Color.DKGRAY else Color.WHITE
+            }
+            if (isBein) {
+                p.textSize = 38f
+                canvas.drawText("beIN", 64f, 61f, p)
+                p.textSize = 16f
+                canvas.drawText("SPORTS", 64f, 86f, p)
+                Regex("\\d+").find(name)?.value?.let { p.textSize = 13f; canvas.drawText(it, 64f, 110f, p) }
+            } else if (isMbc) {
+                val colors = listOf(Color.rgb(0,145,205), Color.rgb(224,62,105), Color.rgb(238,148,38))
+                listOf("M","B","C").forEachIndexed { i, ch -> p.color = colors[i]; p.textSize = 43f; canvas.drawText(ch, 37f + i*27f, 65f, p) }
+                p.color = Color.DKGRAY
+                p.textSize = 13f
+                canvas.drawText(name.substringAfter("MBC").trim().uppercase().take(13), 64f, 94f, p)
+            } else {
+                p.textSize = 24f
+                canvas.drawText(name.take(10).uppercase(), 64f, 72f, p)
+            }
+            return bitmap
+        }
+
+        private fun dp(context: android.content.Context, value: Int): Int =
+            (value * context.resources.displayMetrics.density).toInt()
     }
 
-    private class ChannelHolder(view: View) : RecyclerView.ViewHolder(view)
+    private class ChannelHolder(
+        view: View,
+        val logo: ImageView,
+        val label: TextView
+    ) : RecyclerView.ViewHolder(view)
 
     companion object {
         const val EXTRA_NAME = "channel_name"
