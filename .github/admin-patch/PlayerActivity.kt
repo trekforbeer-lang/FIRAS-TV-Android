@@ -339,8 +339,11 @@ class PlayerActivity : AppCompatActivity() {
                     finally { connection.disconnect() }
             } catch (_: Exception) { }
             val result = bitmap
-            if (result != null) runOnUiThread {
-                if (!isFinishing && current?.logo == expected) watermark.setImageBitmap(result)
+            runOnUiThread {
+                if (!isFinishing && current?.logo == expected) {
+                    if (result != null) watermark.setImageBitmap(result)
+                    else watermark.visibility = View.GONE
+                }
             }
         }
     }
