@@ -24,6 +24,7 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.session.MediaSession
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
@@ -34,6 +35,7 @@ import androidx.media3.ui.TrackSelectionDialogBuilder
 
 class MoviePlayerActivity : AppCompatActivity() {
     private var player: ExoPlayer? = null
+    private var mediaSession: MediaSession? = null
     private lateinit var playerView: PlayerView
     private lateinit var resizeButton: Button
     private var zoomed = false
@@ -228,6 +230,7 @@ class MoviePlayerActivity : AppCompatActivity() {
             .setMediaSourceFactory(sourceFactory)
             .build().also { exo ->
                 playerView.player = exo
+                mediaSession = MediaSession.Builder(this, exo).build()
                 exo.addListener(object : Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {
                         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -327,6 +330,8 @@ class MoviePlayerActivity : AppCompatActivity() {
         speedBoostActive = false
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         playerView.player = null
+        mediaSession?.release()
+        mediaSession = null
         player?.release()
         player = null
         super.onDestroy()
