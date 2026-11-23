@@ -62,6 +62,11 @@ class TeamPreferencesActivity : AppCompatActivity() {
         "الدوري الإيطالي" to listOf("Inter Milan", "AC Milan", "Juventus", "Napoli", "Roma"),
         "الدوري الألماني" to listOf("Bayern Munich", "Borussia Dortmund", "Bayer Leverkusen", "RB Leipzig"),
         "الدوري الفرنسي" to listOf("Paris Saint-Germain", "Marseille", "Monaco", "Lyon"),
+        "الدوري الهولندي" to listOf("Ajax", "PSV Eindhoven", "Feyenoord", "AZ Alkmaar", "FC Twente"),
+        "الدوري البرتغالي" to listOf("Benfica", "Porto", "Sporting CP", "Braga"),
+        "الدوري التركي" to listOf("Galatasaray", "Fenerbahce", "Besiktas", "Trabzonspor"),
+        "الدوري الاسكتلندي" to listOf("Celtic", "Rangers", "Hearts", "Aberdeen"),
+        "الدوري الأمريكي" to listOf("Inter Miami", "LAFC", "LA Galaxy", "New York City FC", "Seattle Sounders"),
         "أندية أخرى" to listOf("Al Ahly", "Zamalek", "Wydad AC", "Raja CA", "Al Hilal", "Al Nassr", "Al Ittihad")
     )
 
@@ -235,7 +240,7 @@ class FanMatchWorker(context: Context, params: WorkerParameters) : Worker(contex
         val date = SimpleDateFormat("yyyyMMdd", Locale.US).apply {
             timeZone = TimeZone.getTimeZone("UTC")
         }.format(Date())
-        val leagues = listOf("eng.1", "esp.1", "ita.1", "ger.1", "fra.1", "uefa.champions", "uefa.europa")
+        val leagues = listOf("eng.1", "esp.1", "ita.1", "ger.1", "fra.1", "ned.1", "por.1", "tur.1", "sco.1", "usa.1", "uefa.champions", "uefa.europa")
         return try {
             for (league in leagues) {
                 val connection = (URL("https://site.api.espn.com/apis/site/v2/sports/soccer/$league/scoreboard?dates=$date")
