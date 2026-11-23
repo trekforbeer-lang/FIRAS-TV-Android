@@ -139,7 +139,7 @@ class MainActivity : AppCompatActivity() {
                         val value = line.trim()
                         if (value.startsWith("#EXTINF", true)) {
                             name = value.substringAfterLast(',').trim()
-                            logo = Regex("tvg-logo=\\"([^\\"]*)\\"").find(value)?.groupValues?.getOrNull(1).orEmpty()
+                            logo = Regex("""tvg-logo="([^"]*)"""").find(value)?.groupValues?.getOrNull(1).orEmpty()
                         } else if (value.startsWith("http", true) && name.isNotBlank() && value !in known) {
                             items.put(JSONObject().put("id", "iptv-" + value.hashCode()).put("name", name)
                                 .put("logo", logo).put("url", value).put("referer", ""))
