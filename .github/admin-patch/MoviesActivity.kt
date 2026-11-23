@@ -35,7 +35,7 @@ class MoviesActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(12, 12, 12, 8); setBackgroundColor(0xFF08090D.toInt()) }
         root.addView(TextView(this).apply { text = "الأفلام"; textSize = 27f; setTextColor(-1); typeface = android.graphics.Typeface.DEFAULT_BOLD; setPadding(8, 8, 8, 2) })
-        root.addView(TextView(this).apply { text = "اكتشف أفلاماً جديدة وشاهدها مباشرة"; textSize = 13f; setTextColor(0xFFB8BAC4.toInt()); setPadding(8, 0, 8, 12) })
+        root.addView(TextView(this).apply { text = "أفلام مختارة • اكتشف وشاهد مباشرة"; textSize = 13f; setTextColor(0xFFB8BAC4.toInt()); setPadding(8, 0, 8, 12) })
         val search = EditText(this).apply { hint = "ابحث عن فيلم..."; setSingleLine(true); setTextColor(-1); setHintTextColor(0xFFAAAAAA.toInt()) }
         root.addView(search, LinearLayout.LayoutParams(-1, 52))
         status = TextView(this).apply { text = "جارٍ تحميل الأفلام..."; setTextColor(0xFFCCCCCC.toInt()); setPadding(4, 8, 4, 8) }
