@@ -41,6 +41,11 @@ jobs:
           grep -q 'media3-exoplayer:1.5.1' app/build.gradle.kts
           grep -q 'media3-ui:1.5.1' app/build.gradle.kts
           grep -q 'media3-datasource-okhttp:1.5.1' app/build.gradle.kts
+          # Media3 1.5.1 requires compileSdk 35; AGP 8.6.1 supports it with Gradle 8.7.
+          sed -i 's/id("com.android.application") version "8.5.2"/id("com.android.application") version "8.6.1"/' build.gradle.kts
+          sed -i -E 's/compileSdk = [0-9]+/compileSdk = 35/' app/build.gradle.kts
+          grep -q 'version "8.6.1"' build.gradle.kts
+          grep -q 'compileSdk = 35' app/build.gradle.kts
           ! grep -R '127.0.0.1' app/src/main
           # Normalize the APK version for this v4 build, regardless of the
           # previous source bundle's versionCode.
