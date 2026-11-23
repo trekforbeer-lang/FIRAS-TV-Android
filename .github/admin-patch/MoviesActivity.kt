@@ -66,7 +66,7 @@ class MoviesActivity : AppCompatActivity() {
         })
         toolbar.addView(titleBlock, LinearLayout.LayoutParams(0, -2, 1f))
         toolbar.addView(TextView(this).apply {
-            text = "FIRAS"; textSize = 14f; typeface = android.graphics.Typeface.DEFAULT_BOLD
+            text = "RAHMANI"; textSize = 14f; typeface = android.graphics.Typeface.DEFAULT_BOLD
             setTextColor(0xFFF0445E.toInt())
         })
         root.addView(toolbar)
@@ -140,7 +140,7 @@ class MoviesActivity : AppCompatActivity() {
     private fun request(address: String): String {
         val c = URL(address).openConnection() as HttpURLConnection
         c.connectTimeout = 15000; c.readTimeout = 20000
-        c.setRequestProperty("User-Agent", "FIRAS-TV/4.0")
+        c.setRequestProperty("User-Agent", "RAHMANI/1.0")
         return try { c.inputStream.bufferedReader().use { it.readText() } } finally { c.disconnect() }
     }
 
