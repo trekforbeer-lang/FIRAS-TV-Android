@@ -50,7 +50,7 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
             gravity = Gravity.CENTER
             layoutDirection = View.LAYOUT_DIRECTION_RTL
             setPadding(dp(7), dp(10), dp(7), dp(9))
-            minimumHeight = dp(145)
+            minimumHeight = dp(152)
             elevation = dp(2).toFloat()
             background = android.graphics.drawable.RippleDrawable(
                 android.content.res.ColorStateList.valueOf(Color.rgb(105, 43, 61)),
@@ -67,6 +67,7 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
             background = GradientDrawable().apply {
                 setColor(Color.WHITE)
                 cornerRadius = dp(13).toFloat()
+                setStroke(dp(1), Color.rgb(92, 61, 70))
             }
         }
         val logo = ImageView(context).apply {
@@ -101,9 +102,14 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
     override fun onBindViewHolder(holder: Holder, position: Int) {
         val channel = getItem(position)
         holder.title.text = channel.name
-        holder.subtitle.text = if (channel.url.isBlank()) "الرابط غير متوفر" else "● رابط مضاف"
-        holder.subtitle.setTextColor(if (channel.url.isBlank()) Color.rgb(235, 170, 105) else Color.rgb(91, 205, 157))
-        holder.card.contentDescription = if (channel.url.isBlank()) "${channel.name}، الرابط غير متوفر" else "${channel.name}، رابط البث مضاف"
+        holder.subtitle.text = if (channel.url.isBlank()) "الرابط غير مضاف" else "جاهزة للتشغيل"
+        holder.subtitle.setTextColor(if (channel.url.isBlank()) Color.rgb(255, 190, 132) else Color.rgb(255, 137, 158))
+        holder.subtitle.background = GradientDrawable().apply {
+            setColor(if (channel.url.isBlank()) Color.rgb(54, 39, 31) else Color.rgb(58, 28, 38))
+            cornerRadius = dp(9).toFloat()
+        }
+        holder.subtitle.setPadding(dp(7), dp(3), dp(7), dp(3))
+        holder.card.contentDescription = if (channel.url.isBlank()) "${channel.name}، الرابط غير مضاف" else "${channel.name}، جاهزة للتشغيل"
         holder.card.setOnClickListener { onClick(channel) }
         holder.logo.tag = channel.logo
         val cached = synchronized(cache) { cache[channel.logo] }
