@@ -34,13 +34,14 @@ class MoviesActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(12, 12, 12, 8); setBackgroundColor(0xFF08090D.toInt()) }
-        root.addView(TextView(this).apply { text = "مكتبة الأفلام"; textSize = 24f; setTextColor(-1); setPadding(8, 8, 8, 12) })
-        val search = EditText(this).apply { hint = "ابحث عن فيلم بالإنجليزية"; setSingleLine(true); setTextColor(-1); setHintTextColor(0xFFAAAAAA.toInt()) }
+        root.addView(TextView(this).apply { text = "الأفلام"; textSize = 27f; setTextColor(-1); typeface = android.graphics.Typeface.DEFAULT_BOLD; setPadding(8, 8, 8, 2) })
+        root.addView(TextView(this).apply { text = "اكتشف أفلاماً جديدة وشاهدها مباشرة"; textSize = 13f; setTextColor(0xFFB8BAC4.toInt()); setPadding(8, 0, 8, 12) })
+        val search = EditText(this).apply { hint = "ابحث عن فيلم..."; setSingleLine(true); setTextColor(-1); setHintTextColor(0xFFAAAAAA.toInt()) }
         root.addView(search, LinearLayout.LayoutParams(-1, 52))
         status = TextView(this).apply { text = "جارٍ تحميل الأفلام..."; setTextColor(0xFFCCCCCC.toInt()); setPadding(4, 8, 4, 8) }
         root.addView(status)
         val list = RecyclerView(this)
-        list.layoutManager = GridLayoutManager(this, 3)
+        list.layoutManager = GridLayoutManager(this, 2)
         adapter = FilmAdapter()
         list.adapter = adapter
         root.addView(list, LinearLayout.LayoutParams(-1, 0, 1f))
@@ -123,8 +124,8 @@ class MoviesActivity : AppCompatActivity() {
         override fun onCreateViewHolder(parent: ViewGroup, type: Int): FilmHolder {
             val box = LinearLayout(parent.context).apply { orientation = LinearLayout.VERTICAL; setPadding(5, 5, 5, 10) }
             val image = ImageView(parent.context).apply { scaleType = ImageView.ScaleType.CENTER_CROP; setBackgroundColor(0xFF242630.toInt()) }
-            box.addView(image, LinearLayout.LayoutParams(-1, (resources.displayMetrics.widthPixels / 3.1f * 1.2f).toInt()))
-            val title = TextView(parent.context).apply { setTextColor(-1); textSize = 12f; maxLines = 2; setPadding(3, 5, 3, 0) }
+            box.addView(image, LinearLayout.LayoutParams(-1, (resources.displayMetrics.widthPixels / 2.15f * 1.42f).toInt()))
+            val title = TextView(parent.context).apply { setTextColor(-1); textSize = 13f; maxLines = 2; setPadding(3, 5, 3, 0) }
             box.addView(title)
             return FilmHolder(box, image, title)
         }
