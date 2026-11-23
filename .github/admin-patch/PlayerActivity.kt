@@ -536,7 +536,12 @@ class PlayerActivity : AppCompatActivity() {
             View.SYSTEM_UI_FLAG_VISIBLE
         }
         window.decorView.systemUiVisibility = flags
-        // Keep the overlay controls visible over the video in fullscreen mode.
+        // In landscape fullscreen, fill the screen by default. In portrait, preserve
+        // the complete frame; users can still switch modes with the zoom control.
+        zoomed = isFullscreen
+        playerView.resizeMode = if (zoomed) AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+            else AspectRatioFrameLayout.RESIZE_MODE_FIT
+        zoom.text = if (zoomed) "ملاءمة" else "زووم"
         fullscreen.text = if (isFullscreen) "⤡" else "⛶"
     }
 
@@ -546,6 +551,9 @@ class PlayerActivity : AppCompatActivity() {
             // Return to the normal phone portrait screen after leaving fullscreen.
             requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
+            zoomed = false
+            playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+            zoom.text = "زووم"
             fullscreen.text = "⛶"
         } else {
             finish()
