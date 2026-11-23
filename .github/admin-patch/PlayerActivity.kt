@@ -77,6 +77,9 @@ class PlayerActivity : AppCompatActivity() {
     private var recoveryTask: Runnable? = null
     private val worker = Executors.newSingleThreadExecutor()
     private val handler = Handler(Looper.getMainLooper())
+    private val hideOverlayTask = Runnable {
+        if (player?.isPlaying == true && !controlsLocked) setOverlayVisible(false)
+    }
     private val refreshTask = object : Runnable {
         override fun run() {
             val channel = current
@@ -318,6 +321,7 @@ class PlayerActivity : AppCompatActivity() {
 
                     override fun onIsPlayingChanged(isPlaying: Boolean) {
                         playPause.text = if (isPlaying) "Ⅱ" else "▶"
+                        if (isPlaying) scheduleOverlayHide() else handler.removeCallbacks(hideOverlayTask)
                     }
                 })
             }
@@ -538,11 +542,20 @@ class PlayerActivity : AppCompatActivity() {
         handleBackAction()
     }
 
+    private fun scheduleOverlayHide() {
+        handler.removeCallbacks(hideOverlayTask)
+        if (!controlsLocked && player?.isPlaying == true) {
+            handler.postDelayed(hideOverlayTask, 5000L)
+        }
+    }
+
     private fun setOverlayVisible(visible: Boolean) {
         val value = if (visible) View.VISIBLE else View.GONE
         findViewById<View>(R.id.topBar).visibility = value
         findViewById<View>(R.id.bottomPanel).visibility = value
         centerControls.visibility = value
+        handler.removeCallbacks(hideOverlayTask)
+        if (visible) scheduleOverlayHide()
     }
 
     private fun changeChannel(direction: Int) {
