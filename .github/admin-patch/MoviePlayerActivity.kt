@@ -167,6 +167,28 @@ class MoviePlayerActivity : AppCompatActivity() {
             }
         }
         topBar.addView(qualityButton, LinearLayout.LayoutParams(dp(78), dp(42)))
+        val audioButton = Button(this).apply {
+            text = "الصوت"
+            isAllCaps = false
+            textSize = 11f
+            setOnClickListener {
+                val active = player
+                if (active == null) Toast.makeText(this@MoviePlayerActivity, "انتظر تحميل الفيلم", Toast.LENGTH_SHORT).show()
+                else TrackSelectionDialogBuilder(this@MoviePlayerActivity, "مسار الصوت", active, C.TRACK_TYPE_AUDIO).build().show()
+            }
+        }
+        topBar.addView(audioButton, LinearLayout.LayoutParams(dp(78), dp(42)))
+        val subtitlesButton = Button(this).apply {
+            text = "الترجمة"
+            isAllCaps = false
+            textSize = 11f
+            setOnClickListener {
+                val active = player
+                if (active == null) Toast.makeText(this@MoviePlayerActivity, "انتظر تحميل الفيلم", Toast.LENGTH_SHORT).show()
+                else TrackSelectionDialogBuilder(this@MoviePlayerActivity, "الترجمة", active, C.TRACK_TYPE_TEXT).build().show()
+            }
+        }
+        topBar.addView(subtitlesButton, LinearLayout.LayoutParams(dp(82), dp(42)))
         root.addView(topBar, FrameLayout.LayoutParams(-1, dp(54), Gravity.TOP))
         setContentView(root)
 
