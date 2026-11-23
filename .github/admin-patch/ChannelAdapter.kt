@@ -115,25 +115,110 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
         }
     }
 
+    // Always draw a local channel badge first. Remote logo URLs are optional:
+    // several catalog entries point to SVG/redirect URLs that BitmapFactory cannot decode.
     private fun fallbackLogo(name: String): Bitmap {
         val size = 160
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(63, 35, 75) }
-        canvas.drawRoundRect(0f, 0f, size.toFloat(), size.toFloat(), 24f, 24f, bg)
-        val parts = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
-        val label = when {
-            parts.isEmpty() -> "TV"
-            parts.size > 1 -> parts.take(2).joinToString("") { it.take(1) }.uppercase()
-            else -> parts[0].take(3).uppercase()
+        val lower = name.lowercase()
+        val isBein = lower.contains("bein")
+        val isMbc = lower.contains("mbc")
+        val isCountry = lower == "egypt" || lower == "algeria" || lower == "morocco"
+
+        val backgroundColor = when {
+            isBein -> Color.rgb(25, 28, 58)
+            isMbc -> Color.rgb(250, 250, 250)
+            isCountry -> Color.rgb(245, 245, 245)
+            else -> Color.rgb(48, 42, 67)
         }
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
+        val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = backgroundColor }
+        canvas.drawRoundRect(0f, 0f, size.toFloat(), size.toFloat(), 22f, 22f, bg)
+
+        if (isCountry) {
+            val stripe = Paint(Paint.ANTI_ALIAS_FLAG)
+            when (lower) {
+                "egypt" -> {
+                    stripe.color = Color.rgb(206, 17, 38)
+                    canvas.drawRect(0f, 0f, size.toFloat(), 53f, stripe)
+                    stripe.color = Color.WHITE
+                    canvas.drawRect(0f, 53f, size.toFloat(), 107f, stripe)
+                    stripe.color = Color.BLACK
+                    canvas.drawRect(0f, 107f, size.toFloat(), size.toFloat(), stripe)
+                }
+                "algeria" -> {
+                    stripe.color = Color.rgb(0, 100, 0)
+                    canvas.drawRect(0f, 0f, 80f, size.toFloat(), stripe)
+                    stripe.color = Color.WHITE
+                    canvas.drawRect(80f, 0f, size.toFloat(), size.toFloat(), stripe)
+                    stripe.color = Color.rgb(210, 16, 52)
+                    canvas.drawCircle(83f, 80f, 25f, stripe)
+                    stripe.color = Color.WHITE
+                    canvas.drawCircle(92f, 73f, 21f, stripe)
+                }
+                else -> {
+                    stripe.color = Color.rgb(193, 39, 45)
+                    canvas.drawRect(0f, 0f, size.toFloat(), size.toFloat(), stripe)
+                    stripe.color = Color.rgb(0, 98, 51)
+                    stripe.style = Paint.Style.STROKE
+                    stripe.strokeWidth = 6f
+                    val path = android.graphics.Path().apply {
+                        moveTo(80f, 47f); lineTo(88f, 70f); lineTo(112f, 70f)
+                        lineTo(93f, 84f); lineTo(100f, 108f); lineTo(80f, 94f)
+                        lineTo(60f, 108f); lineTo(67f, 84f); lineTo(48f, 70f)
+                        lineTo(72f, 70f); close()
+                    }
+                    canvas.drawPath(path, stripe)
+                }
+            }
+            return bitmap
+        }
+
+        val white = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = if (isMbc) Color.rgb(35, 35, 45) else Color.WHITE
             textAlign = Paint.Align.CENTER
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            textSize = if (label.length > 2) 42f else 56f
         }
-        canvas.drawText(label, size / 2f, size / 2f - (paint.ascent() + paint.descent()) / 2f, paint)
+        if (isBein) {
+            white.textSize = 49f
+            canvas.drawText("beIN", 80f, 75f, white)
+            white.textSize = 19f
+            white.letterSpacing = 1.5f
+            canvas.drawText("SPORTS", 80f, 101f, white)
+            val number = Regex("(\\d+)").find(name)?.groupValues?.getOrNull(1)
+            if (number != null) {
+                white.textSize = 17f
+                canvas.drawText(number, 80f, 133f, white)
+            }
+        } else if (isMbc) {
+            val letters = listOf("M", "B", "C")
+            val colors = listOf(Color.rgb(0, 150, 210), Color.rgb(235, 65, 105), Color.rgb(245, 155, 35))
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                textAlign = Paint.Align.CENTER
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                textSize = 55f
+            }
+            val xs = listOf(48f, 82f, 116f)
+            letters.forEachIndexed { index, letter ->
+                paint.color = colors[index]
+                canvas.drawText(letter, xs[index], 91f, paint)
+            }
+            val suffix = name.substringAfter("MBC", "").trim()
+            if (suffix.isNotBlank()) {
+                white.color = Color.DKGRAY
+                white.textSize = if (suffix.length > 10) 13f else 17f
+                canvas.drawText(suffix.uppercase(), 80f, 126f, white)
+            }
+        } else {
+            val parts = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+            val label = when {
+                parts.isEmpty() -> "TV"
+                parts.size > 1 -> parts.take(2).joinToString(" ") { it.uppercase() }
+                else -> parts[0].take(8).uppercase()
+            }
+            white.textSize = if (label.length > 9) 22f else 34f
+            canvas.drawText(label, 80f, 91f, white)
+        }
         return bitmap
     }
 
