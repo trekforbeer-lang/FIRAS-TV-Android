@@ -347,7 +347,7 @@ class AdminActivity : Activity() {
         form.addView(action("لصق رابط الشعار من الحافظة") { pasteInto(logo) })
         val referer = field("Referer", old?.optString("referer").orEmpty())
         val userAgent = field("User-Agent", old?.optString("userAgent").orEmpty())
-        val cookie = field("Cookie (بيانات وصول خاصة بالقناة)", old?.optString("cookie").orEmpty()).apply {
+        val cookie = field("Cookie (بيانات وصول خاصة بالقناة)", old?.let { readStreamCookie(it) }.orEmpty()).apply {
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
         }
         val country = field("رمز الدولة مثل DZ أو SA", old?.optString("cc").orEmpty())
@@ -379,11 +379,10 @@ class AdminActivity : Activity() {
                 item.put("name", channelName).put("url", stream).put("logo", logoUrl)
                     .put("referer", referer.text.toString().trim())
                     .put("userAgent", userAgent.text.toString().trim())
-                    .put("cookie", cookie.text.toString().trim())
                     .put("cc", country.text.toString().trim().uppercase())
                     .put("priv", privateBox.isChecked)
                     .put("alts", JSONArray(altValues))
-                saveStreamConfig(item)
+                saveStreamConfig(item, cookie.text.toString().trim())
                 if (old == null) items(destinationIndex).put(item)
                 else {
                     items(sectionIndex!!).remove(itemIndex!!)
@@ -394,7 +393,22 @@ class AdminActivity : Activity() {
     }
 
     // Advanced stream settings are stored in app-private storage, not in the APK.
-    private fun saveStreamConfig(channel: JSONObject) {
+    private fun readStreamCookie(channel: JSONObject): String {
+        val file = File(filesDir, "channels_stream_config.json")
+        return try {
+            val raw = if (file.isFile) JSONObject(file.readText(Charsets.UTF_8))
+                else JSONObject(assets.open("channels_stream_config.json").bufferedReader(Charsets.UTF_8).use { it.readText() })
+            val arr = raw.optJSONArray("channels") ?: return ""
+            for (i in 0 until arr.length()) {
+                val item = arr.optJSONObject(i) ?: continue
+                if ((channel.optString("id").isNotBlank() && item.optString("id") == channel.optString("id")) ||
+                    item.optString("name").equals(channel.optString("name"), true)) return item.optString("cookie")
+            }
+            ""
+        } catch (_: Exception) { "" }
+    }
+
+    private fun saveStreamConfig(channel: JSONObject, cookieValue: String) {
         val file = File(filesDir, "channels_stream_config.json")
         val rootConfig = try {
             if (file.isFile) JSONObject(file.readText(Charsets.UTF_8))
@@ -422,7 +436,7 @@ class AdminActivity : Activity() {
         if (ua.isNotBlank()) headers.put("User-Agent", ua) else headers.remove("User-Agent")
         if (refererValue.isNotBlank()) headers.put("Referer", refererValue) else headers.remove("Referer")
         config.put("id", id).put("name", name).put("url", channel.optString("url"))
-            .put("cookie", channel.optString("cookie"))
+            .put("cookie", cookieValue)
         config.put("urls", channel.optJSONArray("alts") ?: JSONArray())
         val temp = File(filesDir, "channels_stream_config.json.tmp")
         temp.writeText(rootConfig.toString(2), Charsets.UTF_8)
