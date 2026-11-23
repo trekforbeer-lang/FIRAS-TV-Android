@@ -35,6 +35,11 @@ jobs:
           cp .github/admin-patch/MoviePlayerActivity.kt app/src/main/java/com/firas/tv/MoviePlayerActivity.kt
           grep -q 'minSdk = 21' app/build.gradle.kts
           grep -q 'okhttp:4.12.0' app/build.gradle.kts
+          # The archived v4 source still declares Media3 1.3.1. Align every
+          # Media3 module before compiling so ExoPlayer/UI/OkHttp stay in sync.
+          sed -i -E 's#(androidx\\.media3:[^:\"]+):[0-9]+\\.[0-9]+\\.[0-9]+#\\1:1.5.1#g' app/build.gradle.kts
+          grep -q 'media3-exoplayer:1.5.1' app/build.gradle.kts
+          grep -q 'media3-ui:1.5.1' app/build.gradle.kts
           grep -q 'media3-datasource-okhttp:1.5.1' app/build.gradle.kts
           ! grep -R '127.0.0.1' app/src/main
           # Normalize the APK version for this v4 build, regardless of the
