@@ -536,11 +536,12 @@ class PlayerActivity : AppCompatActivity() {
             View.SYSTEM_UI_FLAG_VISIBLE
         }
         window.decorView.systemUiVisibility = flags
-        // Always show the complete video frame, including in landscape fullscreen.
-        // FIT preserves the source aspect ratio and never crops the picture.
-        zoomed = false
-        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-        zoom.text = "زووم"
+        // Fill the entire landscape screen: no black bars.
+        // ZOOM preserves the source aspect ratio; a small part may be cropped
+        // when the source and phone screen have different aspect ratios.
+        zoomed = true
+        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+        zoom.text = "ملاءمة"
         fullscreen.text = if (isFullscreen) "⤡" else "⛶"
     }
 
