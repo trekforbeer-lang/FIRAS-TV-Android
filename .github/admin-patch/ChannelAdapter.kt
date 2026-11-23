@@ -2,6 +2,8 @@ package com.firas.tv
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
@@ -84,7 +86,7 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
         holder.card.setOnClickListener { onClick(channel) }
         holder.logo.tag = channel.logo
         val cached = synchronized(cache) { cache[channel.logo] }
-        holder.logo.setImageBitmap(cached)
+        holder.logo.setImageBitmap(cached ?: fallbackLogo(channel.name))
         if (cached == null && channel.logo.startsWith("http", true)) {
             io.execute {
                 try {
@@ -103,11 +105,28 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
                 } catch (_: Exception) { }
             }
         }
-        if (cached == null) {
-            holder.logo.setImageDrawable(GradientDrawable().apply {
-                setColor(Color.rgb(55, 34, 75)); cornerRadius = dp(10).toFloat()
-            })
+    }
+
+    private fun fallbackLogo(name: String): Bitmap {
+        val size = 160
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(55, 34, 75) }
+        canvas.drawRoundRect(0f, 0f, size.toFloat(), size.toFloat(), 24f, 24f, bg)
+        val clean = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+        val label = when {
+            clean.isEmpty() -> "TV"
+            clean.size >= 2 -> clean.take(2).joinToString("") { it.take(1) }.uppercase()
+            else -> clean[0].take(3).uppercase()
         }
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textAlign = Paint.Align.CENTER
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            textSize = if (label.length > 2) 42f else 56f
+        }
+        canvas.drawText(label, size / 2f, size / 2f - (paint.ascent() + paint.descent()) / 2f, paint)
+        return bitmap
     }
 
     private fun dp(value: Int) = (value * android.content.res.Resources.getSystem().displayMetrics.density).toInt()
