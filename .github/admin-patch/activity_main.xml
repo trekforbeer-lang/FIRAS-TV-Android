@@ -69,17 +69,17 @@
         android:imeOptions="actionSearch" android:inputType="text"
         android:paddingStart="16dp" android:paddingEnd="16dp" android:textSize="13sp"/>
 
-    <FrameLayout android:id="@+id/homeHeroSection" android:layout_width="match_parent" android:layout_height="150dp"
+    <FrameLayout android:id="@+id/homeHeroSection" android:layout_width="match_parent" android:layout_height="158dp"
         android:layout_marginStart="16dp" android:layout_marginEnd="16dp"
         android:background="@drawable/home_hero_bg">
         <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
             android:orientation="vertical" android:gravity="center_vertical"
             android:paddingStart="19dp" android:paddingEnd="19dp">
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="مرحباً بك في RAHMANI" android:textColor="#FFC3D0"
+                android:text="RAHMANI  •  عالم الترفيه" android:textColor="#FFC3D0"
                 android:textStyle="bold" android:textSize="10sp"/>
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="كل المتعة.. في مكان واحد" android:textColor="#FFFFFF"
+                android:text="عِش أجواء المشاهدة" android:textColor="#FFFFFF"
                 android:textSize="23sp" android:textStyle="bold" android:layout_marginTop="4dp"/>
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:text="قنوات مباشرة  •  أفلام  •  بطولات كبرى" android:textColor="#D4D9E5"
@@ -90,6 +90,29 @@
                 android:backgroundTint="#E94F75" android:textColor="#FFFFFF"/>
         </LinearLayout>
     </FrameLayout>
+
+    <HorizontalScrollView android:layout_width="match_parent" android:layout_height="76dp"
+        android:layout_marginTop="9dp" android:scrollbars="none" android:paddingStart="12dp" android:paddingEnd="12dp">
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="match_parent"
+            android:orientation="horizontal" android:gravity="center_vertical">
+            <TextView android:id="@+id/quickLiveButton" android:layout_width="94dp" android:layout_height="60dp"
+                android:layout_marginEnd="8dp" android:gravity="center" android:orientation="vertical"
+                android:text="●  مباشر\nالقنوات الآن" android:textColor="#FFFFFF" android:textStyle="bold"
+                android:textSize="12sp" android:background="#26364F" android:clickable="true" android:focusable="true"/>
+            <TextView android:id="@+id/quickSportsButton" android:layout_width="94dp" android:layout_height="60dp"
+                android:layout_marginEnd="8dp" android:gravity="center" android:text="⚽  الرياضة\nالمباريات"
+                android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="12sp"
+                android:background="#302943" android:clickable="true" android:focusable="true"/>
+            <TextView android:id="@+id/quickMoviesButton" android:layout_width="94dp" android:layout_height="60dp"
+                android:layout_marginEnd="8dp" android:gravity="center" android:text="▶  الأفلام\nشاهد الآن"
+                android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="12sp"
+                android:background="#3A2636" android:clickable="true" android:focusable="true"/>
+            <TextView android:id="@+id/quickAdminButton" android:layout_width="94dp" android:layout_height="60dp"
+                android:gravity="center" android:text="⚙  الإدارة\nقنواتك"
+                android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="12sp"
+                android:background="#26333A" android:clickable="true" android:focusable="true"/>
+        </LinearLayout>
+    </HorizontalScrollView>
 
     <LinearLayout android:id="@+id/homeSportsSection" android:layout_width="match_parent" android:layout_height="70dp"
         android:orientation="horizontal" android:gravity="center_vertical"
