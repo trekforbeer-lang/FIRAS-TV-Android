@@ -91,7 +91,7 @@ class PlayerActivity : AppCompatActivity() {
                 UniversalStreamEngine.match(advanced, legacy.id, legacy.name))
         }
         list.layoutManager = LinearLayoutManager(this, RecyclerView.HORIZONTAL, false)
-        list.adapter = ChannelAdapter(channels) { play(it) }
+        list.adapter = PlayerChannelAdapter(channels) { play(it) }
 
         playPause.setOnClickListener {
             player?.let { p -> if (p.isPlaying) p.pause() else p.play() }
@@ -245,77 +245,7 @@ class PlayerActivity : AppCompatActivity() {
         }
         recoveryAttempts++
         val delay = (1000L shl (recoveryAttempts - 1)).coerceAtMost(8000L)
-        status.text = "انقطع البث، إعادة المحاولة ${'        val channel = current ?: return
-        val config = currentAdvanced ?: return
-        if (currentUrlIndex + 1 < currentUrls.size) {
-            currentUrlIndex++
-            playUrl(currentUrls[currentUrlIndex])
-        } else {
-            worker.execute {
-                val refreshed = UniversalStreamEngine.resolve(config)
-                runOnUiThread {
-                    if (current?.id == channel.id && refreshed.isNotEmpty()) {
-                        currentUrls = refreshed
-                        currentUrlIndex = 0
-                        playUrl(refreshed.first())
-                    } else status.text = "تعذر الوصول إلى البث"
-                }
-            }
-        }
-    }
-
-    private fun toggleFullscreen() {
-        isFullscreen = !isFullscreen
-        requestedOrientation = if (isFullscreen) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            else ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-        val flags = if (isFullscreen) (View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY) else View.SYSTEM_UI_FLAG_VISIBLE
-        window.decorView.systemUiVisibility = flags
-        findViewById<View>(R.id.topBar).visibility = if (isFullscreen) View.GONE else View.VISIBLE
-        findViewById<View>(R.id.bottomPanel).visibility = if (isFullscreen) View.GONE else View.VISIBLE
-        fullscreen.text = if (isFullscreen) "تصغير" else "ملء الشاشة"
-    }
-
-    override fun onResume() { super.onResume(); player?.playWhenReady = true; handler.postDelayed(refreshTask, 5 * 60 * 1000L) }
-    override fun onPause() { handler.removeCallbacks(refreshTask); player?.pause(); super.onPause() }
-    override fun onDestroy() {
-        handler.removeCallbacksAndMessages(null)
-        handler.removeCallbacks(refreshTask)
-        playerView.player = null
-        player?.release()
-        player = null
-        worker.shutdownNow()
-        super.onDestroy()
-    }
-
-    private class ChannelAdapter(
-        private val items: List<DisplayChannel>, private val click: (DisplayChannel) -> Unit
-    ) : RecyclerView.Adapter<ChannelHolder>() {
-        override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): ChannelHolder {
-            val button = Button(parent.context).apply {
-                isAllCaps = false
-                textSize = 14f
-                minHeight = 52
-                setPadding(20, 8, 20, 8)
-            }
-            return ChannelHolder(button)
-        }
-        override fun getItemCount() = items.size
-        override fun onBindViewHolder(holder: ChannelHolder, position: Int) {
-            (holder.itemView as Button).text = items[position].name
-            holder.itemView.setOnClickListener { click(items[position]) }
-        }
-    }
-    private class ChannelHolder(view: View) : RecyclerView.ViewHolder(view)
-
-    companion object {
-        const val EXTRA_NAME = "channel_name"
-        const val EXTRA_URL = "channel_url"
-        const val EXTRA_REFERER = "channel_referer"
-        const val EXTRA_CHANNEL_ID = "channel_id"
-        const val EXTRA_LOGO = "channel_logo"
-    }
-}
-}{recoveryAttempts}/4..."
+        status.text = "انقطع البث، إعادة المحاولة ${recoveryAttempts}/4..."
         handler.postDelayed({
             if (isFinishing || current == null) return@postDelayed
             if (currentAdvanced != null) nextCandidateOrRetry()
@@ -347,6 +277,7 @@ class PlayerActivity : AppCompatActivity() {
             }
         }
     }
+
     private fun nextCandidateOrRetry() {
         val channel = current ?: return
         val config = currentAdvanced ?: return
@@ -378,10 +309,21 @@ class PlayerActivity : AppCompatActivity() {
         fullscreen.text = if (isFullscreen) "تصغير" else "ملء الشاشة"
     }
 
-    override fun onResume() { super.onResume(); player?.playWhenReady = true; handler.postDelayed(refreshTask, 5 * 60 * 1000L) }
-    override fun onPause() { handler.removeCallbacks(refreshTask); player?.pause(); super.onPause() }
-    override fun onDestroy() {
+    override fun onResume() {
+        super.onResume()
+        player?.playWhenReady = true
         handler.removeCallbacks(refreshTask)
+        handler.postDelayed(refreshTask, 5 * 60 * 1000L)
+    }
+
+    override fun onPause() {
+        handler.removeCallbacks(refreshTask)
+        player?.pause()
+        super.onPause()
+    }
+
+    override fun onDestroy() {
+        handler.removeCallbacksAndMessages(null)
         playerView.player = null
         player?.release()
         player = null
@@ -389,8 +331,9 @@ class PlayerActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
-    private class ChannelAdapter(
-        private val items: List<DisplayChannel>, private val click: (DisplayChannel) -> Unit
+    private class PlayerChannelAdapter(
+        private val items: List<DisplayChannel>,
+        private val click: (DisplayChannel) -> Unit
     ) : RecyclerView.Adapter<ChannelHolder>() {
         override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): ChannelHolder {
             val button = Button(parent.context).apply {
@@ -407,5 +350,14 @@ class PlayerActivity : AppCompatActivity() {
             holder.itemView.setOnClickListener { click(items[position]) }
         }
     }
+
     private class ChannelHolder(view: View) : RecyclerView.ViewHolder(view)
+
+    companion object {
+        const val EXTRA_NAME = "channel_name"
+        const val EXTRA_URL = "channel_url"
+        const val EXTRA_REFERER = "channel_referer"
+        const val EXTRA_CHANNEL_ID = "channel_id"
+        const val EXTRA_LOGO = "channel_logo"
+    }
 }
