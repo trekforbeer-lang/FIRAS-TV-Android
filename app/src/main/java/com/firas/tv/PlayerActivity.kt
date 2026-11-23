@@ -2,7 +2,6 @@ package com.firas.tv
 
 import android.content.pm.ActivityInfo
 import android.graphics.BitmapFactory
-import android.view.ViewGroup
 import android.widget.ImageView
 import java.net.HttpURLConnection
 import java.net.URL
@@ -194,7 +193,6 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun play(channel: DisplayChannel) {
-        handler.removeCallbacksAndMessages(null)
         retryAttempts = 0
         current = channel
         currentAdvanced = channel.advanced
