@@ -198,6 +198,13 @@ class MoviePlayerActivity : AppCompatActivity() {
             }
         }
         topBar.addView(subtitlesButton, LinearLayout.LayoutParams(dp(82), dp(42)))
+        val pipButton = Button(this).apply {
+            text = "نافذة"
+            isAllCaps = false
+            textSize = 11f
+            setOnClickListener { enterMoviePictureInPicture() }
+        }
+        topBar.addView(pipButton, LinearLayout.LayoutParams(dp(72), dp(42)))
         topBarView = topBar
         root.addView(topBar, FrameLayout.LayoutParams(-1, dp(54), Gravity.TOP))
         setContentView(root)
@@ -264,15 +271,27 @@ class MoviePlayerActivity : AppCompatActivity() {
         super.onSaveInstanceState(outState)
     }
 
-    override fun onUserLeaveHint() {
-        super.onUserLeaveHint()
+    private fun enterMoviePictureInPicture() {
         val active = player ?: return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && active.isPlaying && !isInPictureInPictureMode) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            Toast.makeText(this, "ميزة النافذة تحتاج Android 8 أو أحدث", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (!active.isPlaying) {
+            Toast.makeText(this, "شغّل الفيلم أولاً", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (!isInPictureInPictureMode) {
             val params = PictureInPictureParams.Builder()
                 .setAspectRatio(Rational(16, 9))
                 .build()
             enterPictureInPictureMode(params)
         }
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) enterMoviePictureInPicture()
     }
 
     override fun onPictureInPictureModeChanged(
