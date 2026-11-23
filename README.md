@@ -4,7 +4,7 @@
 
 ## البناء
 
-يُبنى المشروع عبر GitHub Actions من الفرع `kotlin-v3` باستخدام Java 17 وGradle 8.7. بعد نجاح التشغيل ستجد APK في Artifacts باسم `FIRAS-TV-APK-v4`، كما يُنشأ GitHub Release يحتوي على `app-release.apk` للتنزيل المباشر.
+يُبنى المشروع عبر GitHub Actions من الفرع `kotlin-v3` باستخدام Java 17 وGradle 8.7. بعد نجاح التشغيل ستجد ملفات APK في Artifacts باسم `FIRAS-TV-APK-v4-admin`، كما يُنشأ GitHub Release يحتوي على `app-release.apk للتنزيل المباشر.
 
 ## ملاحظات
 
