@@ -94,8 +94,13 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
         holder.card.setOnClickListener { onClick(channel) }
         holder.logo.tag = channel.logo
         val cached = synchronized(cache) { cache[channel.logo] }
-        holder.logo.setImageBitmap(cached ?: fallbackLogo(channel.name))
-        if (cached == null && channel.logo.startsWith("http", true)) {
+        val localPath = channel.logo.removePrefix("file://")
+        val localBitmap = if (cached == null && localPath.isNotBlank() && !channel.logo.startsWith("http", true)) {
+            try { BitmapFactory.decodeFile(localPath) } catch (_: Exception) { null }
+        } else null
+        if (localBitmap != null) synchronized(cache) { cache[channel.logo] = localBitmap }
+        holder.logo.setImageBitmap(cached ?: localBitmap ?: fallbackLogo(channel.name))
+        if (cached == null && localBitmap == null && channel.logo.startsWith("http", true)) {
             val imageView = holder.logo
             val cacheFile = java.io.File(holder.itemView.context.cacheDir, "rahmani-logo-${channel.logo.hashCode()}.png")
             io.execute {
