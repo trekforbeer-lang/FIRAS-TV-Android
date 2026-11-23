@@ -22,6 +22,7 @@ import androidx.media3.datasource.HttpDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
@@ -244,7 +245,20 @@ class PlayerActivity : AppCompatActivity() {
             DefaultMediaSourceFactory(this).setDataSourceFactory(httpFactory)
         }
 
+        // Allow high-resolution streams up to 4K while keeping adaptive bitrate
+        // selection enabled so playback can step down when the connection slows.
+        val trackSelector = DefaultTrackSelector(this).apply {
+            setParameters(
+                buildUponParameters()
+                    .setMaxVideoSize(3840, 2160)
+                    .setMaxVideoBitrate(Int.MAX_VALUE)
+                    .setForceHighestSupportedBitrate(false)
+                    .build()
+            )
+        }
+
         player = ExoPlayer.Builder(this)
+            .setTrackSelector(trackSelector)
             .setLoadControl(loadControl)
             .setMediaSourceFactory(sourceFactory)
             .build().also { exo ->
