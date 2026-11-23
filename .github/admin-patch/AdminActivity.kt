@@ -344,6 +344,7 @@ class AdminActivity : Activity() {
         val url = field("رابط البث (الصق رابط M3U8 أو MP4)", old?.optString("url").orEmpty())
         form.addView(action("لصق الرابط من الحافظة") { pasteInto(url) })
         val logo = field("رابط الشعار", old?.optString("logo").orEmpty())
+        form.addView(action("لصق رابط الشعار من الحافظة") { pasteInto(logo) })
         val referer = field("Referer", old?.optString("referer").orEmpty())
         val country = field("رمز الدولة مثل DZ أو SA", old?.optString("cc").orEmpty())
         val category = field("التصنيف", sectionIndex?.let { sections().optJSONObject(it)?.optString("title") }.orEmpty())
