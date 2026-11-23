@@ -46,10 +46,17 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
             gravity = Gravity.CENTER
             layoutDirection = View.LAYOUT_DIRECTION_RTL
             setPadding(dp(7), dp(10), dp(7), dp(9))
+            minimumHeight = dp(145)
+            elevation = dp(2).toFloat()
+            foreground = context.obtainStyledAttributes(intArrayOf(android.R.attr.selectableItemBackground)).let { attrs ->
+                val ripple = attrs.getDrawable(0)
+                attrs.recycle()
+                ripple
+            }
             background = GradientDrawable().apply {
-                setColor(Color.rgb(23, 24, 31))
-                cornerRadius = dp(15).toFloat()
-                setStroke(dp(1), Color.rgb(43, 45, 56))
+                setColor(Color.rgb(19, 27, 43))
+                cornerRadius = dp(16).toFloat()
+                setStroke(dp(1), Color.rgb(47, 59, 82))
             }
         }
         val logoFrame = LinearLayout(context).apply {
@@ -91,6 +98,9 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
     override fun onBindViewHolder(holder: Holder, position: Int) {
         val channel = getItem(position)
         holder.title.text = channel.name
+        holder.subtitle.text = if (channel.url.isBlank()) "الرابط غير متوفر" else "● متاحة للتشغيل"
+        holder.subtitle.setTextColor(if (channel.url.isBlank()) Color.rgb(235, 170, 105) else Color.rgb(91, 205, 157))
+        holder.card.contentDescription = if (channel.url.isBlank()) "${channel.name}، الرابط غير متوفر" else "${channel.name}، جاهزة للتشغيل"
         holder.card.setOnClickListener { onClick(channel) }
         holder.logo.tag = channel.logo
         val cached = synchronized(cache) { cache[channel.logo] }
