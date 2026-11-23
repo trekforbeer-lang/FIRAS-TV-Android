@@ -29,6 +29,8 @@ class MoviesActivity : AppCompatActivity() {
     private lateinit var status: TextView
     private var page = 1
     private var busy = false
+    private var reloadAfterBusy = false
+    private var hasMore = true
     private var query = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -140,13 +142,22 @@ class MoviesActivity : AppCompatActivity() {
     private fun request(address: String): String {
         val c = URL(address).openConnection() as HttpURLConnection
         c.connectTimeout = 15000; c.readTimeout = 20000
+        c.instanceFollowRedirects = true
         c.setRequestProperty("User-Agent", "RAHMANI/1.0")
-        return try { c.inputStream.bufferedReader().use { it.readText() } } finally { c.disconnect() }
+        return try {
+            val code = c.responseCode
+            if (code !in 200..299) throw java.io.IOException("HTTP $code")
+            c.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+        } finally { c.disconnect() }
     }
 
     private fun load(reset: Boolean) {
-        if (busy) return
-        if (reset) { page = 1; films.clear(); adapter.notifyDataSetChanged() }
+        if (busy) {
+            if (reset) reloadAfterBusy = true
+            return
+        }
+        if (reset) { page = 1; hasMore = true; films.clear(); adapter.notifyDataSetChanged() }
+        if (!hasMore) return
         busy = true; status.text = "جارٍ تحميل الأفلام..."
         io.execute {
             try {
@@ -163,12 +174,26 @@ class MoviesActivity : AppCompatActivity() {
                 }
                 runOnUiThread {
                     if (reset) films.clear()
-                    films.addAll(found); adapter.notifyDataSetChanged()
-                    page++; busy = false
+                    val existing = films.mapTo(HashSet()) { it.id }
+                    films.addAll(found.filter { existing.add(it.id) })
+                    adapter.notifyDataSetChanged()
+                    page++; hasMore = found.size >= 30
+                    busy = false
+                    if (reloadAfterBusy) {
+                        reloadAfterBusy = false
+                        load(true)
+                        return@runOnUiThread
+                    }
                     status.text = if (films.isEmpty()) "لا توجد نتائج حالياً" else "الأفلام: " + films.size + " • Internet Archive"
                 }
             } catch (_: Exception) {
-                runOnUiThread { busy = false; status.text = "تعذّر تحميل الأفلام. تحقق من الإنترنت." }
+                runOnUiThread {
+                    busy = false
+                    if (reloadAfterBusy) {
+                        reloadAfterBusy = false
+                        load(true)
+                    } else status.text = "تعذّر تحميل الأفلام. تحقق من الإنترنت."
+                }
             }
         }
     }
