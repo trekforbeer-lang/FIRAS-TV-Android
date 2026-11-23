@@ -346,6 +346,10 @@ class AdminActivity : Activity() {
         val logo = field("رابط الشعار", old?.optString("logo").orEmpty())
         form.addView(action("لصق رابط الشعار من الحافظة") { pasteInto(logo) })
         val referer = field("Referer", old?.optString("referer").orEmpty())
+        val userAgent = field("User-Agent", old?.optString("userAgent").orEmpty())
+        val cookie = field("Cookie (بيانات وصول خاصة بالقناة)", old?.optString("cookie").orEmpty()).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
         val country = field("رمز الدولة مثل DZ أو SA", old?.optString("cc").orEmpty())
         val category = field("التصنيف", sectionIndex?.let { sections().optJSONObject(it)?.optString("title") }.orEmpty())
         val alts = field("روابط بديلة - رابط في كل سطر", old?.optJSONArray("alts")?.let { a -> (0 until a.length()).joinToString("\n") { a.optString(it) } }.orEmpty(), true)
@@ -371,11 +375,15 @@ class AdminActivity : Activity() {
                 }
                 val destinationIndex = targetIndex ?: return@setPositiveButton
                 val item = old ?: JSONObject().put("id", "admin-${System.currentTimeMillis()}")
+                if (item.optString("id").isBlank()) item.put("id", "channel-${System.currentTimeMillis()}")
                 item.put("name", channelName).put("url", stream).put("logo", logoUrl)
                     .put("referer", referer.text.toString().trim())
+                    .put("userAgent", userAgent.text.toString().trim())
+                    .put("cookie", cookie.text.toString().trim())
                     .put("cc", country.text.toString().trim().uppercase())
                     .put("priv", privateBox.isChecked)
                     .put("alts", JSONArray(altValues))
+                saveStreamConfig(item)
                 if (old == null) items(destinationIndex).put(item)
                 else {
                     items(sectionIndex!!).remove(itemIndex!!)
@@ -383,6 +391,63 @@ class AdminActivity : Activity() {
                 }
                 save(); render()
             }.setNegativeButton("إلغاء", null).show()
+    }
+
+    // Advanced stream settings are stored in app-private storage, not in the APK.
+    private fun saveStreamConfig(channel: JSONObject) {
+        val file = File(filesDir, "channels_stream_config.json")
+        val rootConfig = try {
+            if (file.isFile) JSONObject(file.readText(Charsets.UTF_8))
+            else JSONObject(assets.open("channels_stream_config.json").bufferedReader(Charsets.UTF_8).use { it.readText() })
+        } catch (_: Exception) { JSONObject() }
+        val array = rootConfig.optJSONArray("channels") ?: JSONArray().also { rootConfig.put("channels", it) }
+        val id = channel.optString("id")
+        val name = channel.optString("name")
+        var config: JSONObject? = null
+        for (i in 0 until array.length()) {
+            val candidate = array.optJSONObject(i) ?: continue
+            if ((id.isNotBlank() && candidate.optString("id") == id) ||
+                (name.isNotBlank() && candidate.optString("name").equals(name, true))) {
+                config = candidate
+                break
+            }
+        }
+        if (config == null) {
+            config = JSONObject().put("mode", "direct")
+            array.put(config)
+        }
+        val headers = config.optJSONObject("headers") ?: JSONObject().also { config.put("headers", it) }
+        val ua = channel.optString("userAgent").trim()
+        val refererValue = channel.optString("referer").trim()
+        if (ua.isNotBlank()) headers.put("User-Agent", ua) else headers.remove("User-Agent")
+        if (refererValue.isNotBlank()) headers.put("Referer", refererValue) else headers.remove("Referer")
+        config.put("id", id).put("name", name).put("url", channel.optString("url"))
+            .put("cookie", channel.optString("cookie"))
+        config.put("urls", channel.optJSONArray("alts") ?: JSONArray())
+        val temp = File(filesDir, "channels_stream_config.json.tmp")
+        temp.writeText(rootConfig.toString(2), Charsets.UTF_8)
+        if (!temp.renameTo(file)) {
+            temp.copyTo(file, overwrite = true)
+            temp.delete()
+        }
+    }
+
+    private fun removeStreamConfig(channel: JSONObject?) {
+        if (channel == null) return
+        val file = File(filesDir, "channels_stream_config.json")
+        val configRoot = try {
+            if (file.isFile) JSONObject(file.readText(Charsets.UTF_8))
+            else JSONObject(assets.open("channels_stream_config.json").bufferedReader(Charsets.UTF_8).use { it.readText() })
+        } catch (_: Exception) { return }
+        val array = configRoot.optJSONArray("channels") ?: return
+        val id = channel.optString("id")
+        val name = channel.optString("name")
+        for (i in array.length() - 1 downTo 0) {
+            val item = array.optJSONObject(i) ?: continue
+            if ((id.isNotBlank() && item.optString("id") == id) ||
+                (name.isNotBlank() && item.optString("name").equals(name, true))) array.remove(i)
+        }
+        file.writeText(configRoot.toString(2), Charsets.UTF_8)
     }
 
     private fun pasteInto(target: EditText) {
@@ -397,6 +462,7 @@ class AdminActivity : Activity() {
             .setPositiveButton("حذف") { _, _ ->
                 val channel = items(sectionIndex).optJSONObject(itemIndex)
                 if (channel != null) {
+                    removeStreamConfig(channel)
                     items(sectionIndex).remove(itemIndex); save(); render()
                 }
             }.setNegativeButton("إلغاء", null).show()
