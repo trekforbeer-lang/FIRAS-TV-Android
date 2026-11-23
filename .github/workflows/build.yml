@@ -40,6 +40,9 @@ jobs:
           cp .github/admin-patch/channels.json app/src/main/assets/channels.json
           grep -q 'minSdk = 21' app/build.gradle.kts
           grep -q 'okhttp:4.12.0' app/build.gradle.kts
+          # Render SVG channel logos natively on Android (PNG/JPEG remain supported).
+          sed -i '/^dependencies[[:space:]]*{/a\    implementation("com.caverock:androidsvg-aar:1.4")' app/build.gradle.kts
+          grep -q 'com.caverock:androidsvg-aar:1.4' app/build.gradle.kts
           # The archived v4 source still declares Media3 1.3.1. Align every
           # Media3 module before compiling so ExoPlayer/UI/OkHttp stay in sync.
           sed -i -E 's#(androidx\.media3:[^:]+):[0-9.]+#\1:1.5.1#g' app/build.gradle.kts
@@ -69,13 +72,13 @@ jobs:
         run: gradle --no-daemon clean assembleDebug assembleRelease --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: FIRAS-TV-APK-v4-restored-channels-films
+          name: RAHMANI-ANDROID-APK
           path: app/build/outputs/apk/**/*.apk
           if-no-files-found: error
           retention-days: 14
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: firas-tv-v4-restored-${{ github.run_number }}
-          name: FIRAS TV v4 Restored (Build ${{ github.run_number }})
+          tag_name: rahmani-android-${{ github.run_number }}
+          name: RAHMANI Android (Build ${{ github.run_number }})
           files: app/build/outputs/apk/release/app-release.apk
           generate_release_notes: true
