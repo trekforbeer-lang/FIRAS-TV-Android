@@ -27,6 +27,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
+import androidx.media3.session.MediaSession
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -57,6 +59,7 @@ private data class DisplayChannel(
 
 class PlayerActivity : AppCompatActivity() {
     private var player: ExoPlayer? = null
+    private var mediaSession: MediaSession? = null
     private lateinit var playerView: PlayerView
     private lateinit var title: TextView
     private lateinit var watermark: ImageView
@@ -266,6 +269,8 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun ensurePlayer(channel: DisplayChannel) {
         playerView.player = null
+        mediaSession?.release()
+        mediaSession = null
         player?.release()
         player = null
 
@@ -315,6 +320,7 @@ class PlayerActivity : AppCompatActivity() {
             .setMediaSourceFactory(sourceFactory)
             .build().also { exo ->
                 playerView.player = exo
+                mediaSession = MediaSession.Builder(this, exo).build()
                 exo.addListener(object : Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {
                         var responseCode: Int? = null
@@ -442,6 +448,12 @@ class PlayerActivity : AppCompatActivity() {
         val itemBuilder = MediaItem.Builder()
             .setUri(url)
             .setMediaId(current?.id ?: "firas")
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setTitle(current?.name ?: "بث مباشر")
+                    .setArtist("RAHMANI")
+                    .build()
+            )
         // Preserve HLS handling for extension-less and PHP resolver endpoints,
         // which commonly return an HLS playlist. Use progressive inference only
         // for file extensions that clearly identify a non-HLS media file.
@@ -765,6 +777,8 @@ class PlayerActivity : AppCompatActivity() {
         handler.removeCallbacksAndMessages(null)
         recoveryTask = null
         playerView.player = null
+        mediaSession?.release()
+        mediaSession = null
         player?.release()
         player = null
         worker.shutdownNow()
