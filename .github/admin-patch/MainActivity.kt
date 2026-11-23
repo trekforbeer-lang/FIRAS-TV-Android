@@ -128,10 +128,12 @@ class MainActivity : AppCompatActivity() {
                         if (item?.optString("title") == title) { section = item; break }
                     }
                     if (section == null) {
-                        section = JSONObject().put("title", title).put("items", JSONArray())
-                        groups.put(section)
+                        val created = JSONObject().put("title", title).put("items", JSONArray())
+                        groups.put(created)
+                        section = created
                     }
-                    val items = section.optJSONArray("items") ?: JSONArray().also { section.put("items", it) }
+                    val actualSection = section ?: continue
+                    val items = actualSection.optJSONArray("items") ?: JSONArray().also { actualSection.put("items", it) }
                     val known = HashSet<String>()
                     for (i in 0 until items.length()) known.add(items.optJSONObject(i)?.optString("url").orEmpty())
                     var name = ""; var logo = ""
