@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent" android:layout_height="match_parent"
-    android:orientation="vertical" android:background="#080B14"
+    android:orientation="vertical" android:background="#000000"
     android:layoutDirection="rtl" android:fitsSystemWindows="true">
 
     <LinearLayout android:layout_width="match_parent" android:layout_height="64dp"
@@ -11,10 +11,10 @@
         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:orientation="vertical">
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="RAHMANI" android:textColor="#FF6687" android:textSize="23sp"
+                android:text="RAHMANI" android:textColor="#FF1E2D" android:textSize="25sp" android:textStyle="italic"
                 android:textStyle="bold" android:letterSpacing="0.05" android:layoutDirection="ltr"/>
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="ترفيه • رياضة • بث مباشر" android:textColor="#9AA8C0" android:textSize="10sp"/>
+                android:text="ترفيه • رياضة • بث مباشر" android:textColor="#9A9A9A" android:textSize="10sp"/>
         </LinearLayout>
         <HorizontalScrollView android:layout_width="0dp" android:layout_height="match_parent"
             android:layout_weight="1" android:scrollbars="none" android:fillViewport="false"
@@ -25,16 +25,16 @@
                     android:layout_height="48dp" android:minWidth="64dp" android:gravity="center"
                     android:contentDescription="اختيار نمط الصفحة الرئيسية" android:paddingStart="10dp"
                     android:paddingEnd="10dp" android:text="نمط العرض" android:textColor="#FFFFFF"
-                    android:textSize="11sp" android:background="#29344B" android:clickable="true" android:focusable="true"/>
+                    android:textSize="11sp" android:background="#2A2A2D" android:clickable="true" android:focusable="true"/>
                 <TextView android:id="@+id/customizeButton" android:layout_width="wrap_content"
                     android:layout_height="48dp" android:minWidth="58dp" android:gravity="center"
                     android:paddingStart="9dp" android:paddingEnd="9dp" android:text="تخصيص"
-                    android:textColor="#FFFFFF" android:textSize="11sp" android:background="#25252A"
+                    android:textColor="#FFFFFF" android:textSize="11sp" android:background="#1C1C1E"
                     android:clickable="true" android:focusable="true"/>
                 <TextView android:id="@+id/fanPreferencesButton" android:layout_width="wrap_content"
                     android:layout_height="48dp" android:minWidth="72dp" android:gravity="center"
                     android:paddingStart="9dp" android:paddingEnd="9dp" android:text="اهتماماتي"
-                    android:textColor="#FFFFFF" android:textSize="11sp" android:background="#493047"
+                    android:textColor="#FFFFFF" android:textSize="11sp" android:background="#1C1C1E"
                     android:clickable="true" android:focusable="true"/>
                 <Button android:id="@+id/adminButton" android:layout_width="wrap_content"
                     android:layout_height="44dp" android:minHeight="44dp" android:minWidth="62dp"
@@ -51,9 +51,9 @@
             <TextView android:id="@+id/homeTab" android:layout_width="wrap_content" android:layout_height="34dp"
                 android:gravity="center" android:text="الرئيسية" android:textColor="#FFFFFF"
                 android:textSize="12sp" android:textStyle="bold" android:paddingStart="17dp" android:paddingEnd="17dp"
-                android:background="#303047" android:clickable="true" android:focusable="true"/>
+                android:background="#3A3A3C" android:clickable="true" android:focusable="true"/>
             <TextView android:id="@+id/channelsTab" android:layout_width="wrap_content" android:layout_height="34dp"
-                android:gravity="center" android:text="القنوات" android:textColor="#A9B5CA"
+                android:gravity="center" android:text="القنوات" android:textColor="#8E8E93"
                 android:textSize="12sp" android:paddingStart="17dp" android:paddingEnd="17dp"
                 android:clickable="true" android:focusable="true"/>
             <TextView android:id="@+id/sportsTab" android:layout_width="wrap_content" android:layout_height="34dp"
@@ -83,7 +83,7 @@
 
     <FrameLayout android:id="@+id/homeHeroSection" android:layout_width="match_parent" android:layout_height="158dp"
         android:layout_marginStart="16dp" android:layout_marginEnd="16dp"
-        android:background="@drawable/home_hero_bg">
+        android:background="@drawable/home_hero_bg" android:foreground="@drawable/rahmani_card_stroke">
         <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
             android:orientation="vertical" android:gravity="center_vertical"
             android:paddingStart="19dp" android:paddingEnd="19dp">
@@ -110,19 +110,19 @@
             <TextView android:id="@+id/quickLiveButton" android:layout_width="94dp" android:layout_height="60dp"
                 android:layout_marginEnd="8dp" android:gravity="center"
                 android:text="●  مباشر\nالقنوات الآن" android:textColor="#FFFFFF" android:textStyle="bold"
-                android:textSize="12sp" android:background="#26364F" android:clickable="true" android:focusable="true"/>
+                android:textSize="12sp" android:background="#1C1C1E" android:clickable="true" android:focusable="true"/>
             <TextView android:id="@+id/quickSportsButton" android:layout_width="94dp" android:layout_height="60dp"
                 android:layout_marginEnd="8dp" android:gravity="center" android:text="⚽  الرياضة\nالمباريات"
                 android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="12sp"
-                android:background="#302943" android:clickable="true" android:focusable="true"/>
+                android:background="#1C1C1E" android:clickable="true" android:focusable="true"/>
             <TextView android:id="@+id/quickMoviesButton" android:layout_width="94dp" android:layout_height="60dp"
                 android:layout_marginEnd="8dp" android:gravity="center" android:text="▶  الأفلام\nشاهد الآن"
                 android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="12sp"
-                android:background="#3A2636" android:clickable="true" android:focusable="true"/>
+                android:background="#1C1C1E" android:clickable="true" android:focusable="true"/>
             <TextView android:id="@+id/quickAdminButton" android:layout_width="94dp" android:layout_height="60dp"
                 android:gravity="center" android:text="⚙  الإدارة\nقنواتك"
                 android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="12sp"
-                android:background="#26333A" android:clickable="true" android:focusable="true"/>
+                android:background="#1C1C1E" android:clickable="true" android:focusable="true"/>
         </LinearLayout>
     </HorizontalScrollView>
 
@@ -130,7 +130,7 @@
         android:orientation="horizontal" android:gravity="center_vertical"
         android:layout_marginStart="16dp" android:layout_marginEnd="16dp"
         android:layout_marginTop="10dp" android:paddingStart="14dp" android:paddingEnd="12dp"
-        android:background="#171F31">
+        android:background="#1C1C1E">
         <TextView android:layout_width="42dp" android:layout_height="42dp"
             android:gravity="center" android:text="⚽" android:textSize="23sp"
             android:background="#2D2944"/>
@@ -154,7 +154,7 @@
         <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
             android:text="تصفّح حسب القسم" android:textColor="#FFFFFF" android:textSize="15sp" android:textStyle="bold"/>
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="اسحب لاكتشاف المزيد" android:textColor="#8492A9" android:textSize="9sp"/>
+            android:text="اسحب لاكتشاف المزيد" android:textColor="#9A9A9A" android:textSize="9sp"/>
     </LinearLayout>
 
     <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -199,12 +199,13 @@
       </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <LinearLayout android:layout_width="match_parent" android:layout_height="58dp"
-        android:orientation="horizontal" android:gravity="center" android:background="#111827"
-        android:paddingStart="5dp" android:paddingEnd="5dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="62dp"
+        android:layout_marginStart="12dp" android:layout_marginEnd="12dp" android:layout_marginBottom="8dp"
+        android:orientation="horizontal" android:gravity="center" android:background="@drawable/rahmani_nav_capsule"
+        android:paddingStart="7dp" android:paddingEnd="7dp">
         <TextView android:id="@+id/navHome" android:layout_width="0dp" android:layout_weight="1"
             android:layout_height="match_parent" android:gravity="center" android:text="⌂\nالرئيسية"
-            android:textColor="#FF718D" android:textSize="10sp" android:textStyle="bold"
+            android:textColor="#FFFFFF" android:textSize="10sp" android:textStyle="bold"
             android:clickable="true" android:focusable="true"/>
         <TextView android:id="@+id/navChannels" android:layout_width="0dp" android:layout_weight="1"
             android:layout_height="match_parent" android:gravity="center" android:text="▣\nالقنوات"
