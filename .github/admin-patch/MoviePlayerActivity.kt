@@ -108,7 +108,7 @@ class MoviePlayerActivity : AppCompatActivity() {
                 .build())
         }
         val dataSource = DefaultHttpDataSource.Factory()
-            .setUserAgent("FIRAS-TV/4.0")
+            .setUserAgent("RAHMANI/1.0")
             .setAllowCrossProtocolRedirects(true)
             .setConnectTimeoutMs(15000)
             .setReadTimeoutMs(25000)
