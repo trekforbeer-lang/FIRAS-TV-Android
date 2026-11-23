@@ -102,7 +102,7 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
     override fun onBindViewHolder(holder: Holder, position: Int) {
         val channel = getItem(position)
         holder.title.text = channel.name
-        holder.subtitle.text = if (channel.url.isBlank()) "الرابط غير مضاف" else "جاهزة للتشغيل"
+        holder.subtitle.text = if (channel.url.isBlank()) "لا يوجد رابط" else "رابط مضاف"
         holder.subtitle.setTextColor(if (channel.url.isBlank()) Color.rgb(255, 190, 132) else Color.rgb(255, 137, 158))
         holder.subtitle.background = GradientDrawable().apply {
             setColor(if (channel.url.isBlank()) Color.rgb(54, 39, 31) else Color.rgb(58, 28, 38))
@@ -134,12 +134,15 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
                     }
                     if (bitmap == null) {
                         val connection = URL(channel.logo).openConnection() as HttpURLConnection
-                        connection.connectTimeout = 8000
-                        connection.readTimeout = 8000
+                        connection.connectTimeout = 10000
+                        connection.readTimeout = 10000
                         connection.instanceFollowRedirects = true
-                        connection.setRequestProperty("User-Agent", "RAHMANI/1.0")
-                        connection.setRequestProperty("Accept", "image/avif,image/webp,image/svg+xml,image/png,image/*;q=0.9,*/*;q=0.5")
+                        connection.useCaches = true
+                        connection.setRequestProperty("User-Agent", "RAHMANI-Android/4.0 (channel-logo)")
+                        connection.setRequestProperty("Accept", "image/svg+xml,image/png,image/webp,image/jpeg,image/*;q=0.9,*/*;q=0.5")
                         bitmap = try {
+                            val responseCode = connection.responseCode
+                            if (responseCode !in 200..299) throw java.io.IOException("Logo HTTP $responseCode")
                             val bytes = connection.inputStream.use { input ->
                                 val output = java.io.ByteArrayOutputStream()
                                 val buffer = ByteArray(8192)
@@ -154,13 +157,17 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
                                 output.toByteArray()
                             }
                             val type = connection.contentType.orEmpty().lowercase()
-                            val prefix = bytes.take(512).toByteArray().toString(Charsets.UTF_8).trimStart()
-                            if (type.contains("svg") || prefix.startsWith("<svg") || prefix.startsWith("<?xml") && prefix.contains("<svg")) {
-                                val svg = SVG.getFromString(bytes.toString(Charsets.UTF_8))
-                                val rendered = Bitmap.createBitmap(192, 192, Bitmap.Config.ARGB_8888)
-                                svg.renderToCanvas(Canvas(rendered))
-                                rendered
-                            } else BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                            val prefix = bytes.take(1024).toByteArray().toString(Charsets.UTF_8).trimStart()
+                            when {
+                                type.contains("svg") || prefix.startsWith("<svg") || prefix.startsWith("<?xml") && prefix.contains("<svg") -> {
+                                    val svg = SVG.getFromString(bytes.toString(Charsets.UTF_8))
+                                    val rendered = Bitmap.createBitmap(256, 256, Bitmap.Config.ARGB_8888)
+                                    svg.renderToCanvas(Canvas(rendered))
+                                    rendered
+                                }
+                                type.contains("html") || prefix.startsWith("<!doctype html", true) || prefix.startsWith("<html", true) -> null
+                                else -> BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                            }
                         } finally { connection.disconnect() }
                         bitmap?.let { image ->
                             try {
@@ -183,123 +190,29 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
         }
     }
 
-    // Always draw a local channel badge first. Remote logo URLs are optional:
-    // several catalog entries point to SVG/redirect URLs that BitmapFactory cannot decode.
+    // A neutral fallback is used only when the official logo cannot be loaded.
+    // Never draw an imitation of a broadcaster's trademark as if it were its real logo.
     private fun fallbackLogo(name: String): Bitmap {
         val size = 160
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
+        val background = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(39, 29, 35) }
+        canvas.drawRoundRect(0f, 0f, size.toFloat(), size.toFloat(), 24f, 24f, background)
+
         val normalized = name.trim().replace(Regex("\\s+"), " ")
-        val lower = normalized.lowercase()
-        val isBein = lower.contains("bein")
-        val isMbc = lower.startsWith("mbc")
-        val isCountry = lower == "egypt" || lower == "algeria" || lower == "morocco"
-
-        val backgroundColor = when {
-            isBein -> Color.rgb(25, 28, 58)
-            isMbc -> Color.WHITE
-            isCountry -> Color.rgb(245, 245, 245)
-            else -> Color.rgb(48, 42, 67)
+        val words = normalized.split(" ").filter { it.isNotBlank() }
+        val initials = when {
+            words.isEmpty() -> "TV"
+            words.size >= 2 -> words.take(2).joinToString("") { it.first().uppercase() }
+            else -> words.first().take(2).uppercase()
         }
-        val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = backgroundColor }
-        canvas.drawRoundRect(0f, 0f, size.toFloat(), size.toFloat(), 22f, 22f, bg)
-
-        if (isCountry) {
-            val stripe = Paint(Paint.ANTI_ALIAS_FLAG)
-            when (lower) {
-                "egypt" -> {
-                    stripe.color = Color.rgb(206, 17, 38)
-                    canvas.drawRect(0f, 0f, size.toFloat(), 53f, stripe)
-                    stripe.color = Color.WHITE
-                    canvas.drawRect(0f, 53f, size.toFloat(), 107f, stripe)
-                    stripe.color = Color.BLACK
-                    canvas.drawRect(0f, 107f, size.toFloat(), size.toFloat(), stripe)
-                }
-                "algeria" -> {
-                    stripe.color = Color.rgb(0, 100, 0)
-                    canvas.drawRect(0f, 0f, 80f, size.toFloat(), stripe)
-                    stripe.color = Color.WHITE
-                    canvas.drawRect(80f, 0f, size.toFloat(), size.toFloat(), stripe)
-                    stripe.color = Color.rgb(210, 16, 52)
-                    canvas.drawCircle(83f, 80f, 25f, stripe)
-                    stripe.color = Color.WHITE
-                    canvas.drawCircle(92f, 73f, 21f, stripe)
-                }
-                else -> {
-                    stripe.color = Color.rgb(193, 39, 45)
-                    canvas.drawRect(0f, 0f, size.toFloat(), size.toFloat(), stripe)
-                    stripe.color = Color.rgb(0, 98, 51)
-                    stripe.style = Paint.Style.STROKE
-                    stripe.strokeWidth = 6f
-                    val path = android.graphics.Path().apply {
-                        moveTo(80f, 47f); lineTo(88f, 70f); lineTo(112f, 70f)
-                        lineTo(93f, 84f); lineTo(100f, 108f); lineTo(80f, 94f)
-                        lineTo(60f, 108f); lineTo(67f, 84f); lineTo(48f, 70f)
-                        lineTo(72f, 70f); close()
-                    }
-                    canvas.drawPath(path, stripe)
-                }
-            }
-            return bitmap
-        }
-
-        if (isBein) {
-            val white = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.WHITE
-                textAlign = Paint.Align.CENTER
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            }
-            white.textSize = 45f
-            canvas.drawText("beIN", 80f, 66f, white)
-            white.textSize = 19f
-            canvas.drawText("SPORTS", 80f, 91f, white)
-            val variant = when {
-                lower.contains("xtra") -> "XTRA " + (Regex("\\d+").find(normalized)?.value ?: "")
-                lower.contains("news") -> "NEWS"
-                Regex("\\ben\\b").containsMatchIn(lower) -> "EN " + (Regex("\\d+").find(normalized)?.value ?: "")
-                else -> Regex("\\d+").find(normalized)?.value ?: "SPORTS"
-            }
-            white.textSize = if (variant.length > 9) 14f else 17f
-            canvas.drawText(variant, 80f, 126f, white)
-            return bitmap
-        }
-
-        val dark = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.rgb(35, 35, 45)
-            textAlign = Paint.Align.CENTER
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-        }
-        if (isMbc) {
-            val letters = listOf("M", "B", "C")
-            val colors = listOf(Color.rgb(0, 150, 210), Color.rgb(235, 65, 105), Color.rgb(245, 155, 35))
-            val xs = listOf(48f, 82f, 116f)
-            dark.textSize = 55f
-            letters.forEachIndexed { index, letter ->
-                dark.color = colors[index]
-                canvas.drawText(letter, xs[index], 83f, dark)
-            }
-            val suffix = normalized.substring(3).trim()
-            if (suffix.isNotBlank()) {
-                dark.color = Color.DKGRAY
-                dark.textSize = if (suffix.length > 11) 12f else 16f
-                canvas.drawText(suffix.uppercase(), 80f, 126f, dark)
-            }
-            return bitmap
-        }
-
-        val white = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
             textAlign = Paint.Align.CENTER
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            textSize = if (initials.length > 1) 58f else 68f
         }
-        val parts = normalized.split(Regex("\\s+")).filter { it.isNotBlank() }
-        val label = when {
-            parts.isEmpty() -> "TV"
-            parts.size > 1 -> parts.take(2).joinToString(" ") { it.uppercase() }
-            else -> parts[0].take(8).uppercase()
-        }
-        white.textSize = if (label.length > 9) 22f else 34f
-        canvas.drawText(label, 80f, 91f, white)
+        canvas.drawText(initials, 80f, 101f, paint)
         return bitmap
     }
 
