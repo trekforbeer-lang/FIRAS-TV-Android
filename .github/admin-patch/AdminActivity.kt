@@ -323,7 +323,8 @@ class AdminActivity : Activity() {
                     groups.put(JSONObject().put("title", "بدون تصنيف").put("items", JSONArray()))
                     target = groups.length() - 1
                 }
-                val dest = items(target)
+                val destinationIndex = target ?: return@setPositiveButton
+                val dest = items(destinationIndex)
                 for (i in 0 until list.length()) dest.put(list.optJSONObject(i))
                 groups.remove(index)
                 save(); render()
@@ -370,16 +371,17 @@ class AdminActivity : Activity() {
                     groups.put(JSONObject().put("title", targetName).put("items", JSONArray()))
                     targetIndex = groups.length() - 1
                 }
+                val destinationIndex = targetIndex ?: return@setPositiveButton
                 val item = old ?: JSONObject().put("id", "admin-${System.currentTimeMillis()}")
                 item.put("name", channelName).put("url", stream).put("logo", logoUrl)
                     .put("referer", referer.text.toString().trim())
                     .put("cc", country.text.toString().trim().uppercase())
                     .put("priv", privateBox.isChecked)
                     .put("alts", JSONArray(altValues))
-                if (old == null) items(targetIndex).put(item)
+                if (old == null) items(destinationIndex).put(item)
                 else {
                     items(sectionIndex!!).remove(itemIndex!!)
-                    items(targetIndex).put(item)
+                    items(destinationIndex).put(item)
                 }
                 save(); render()
             }.setNegativeButton("إلغاء", null).show()
@@ -436,8 +438,8 @@ class AdminActivity : Activity() {
             if (line.isBlank()) continue
             if (line.startsWith("#EXTINF", true)) {
                 name = line.substringAfterLast(',').trim().ifBlank { "قناة مستوردة" }
-                logo = Regex("""tvg-logo="([^"]*)"""").find(line)?.groupValues?.getOrNull(1).orEmpty()
-                group = Regex("""group-title="([^"]*)"""").find(line)?.groupValues?.getOrNull(1).orEmpty()
+                logo = Regex("tvg-logo=\"([^\"]*)\"").find(line)?.groupValues?.getOrNull(1).orEmpty()
+                group = Regex("group-title=\"([^\"]*)\"").find(line)?.groupValues?.getOrNull(1).orEmpty()
             } else if (!line.startsWith("#") && safe(line)) {
                 val parts = if (line.contains('|')) line.split('|', limit = 2) else emptyList()
                 val channelName = if (parts.isNotEmpty()) parts[0].trim() else name.ifBlank { "قناة مستوردة" }
@@ -481,7 +483,9 @@ class AdminActivity : Activity() {
             val sourceItems = source.optJSONArray("items") ?: continue
             var target = (0 until incoming.length()).firstOrNull { incoming.optJSONObject(it)?.optString("title") == source.optString("title") }
             if (target == null) { incoming.put(JSONObject().put("title", source.optString("title")).put("items", JSONArray())); target = incoming.length() - 1 }
-            val dest = incoming.optJSONObject(target)?.optJSONArray("items") ?: JSONArray().also { incoming.optJSONObject(target)?.put("items", it) }
+            val targetIndex = target ?: continue
+            val targetSection = incoming.optJSONObject(targetIndex) ?: continue
+            val dest = targetSection.optJSONArray("items") ?: JSONArray().also { targetSection.put("items", it) }
             for (j in 0 until sourceItems.length()) {
                 val item = sourceItems.optJSONObject(j) ?: continue
                 val exists = (0 until incoming.length()).any { k ->
