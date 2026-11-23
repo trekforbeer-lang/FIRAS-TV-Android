@@ -31,6 +31,11 @@
                     android:paddingStart="9dp" android:paddingEnd="9dp" android:text="تخصيص"
                     android:textColor="#FFFFFF" android:textSize="11sp" android:background="#25252A"
                     android:clickable="true" android:focusable="true"/>
+                <TextView android:id="@+id/fanPreferencesButton" android:layout_width="wrap_content"
+                    android:layout_height="48dp" android:minWidth="72dp" android:gravity="center"
+                    android:paddingStart="9dp" android:paddingEnd="9dp" android:text="اهتماماتي"
+                    android:textColor="#FFFFFF" android:textSize="11sp" android:background="#493047"
+                    android:clickable="true" android:focusable="true"/>
                 <Button android:id="@+id/adminButton" android:layout_width="wrap_content"
                     android:layout_height="44dp" android:minHeight="44dp" android:minWidth="62dp"
                     android:layout_marginStart="6dp" android:text="الإدارة" android:textAllCaps="false"
