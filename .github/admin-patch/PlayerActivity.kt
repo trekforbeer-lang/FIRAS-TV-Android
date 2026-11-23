@@ -140,7 +140,11 @@ class PlayerActivity : AppCompatActivity() {
             )
         }
         list.layoutManager = LinearLayoutManager(this, RecyclerView.HORIZONTAL, false)
-        list.adapter = PlayerChannelAdapter(channels) { play(it) }
+        list.adapter = PlayerChannelAdapter(channels) {
+            play(it)
+            list.visibility = View.GONE
+            setOverlayVisible(true)
+        }
 
         playPause.setOnClickListener {
             player?.let { p -> if (p.isPlaying) p.pause() else p.play() }
