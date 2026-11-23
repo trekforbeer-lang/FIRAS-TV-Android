@@ -809,15 +809,17 @@ class AdminActivity : Activity() {
 
                 var good = 0
                 var bad = 0
-                val completedAt = System.currentTimeMillis()
-                checks.forEach { (original, future) ->
+                val results = checks.map { (original, future) ->
                     val ok = try { future.get() } catch (_: Exception) { false }
-                    // JSONObject is updated only after returning to the main thread.
-                    original.put("ok", ok).put("chk", completedAt)
                     if (ok) good++ else bad++
+                    original to ok
                 }
+                val completedAt = System.currentTimeMillis()
                 runOnUiThread {
                     if (isFinishing || isDestroyed) return@runOnUiThread
+                    results.forEach { (original, ok) ->
+                        original.put("ok", ok).put("chk", completedAt)
+                    }
                     save()
                     Toast.makeText(this, "انتهى فحص استجابة الخوادم: ناجح $good • فاشل $bad. هذا ليس اختبار تشغيل فيديو.", Toast.LENGTH_LONG).show()
                     render()
