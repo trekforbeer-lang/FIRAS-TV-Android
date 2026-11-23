@@ -4,7 +4,7 @@ import android.content.Context
 import org.json.JSONObject
 import java.io.File
 
-data class Channel(val name: String, val logo: String, val url: String, val referer: String, val id: String = "")
+data class Channel(val name: String, val logo: String, val url: String, val referer: String, val id: String = "", val isPrivate: Boolean = false)
 data class Section(val title: String, val items: List<Channel>)
 
 object ChannelRepository {
@@ -27,10 +27,11 @@ object ChannelRepository {
             val items = section.optJSONArray("items") ?: return@mapNotNull null
             val channels = (0 until items.length()).mapNotNull { j ->
                 val item = items.optJSONObject(j) ?: return@mapNotNull null
+                if (item.optBoolean("priv", false)) return@mapNotNull null
                 val url = item.optString("url", item.optString("stream")).trim()
                 if (!(url.startsWith("http://", true) || url.startsWith("https://", true))) return@mapNotNull null
                 Channel(item.optString("name", "قناة"), item.optString("logo"), url,
-                    item.optString("referer"), item.optString("id"))
+                    item.optString("referer"), item.optString("id"), item.optBoolean("priv", false))
             }
             if (channels.isEmpty()) null else Section(section.optString("title"), channels)
         }
