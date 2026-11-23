@@ -50,7 +50,7 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
             gravity = Gravity.CENTER
             layoutDirection = View.LAYOUT_DIRECTION_RTL
             setPadding(dp(7), dp(10), dp(7), dp(9))
-            minimumHeight = dp(152)
+            minimumHeight = dp(162)
             elevation = dp(2).toFloat()
             background = android.graphics.drawable.RippleDrawable(
                 android.content.res.ColorStateList.valueOf(Color.rgb(105, 43, 61)),
@@ -72,11 +72,11 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
         }
         val logo = ImageView(context).apply {
             scaleType = ImageView.ScaleType.FIT_CENTER
-            setPadding(dp(7), dp(7), dp(7), dp(7))
+            setPadding(dp(5), dp(5), dp(5), dp(5))
             contentDescription = "شعار القناة"
         }
-        logoFrame.addView(logo, LinearLayout.LayoutParams(dp(66), dp(66)))
-        card.addView(logoFrame, LinearLayout.LayoutParams(dp(78), dp(78)))
+        logoFrame.addView(logo, LinearLayout.LayoutParams(dp(76), dp(76)))
+        card.addView(logoFrame, LinearLayout.LayoutParams(dp(88), dp(88)))
         val title = TextView(context).apply {
             setTextColor(Color.WHITE)
             textSize = 12.5f
@@ -134,7 +134,8 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
                         bitmap = BitmapFactory.decodeFile(cacheFile.absolutePath)
                     }
                     if (bitmap == null) {
-                        val connection = URL(channel.logo).openConnection() as HttpURLConnection
+                        val requestUrl = if (channel.logo.contains("/Special:FilePath/")) channel.logo + "?width=256" else channel.logo
+                        val connection = URL(requestUrl).openConnection() as HttpURLConnection
                         connection.connectTimeout = 10000
                         connection.readTimeout = 10000
                         connection.instanceFollowRedirects = true
