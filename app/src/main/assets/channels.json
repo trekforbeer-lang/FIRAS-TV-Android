@@ -1,5 +1,5 @@
 {
-  "appName": "FIRAS TV",
+  "appName": "RAHMANI",
   "sections": [
     {
       "title": "beIN SPORTS",
@@ -140,14 +140,14 @@
         {
           "id": "bein-sports-xtra-8",
           "name": "beIN SPORTS XTRA 8",
-          "logo": "",
+          "logo": "https://commons.wikimedia.org/wiki/Special:FilePath/BeIN%20Sports%20XTRA%208.png",
           "url": "",
           "referer": ""
         },
         {
           "id": "bein-sports-xtra-9",
           "name": "beIN SPORTS XTRA 9",
-          "logo": "",
+          "logo": "https://commons.wikimedia.org/wiki/Special:FilePath/BeIN%20Sports%20XTRA%209.png",
           "url": "",
           "referer": ""
         }
