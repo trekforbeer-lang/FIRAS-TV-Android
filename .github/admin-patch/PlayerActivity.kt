@@ -403,10 +403,13 @@ class PlayerActivity : AppCompatActivity() {
         val itemBuilder = MediaItem.Builder()
             .setUri(url)
             .setMediaId(current?.id ?: "firas")
-        // Only force the HLS MIME type when the URL clearly identifies an HLS
-        // playlist. Let Media3 infer MP4 and extension-less PHP/API responses.
-        val path = Uri.parse(url).path.orEmpty()
-        if (path.endsWith(".m3u8", ignoreCase = true)) {
+        // Preserve HLS handling for extension-less and PHP resolver endpoints,
+        // which commonly return an HLS playlist. Use progressive inference only
+        // for file extensions that clearly identify a non-HLS media file.
+        val path = Uri.parse(url).path.orEmpty().lowercase()
+        val progressive = listOf(".mp4", ".m4v", ".webm", ".mkv", ".mp3", ".m4a", ".aac", ".wav")
+            .any { path.endsWith(it) }
+        if (!progressive) {
             itemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
         }
         val item = itemBuilder.build()
