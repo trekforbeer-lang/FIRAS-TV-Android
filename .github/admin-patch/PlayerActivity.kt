@@ -1,6 +1,9 @@
 package com.firas.tv
 
 import android.content.pm.ActivityInfo
+import android.app.PictureInPictureParams
+import android.os.Build
+import android.util.Rational
 import android.net.Uri
 import android.os.Bundle
 import android.graphics.BitmapFactory
@@ -110,6 +113,7 @@ class PlayerActivity : AppCompatActivity() {
         lockButton = findViewById(R.id.lockButton)
         findViewById<Button>(R.id.playerBackButton).setOnClickListener { handleBackAction() }
         lockButton.setOnClickListener { controlsLocked = !controlsLocked; setOverlayVisible(!controlsLocked); lockButton.text = if (controlsLocked) "🔒" else "♙" }
+        findViewById<Button>(R.id.pictureInPictureButton).setOnClickListener { enterPictureInPictureIfSupported() }
         findViewById<Button>(R.id.castButton).setOnClickListener { Toast.makeText(this, "ميزة Google Cast تحتاج ربط جهاز البث، ولم يتم تفعيلها بعد.", Toast.LENGTH_LONG).show() }
         findViewById<Button>(R.id.channelListButton).setOnClickListener { list.visibility = if (list.visibility == View.VISIBLE) View.GONE else View.VISIBLE }
         findViewById<Button>(R.id.subtitleButton).setOnClickListener {
@@ -644,11 +648,53 @@ class PlayerActivity : AppCompatActivity() {
     override fun onPause() {
         handler.removeCallbacks(refreshTask)
         // Remember the viewer's intent so a manually paused video stays paused on return.
-        resumePlaybackOnResume = player?.playWhenReady == true
-        player?.pause()
-        // Defensive cleanup: never keep the device awake after leaving the player screen.
-        window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || !isInPictureInPictureMode) {
+            resumePlaybackOnResume = player?.playWhenReady == true
+            player?.pause()
+            window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
         super.onPause()
+    }
+
+    private fun enterPictureInPictureIfSupported() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            Toast.makeText(this, "ميزة الشاشة المصغّرة تحتاج Android 8 أو أحدث", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val exo = player
+        if (exo == null || !exo.isPlaying) {
+            Toast.makeText(this, "ابدأ تشغيل الفيديو أولاً", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (!packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
+            Toast.makeText(this, "الشاشة المصغّرة غير مدعومة على هذا الجهاز", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val params = PictureInPictureParams.Builder()
+            .setAspectRatio(Rational(16, 9))
+            .build()
+        enterPictureInPictureMode(params)
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && player?.isPlaying == true &&
+            packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
+            enterPictureInPictureIfSupported()
+        }
+    }
+
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        newConfig: android.content.res.Configuration
+    ) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        if (isInPictureInPictureMode) {
+            setOverlayVisible(false)
+            list.visibility = View.GONE
+        } else {
+            setOverlayVisible(true)
+        }
     }
 
     override fun onDestroy() {
