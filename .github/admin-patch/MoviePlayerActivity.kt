@@ -44,9 +44,12 @@ class MoviePlayerActivity : AppCompatActivity() {
     private var gestureStartBrightness = 0.5f
     private var speedBoostActive = false
     private var topBarView: View? = null
+    private var restorePositionMs: Long = C.TIME_UNSET
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        restorePositionMs = savedInstanceState?.getLong("movie_position_ms", C.TIME_UNSET) ?: C.TIME_UNSET
+        zoomed = savedInstanceState?.getBoolean("movie_zoomed", false) ?: false
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         window.decorView.systemUiVisibility = immersiveFlags()
         window.statusBarColor = Color.BLACK
@@ -229,6 +232,7 @@ class MoviePlayerActivity : AppCompatActivity() {
                     }
                 })
                 exo.setMediaItem(MediaItem.fromUri(url))
+                if (restorePositionMs > 0L) exo.seekTo(restorePositionMs)
                 exo.prepare()
                 exo.playWhenReady = true
             }
@@ -251,6 +255,12 @@ class MoviePlayerActivity : AppCompatActivity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) window.decorView.systemUiVisibility = immersiveFlags()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putLong("movie_position_ms", player?.currentPosition ?: C.TIME_UNSET)
+        outState.putBoolean("movie_zoomed", zoomed)
+        super.onSaveInstanceState(outState)
     }
 
     override fun onUserLeaveHint() {
