@@ -400,11 +400,16 @@ class PlayerActivity : AppCompatActivity() {
             status.text = "رابط البث غير صالح"
             return
         }
-        val item = MediaItem.Builder()
+        val itemBuilder = MediaItem.Builder()
             .setUri(url)
-            .setMimeType(MimeTypes.APPLICATION_M3U8)
             .setMediaId(current?.id ?: "firas")
-            .build()
+        // Only force the HLS MIME type when the URL clearly identifies an HLS
+        // playlist. Let Media3 infer MP4 and extension-less PHP/API responses.
+        val path = Uri.parse(url).path.orEmpty()
+        if (path.endsWith(".m3u8", ignoreCase = true)) {
+            itemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
+        }
+        val item = itemBuilder.build()
         player?.apply {
             stop()
             clearMediaItems()
