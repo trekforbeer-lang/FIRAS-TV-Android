@@ -4,32 +4,16 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="true" />
-    <application
-        android:allowBackup="false"
-        android:icon="@drawable/ic_launcher"
-        android:roundIcon="@drawable/ic_launcher"
-        android:label="FIRAS TV"
-        android:supportsRtl="true"
-        android:usesCleartextTraffic="true"
-        android:hardwareAccelerated="true"
-        android:theme="@style/Theme.FirasTV">
+    <application android:allowBackup="false" android:icon="@drawable/ic_launcher" android:roundIcon="@drawable/ic_launcher"
+        android:label="FIRAS TV" android:supportsRtl="true" android:usesCleartextTraffic="true" android:hardwareAccelerated="true" android:theme="@style/Theme.FirasTV">
         <activity android:name=".AdminActivity" android:exported="false" android:screenOrientation="portrait" />
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustPan">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+        <activity android:name=".MoviesActivity" android:exported="false" android:screenOrientation="portrait" />
+        <activity android:name=".MoviePlayerActivity" android:exported="false" android:screenOrientation="sensorLandscape" />
+        <activity android:name=".MainActivity" android:exported="true" android:screenOrientation="portrait" android:windowSoftInputMode="adjustPan">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity>
-        <activity
-            android:name=".PlayerActivity"
-            android:exported="false"
-            android:screenOrientation="sensorLandscape"
+        <activity android:name=".PlayerActivity" android:exported="false" android:screenOrientation="sensorLandscape"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|keyboard|navigation|uiMode|density|locale|layoutDirection|fontScale"
-            android:launchMode="singleTop"
-            android:theme="@style/Theme.FirasTV.Player" />
+            android:launchMode="singleTop" android:theme="@style/Theme.FirasTV.Player" />
     </application>
 </manifest>
