@@ -38,6 +38,7 @@ class MoviePlayerActivity : AppCompatActivity() {
     private var gestureStartX = 0f
     private var gestureStartVolume = 0
     private var gestureStartBrightness = 0.5f
+    private var speedBoostActive = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -93,6 +94,14 @@ class MoviePlayerActivity : AppCompatActivity() {
                 return true
             }
 
+            override fun onLongPress(event: MotionEvent) {
+                val active = player ?: return
+                if (!active.isPlaying) return
+                active.setPlaybackSpeed(2f)
+                speedBoostActive = true
+                Toast.makeText(this@MoviePlayerActivity, "سرعة 2x", Toast.LENGTH_SHORT).show()
+            }
+
             override fun onDoubleTap(event: MotionEvent): Boolean {
                 val active = player ?: return false
                 val delta = if (event.x < playerView.width / 2f) -10_000L else 10_000L
@@ -109,6 +118,10 @@ class MoviePlayerActivity : AppCompatActivity() {
         })
         playerView.setOnTouchListener { _, event ->
             seekGesture.onTouchEvent(event)
+            if ((event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL) && speedBoostActive) {
+                player?.setPlaybackSpeed(1f)
+                speedBoostActive = false
+            }
             false
         }
 
@@ -214,6 +227,8 @@ class MoviePlayerActivity : AppCompatActivity() {
 
     override fun onStop() {
         resumePlaybackOnStart = player?.isPlaying == true
+        if (speedBoostActive) player?.setPlaybackSpeed(1f)
+        speedBoostActive = false
         player?.pause()
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         super.onStop()
@@ -226,6 +241,8 @@ class MoviePlayerActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        if (speedBoostActive) player?.setPlaybackSpeed(1f)
+        speedBoostActive = false
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         playerView.player = null
         player?.release()
