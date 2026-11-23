@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.caverock.androidsvg.SVG
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.MessageDigest
 import java.util.concurrent.Executors
 import java.util.concurrent.ConcurrentHashMap
 
@@ -116,7 +117,9 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
         if (cached == null && localBitmap == null && channel.logo.startsWith("http", true) &&
             System.currentTimeMillis() >= retryAt && inFlight.add(channel.logo)) {
             val imageView = holder.logo
-            val cacheFile = java.io.File(holder.itemView.context.cacheDir, "rahmani-logo-${channel.logo.hashCode()}.png")
+            val logoKey = MessageDigest.getInstance("SHA-256").digest(channel.logo.toByteArray(Charsets.UTF_8))
+                .joinToString("") { "%02x".format(it) }
+            val cacheFile = java.io.File(holder.itemView.context.cacheDir, "rahmani-logo-$logoKey.png")
             io.execute {
                 var bitmap: Bitmap? = null
                 try {
