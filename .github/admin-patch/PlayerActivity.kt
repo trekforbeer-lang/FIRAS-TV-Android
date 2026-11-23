@@ -526,23 +526,34 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
+    @Suppress("DEPRECATION")
+    private fun applyFullscreenSystemUi() {
+        window.decorView.systemUiVisibility = if (isFullscreen) {
+            (View.SYSTEM_UI_FLAG_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION)
+        } else {
+            View.SYSTEM_UI_FLAG_VISIBLE
+        }
+    }
+
     private fun toggleFullscreen() {
         isFullscreen = !isFullscreen
         requestedOrientation = if (isFullscreen) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
             else ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-        val flags = if (isFullscreen) {
-            View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-        } else {
-            View.SYSTEM_UI_FLAG_VISIBLE
-        }
-        window.decorView.systemUiVisibility = flags
+        applyFullscreenSystemUi()
         // Fill the entire landscape screen: no black bars.
         // ZOOM preserves the source aspect ratio; a small part may be cropped
         // when the source and phone screen have different aspect ratios.
-        zoomed = true
-        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-        zoom.text = "ملاءمة"
+        zoomed = isFullscreen
+        playerView.resizeMode = if (isFullscreen) AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+            else AspectRatioFrameLayout.RESIZE_MODE_FIT
+        zoom.text = if (zoomed) "ملاءمة" else "زووم"
         fullscreen.text = if (isFullscreen) "⤡" else "⛶"
+        if (isFullscreen) scheduleOverlayHide() else handler.removeCallbacks(hideOverlayTask)
     }
 
     private fun handleBackAction() {
@@ -550,14 +561,20 @@ class PlayerActivity : AppCompatActivity() {
             isFullscreen = false
             // Return to the normal phone portrait screen after leaving fullscreen.
             requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
+            applyFullscreenSystemUi()
             zoomed = false
             playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
             zoom.text = "زووم"
             fullscreen.text = "⛶"
+            handler.removeCallbacks(hideOverlayTask)
         } else {
             finish()
         }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus && isFullscreen) applyFullscreenSystemUi()
     }
 
     @Suppress("DEPRECATION")
