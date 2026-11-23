@@ -2,10 +2,12 @@ package com.firas.tv
 
 import android.content.pm.ActivityInfo
 import android.os.Bundle
+import android.graphics.BitmapFactory
 import android.os.Handler
 import android.os.Looper
 import android.view.View
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -24,12 +26,15 @@ import androidx.media3.ui.TrackSelectionDialogBuilder
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import java.util.concurrent.Executors
+import java.net.HttpURLConnection
+import java.net.URL
 
 private data class DisplayChannel(
     val id: String,
     val name: String,
     val legacyUrl: String,
     val legacyHeaders: Map<String, String>,
+    val logo: String,
     val advanced: StreamConfig?
 )
 
@@ -37,6 +42,7 @@ class PlayerActivity : AppCompatActivity() {
     private var player: ExoPlayer? = null
     private lateinit var playerView: PlayerView
     private lateinit var title: TextView
+    private lateinit var watermark: ImageView
     private lateinit var status: TextView
     private lateinit var list: RecyclerView
     private lateinit var playPause: Button
@@ -52,6 +58,7 @@ class PlayerActivity : AppCompatActivity() {
     private var currentUrls: List<String> = emptyList()
     private var currentUrlIndex = 0
     private var isFullscreen = false
+    private var recoveryAttempts = 0
     private var zoomed = true
     private val worker = Executors.newSingleThreadExecutor()
     private val handler = Handler(Looper.getMainLooper())
@@ -68,6 +75,7 @@ class PlayerActivity : AppCompatActivity() {
         setContentView(R.layout.activity_player)
         playerView = findViewById(R.id.playerView)
         title = findViewById(R.id.channelTitle)
+        watermark = findViewById(R.id.channelWatermark)
         status = findViewById(R.id.statusText)
         list = findViewById(R.id.channelList)
         playPause = findViewById(R.id.playPauseButton)
@@ -79,7 +87,7 @@ class PlayerActivity : AppCompatActivity() {
 
         val advanced = UniversalStreamEngine.load(this)
         channels = UniversalStreamEngine.loadLegacy(this).map { legacy ->
-            DisplayChannel(legacy.id, legacy.name, legacy.stream, legacy.headers,
+            DisplayChannel(legacy.id, legacy.name, legacy.stream, legacy.headers, legacy.logo,
                 UniversalStreamEngine.match(advanced, legacy.id, legacy.name))
         }
         list.layoutManager = LinearLayoutManager(this, RecyclerView.HORIZONTAL, false)
@@ -94,14 +102,22 @@ class PlayerActivity : AppCompatActivity() {
             playerView.resizeMode = if (zoomed) AspectRatioFrameLayout.RESIZE_MODE_ZOOM else AspectRatioFrameLayout.RESIZE_MODE_FIT
             zoom.text = if (zoomed) "ملاءمة" else "زووم"
         }
-        retry.setOnClickListener { current?.let { play(it) } }
+        retry.setOnClickListener { recoveryAttempts = 0; current?.let { play(it) } }
         server.setOnClickListener { nextCandidateOrRetry() }
         quality.setOnClickListener {
             val active = player
             if (active == null) Toast.makeText(this, "شغّل قناة أولاً", Toast.LENGTH_SHORT).show()
             else TrackSelectionDialogBuilder(this, "اختيار الجودة", active, C.TRACK_TYPE_VIDEO).build().show()
         }
-        if (channels.isNotEmpty()) play(channels.first())
+        val requestedId = intent.getStringExtra(EXTRA_CHANNEL_ID).orEmpty()
+        val requestedUrl = intent.getStringExtra(EXTRA_URL).orEmpty()
+        val requestedName = intent.getStringExtra(EXTRA_NAME).orEmpty()
+        val selected = channels.firstOrNull {
+            (requestedId.isNotBlank() && it.id == requestedId) ||
+                (requestedUrl.isNotBlank() && it.legacyUrl == requestedUrl) ||
+                (requestedName.isNotBlank() && it.name == requestedName)
+        } ?: channels.firstOrNull()
+        if (selected != null) play(selected)
         else status.text = "لا توجد قنوات في ملف channels.json"
     }
 
@@ -129,12 +145,12 @@ class PlayerActivity : AppCompatActivity() {
                 exo.addListener(object : Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {
                         status.text = "تعذر تشغيل البث، جارٍ تجربة رابط آخر..."
-                        nextCandidateOrRetry()
+                        scheduleRecovery()
                     }
                     override fun onPlaybackStateChanged(state: Int) {
                         status.text = when (state) {
                             Player.STATE_BUFFERING -> "جارٍ تحميل البث..."
-                            Player.STATE_READY -> "FIRAS TV • البث جاهز"
+                            Player.STATE_READY -> { recoveryAttempts = 0; "FIRAS TV • البث جاهز" }
                             Player.STATE_ENDED -> "انتهى البث"
                             else -> "FIRAS TV • بث مباشر"
                         }
@@ -150,6 +166,8 @@ class PlayerActivity : AppCompatActivity() {
     private fun play(channel: DisplayChannel) {
         current = channel
         currentAdvanced = channel.advanced
+        recoveryAttempts = 0
+        loadWatermark(channel.logo)
         currentUrlIndex = 0
         title.text = channel.name
         ensurePlayer(channel)
@@ -215,6 +233,112 @@ class PlayerActivity : AppCompatActivity() {
         status.text = "جارٍ الاتصال..."
     }
 
+    private fun scheduleRecovery() {
+        if (recoveryAttempts >= 4) {
+            status.text = "تعذر الاتصال بعد عدة محاولات. اضغط تحديث للمحاولة مجدداً."
+            return
+        }
+        recoveryAttempts++
+        val delay = (1000L shl (recoveryAttempts - 1)).coerceAtMost(8000L)
+        status.text = "انقطع البث، إعادة المحاولة ${'        val channel = current ?: return
+        val config = currentAdvanced ?: return
+        if (currentUrlIndex + 1 < currentUrls.size) {
+            currentUrlIndex++
+            playUrl(currentUrls[currentUrlIndex])
+        } else {
+            worker.execute {
+                val refreshed = UniversalStreamEngine.resolve(config)
+                runOnUiThread {
+                    if (current?.id == channel.id && refreshed.isNotEmpty()) {
+                        currentUrls = refreshed
+                        currentUrlIndex = 0
+                        playUrl(refreshed.first())
+                    } else status.text = "تعذر الوصول إلى البث"
+                }
+            }
+        }
+    }
+
+    private fun toggleFullscreen() {
+        isFullscreen = !isFullscreen
+        requestedOrientation = if (isFullscreen) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            else ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        val flags = if (isFullscreen) (View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY) else View.SYSTEM_UI_FLAG_VISIBLE
+        window.decorView.systemUiVisibility = flags
+        findViewById<View>(R.id.topBar).visibility = if (isFullscreen) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.bottomPanel).visibility = if (isFullscreen) View.GONE else View.VISIBLE
+        fullscreen.text = if (isFullscreen) "تصغير" else "ملء الشاشة"
+    }
+
+    override fun onResume() { super.onResume(); player?.playWhenReady = true; handler.postDelayed(refreshTask, 5 * 60 * 1000L) }
+    override fun onPause() { handler.removeCallbacks(refreshTask); player?.pause(); super.onPause() }
+    override fun onDestroy() {
+        handler.removeCallbacksAndMessages(null)
+        handler.removeCallbacks(refreshTask)
+        playerView.player = null
+        player?.release()
+        player = null
+        worker.shutdownNow()
+        super.onDestroy()
+    }
+
+    private class ChannelAdapter(
+        private val items: List<DisplayChannel>, private val click: (DisplayChannel) -> Unit
+    ) : RecyclerView.Adapter<ChannelHolder>() {
+        override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): ChannelHolder {
+            val button = Button(parent.context).apply {
+                isAllCaps = false
+                textSize = 14f
+                minHeight = 52
+                setPadding(20, 8, 20, 8)
+            }
+            return ChannelHolder(button)
+        }
+        override fun getItemCount() = items.size
+        override fun onBindViewHolder(holder: ChannelHolder, position: Int) {
+            (holder.itemView as Button).text = items[position].name
+            holder.itemView.setOnClickListener { click(items[position]) }
+        }
+    }
+    private class ChannelHolder(view: View) : RecyclerView.ViewHolder(view)
+
+    companion object {
+        const val EXTRA_NAME = "channel_name"
+        const val EXTRA_URL = "channel_url"
+        const val EXTRA_REFERER = "channel_referer"
+        const val EXTRA_CHANNEL_ID = "channel_id"
+        const val EXTRA_LOGO = "channel_logo"
+    }
+}
+}{recoveryAttempts}/4..."
+        handler.postDelayed({
+            if (isFinishing || current == null) return@postDelayed
+            if (currentAdvanced != null) nextCandidateOrRetry()
+            else current?.let { playUrl(it.legacyUrl) }
+        }, delay)
+    }
+
+    private fun loadWatermark(url: String) {
+        watermark.setImageDrawable(null)
+        watermark.visibility = if (url.startsWith("http://", true) || url.startsWith("https://", true)) View.VISIBLE else View.GONE
+        if (watermark.visibility == View.GONE) return
+        val expected = url
+        worker.execute {
+            var bitmap: android.graphics.Bitmap? = null
+            try {
+                val connection = URL(url).openConnection() as HttpURLConnection
+                connection.connectTimeout = 6000
+                connection.readTimeout = 6000
+                connection.setRequestProperty("User-Agent", "FIRAS-TV/4.0")
+                bitmap = try { connection.inputStream.use { BitmapFactory.decodeStream(it) } }
+                    finally { connection.disconnect() }
+            } catch (_: Exception) { }
+            val result = bitmap
+            if (result != null) runOnUiThread {
+                if (!isFinishing && current?.logo == expected) watermark.setImageBitmap(result)
+            }
+        }
+    }
     private fun nextCandidateOrRetry() {
         val channel = current ?: return
         val config = currentAdvanced ?: return
