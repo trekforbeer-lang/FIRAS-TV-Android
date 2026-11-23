@@ -52,6 +52,7 @@ class TeamPreferencesActivity : AppCompatActivity() {
     private lateinit var customInput: EditText
     private lateinit var matchStartSwitch: Switch
     private lateinit var scoreSwitch: Switch
+    private var pendingPermissionFinish = false
     private val selectedTeams = linkedSetOf<String>()
     private val customTeams = linkedSetOf<String>()
 
@@ -97,7 +98,7 @@ class TeamPreferencesActivity : AppCompatActivity() {
             orientation = LinearLayout.HORIZONTAL
         }
         customInput = EditText(this).apply {
-            hint = "أضف اسم فريق آخر"
+            hint = "اسم الفريق كما يظهر في النتائج"
             textSize = 13f
             setSingleLine(true)
             setTextColor(Color.WHITE)
@@ -198,12 +199,19 @@ class TeamPreferencesActivity : AppCompatActivity() {
             .putBoolean("notify_score_change", scoreSwitch.isChecked)
             .apply()
         FanMatchWorker.schedule(this)
+        Toast.makeText(this, "تم حفظ فرقك وإعدادات التنبيهات", Toast.LENGTH_LONG).show()
         if (Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            pendingPermissionFinish = true
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 701)
+        } else {
+            finish()
         }
-        Toast.makeText(this, "تم حفظ فرقك وإعدادات التنبيهات", Toast.LENGTH_LONG).show()
-        finish()
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 701 && pendingPermissionFinish) finish()
     }
 
     private fun text(value: String, size: Int, color: Int, bold: Boolean) = TextView(this).apply {
@@ -262,7 +270,9 @@ class FanMatchWorker(context: Context, params: WorkerParameters) : Worker(contex
                     val score = "$homeScore-$awayScore"
                     val stateKey = "event_$eventId"
                     val previous = prefs.getString(stateKey, null)
-                    if (previous != null) {
+                    if (previous == null && state == "in" && prefs.getBoolean("notify_match_start", true)) {
+                        notify(eventId, "مباراة فريقك المفضل مباشرة", "$home ضد $away • المباراة جارية الآن")
+                    } else if (previous != null) {
                         val old = previous.split("|", limit = 2)
                         val oldState = old.getOrNull(0).orEmpty()
                         val oldScore = old.getOrNull(1).orEmpty()
