@@ -125,7 +125,8 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
             val imageView = holder.logo
             val logoKey = MessageDigest.getInstance("SHA-256").digest(channel.logo.toByteArray(Charsets.UTF_8))
                 .joinToString("") { "%02x".format(it) }
-            val cacheFile = java.io.File(holder.itemView.context.cacheDir, "rahmani-logo-$logoKey.png")
+            val logoDirectory = java.io.File(holder.itemView.context.filesDir, "channel-logos").apply { mkdirs() }
+            val cacheFile = java.io.File(logoDirectory, "rahmani-logo-$logoKey.png")
             io.execute {
                 var bitmap: Bitmap? = null
                 try {
