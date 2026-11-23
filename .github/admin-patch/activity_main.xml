@@ -20,7 +20,7 @@
             android:gravity="center" android:text="✦" android:textSize="20sp"
             android:textColor="#FFD166" android:background="@drawable/search_bg"/>
         <TextView android:id="@+id/homeModeButton" android:layout_width="wrap_content"
-            android:layout_height="38dp" android:gravity="center" android:paddingStart="10dp"
+            android:layout_height="48dp" android:minWidth="64dp" android:gravity="center" android:contentDescription="اختيار نمط الصفحة الرئيسية" android:paddingStart="10dp"
             android:paddingEnd="10dp" android:text="نمط العرض" android:textColor="#FFFFFF"
             android:textSize="11sp" android:background="#29344B" android:clickable="true" android:focusable="true"/>
         <TextView android:id="@+id/customizeButton" android:layout_width="wrap_content"
