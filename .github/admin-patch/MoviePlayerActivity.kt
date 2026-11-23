@@ -1,7 +1,11 @@
 package com.firas.tv
 
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.media.AudioManager
+import android.os.Build
+import android.app.PictureInPictureParams
+import android.util.Rational
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
@@ -39,6 +43,7 @@ class MoviePlayerActivity : AppCompatActivity() {
     private var gestureStartVolume = 0
     private var gestureStartBrightness = 0.5f
     private var speedBoostActive = false
+    private var topBarView: View? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -189,6 +194,7 @@ class MoviePlayerActivity : AppCompatActivity() {
             }
         }
         topBar.addView(subtitlesButton, LinearLayout.LayoutParams(dp(82), dp(42)))
+        topBarView = topBar
         root.addView(topBar, FrameLayout.LayoutParams(-1, dp(54), Gravity.TOP))
         setContentView(root)
 
@@ -247,12 +253,36 @@ class MoviePlayerActivity : AppCompatActivity() {
         if (hasFocus) window.decorView.systemUiVisibility = immersiveFlags()
     }
 
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        val active = player ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && active.isPlaying && !isInPictureInPictureMode) {
+            val params = PictureInPictureParams.Builder()
+                .setAspectRatio(Rational(16, 9))
+                .build()
+            enterPictureInPictureMode(params)
+        }
+    }
+
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        newConfig: Configuration
+    ) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        topBarView?.visibility = if (isInPictureInPictureMode) View.GONE else View.VISIBLE
+        if (isInPictureInPictureMode) {
+            playerView.hideController()
+        }
+    }
+
     override fun onStop() {
-        resumePlaybackOnStart = player?.isPlaying == true
-        if (speedBoostActive) player?.setPlaybackSpeed(1f)
-        speedBoostActive = false
-        player?.pause()
-        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        if (!isInPictureInPictureMode) {
+            resumePlaybackOnStart = player?.isPlaying == true
+            if (speedBoostActive) player?.setPlaybackSpeed(1f)
+            speedBoostActive = false
+            player?.pause()
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
         super.onStop()
     }
 
