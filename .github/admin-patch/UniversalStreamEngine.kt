@@ -215,28 +215,30 @@ object UniversalStreamEngine {
                 val requestUrl = try {
                     val parsed = endpoint.toHttpUrl()
                     val parameter = config.resolverParam.ifBlank { "id" }
+                    val existingValue = parsed.queryParameter(parameter).orEmpty()
                     val value = config.resolverValue.ifBlank {
-                        when (parameter.lowercase()) {
-                            "name", "channel", "channel_name" -> config.name
-                            "slug" -> config.id.ifBlank { config.name.trim().lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-') }
-                            "url", "stream", "source" -> config.url
-                            else -> config.id.ifBlank { config.name }
+                        existingValue.ifBlank {
+                            when (parameter.lowercase()) {
+                                "name", "channel", "channel_name" -> config.name
+                                "slug" -> config.id.ifBlank { config.name.trim().lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-') }
+                                "url", "stream", "source" -> config.url
+                                else -> config.id.ifBlank { config.name }
+                            }
                         }
                     }
-                    if (value.isBlank()) parsed
-                    else parsed.newBuilder().removeAllQueryParameters(parameter).addQueryParameter(parameter, value).build()
+                    if (value.isBlank() || value == existingValue) parsed
+                    else parsed.newBuilder().setQueryParameter(parameter, value).build()
                 } catch (e: Exception) {
                     Log.w(TAG, "Invalid resolver endpoint", e)
                     return listOf(config.fallbackUrl).filter { it.isNotBlank() }
                 }
-                var body: String? = null
+                var resolved = ""
                 repeat(2) { attempt ->
-                    if (body.isNullOrBlank()) {
-                        body = requestText(requestUrl.toString(), headers, config.id)
-                        if (body.isNullOrBlank() && attempt == 0) Thread.sleep(350)
+                    if (resolved.isBlank()) {
+                        resolved = resolveHttpEntry(requestUrl.toString(), headers, config.id, config)
+                        if (resolved.isBlank() && attempt == 0) Thread.sleep(350)
                     }
                 }
-                val resolved = body?.let { extractResolverValue(it, config) }.orEmpty()
                 listOf(resolved, config.fallbackUrl).filter { it.isNotBlank() }.distinct()
             }
             "sequential" -> {
@@ -247,6 +249,41 @@ object UniversalStreamEngine {
             }
             else -> (config.urls + config.url + config.fallbackUrl).filter { it.isNotBlank() }.distinct()
         }
+    }
+
+    private fun resolveHttpEntry(
+        url: String,
+        headers: Map<String, String>,
+        channelId: String,
+        config: StreamConfig
+    ): String = try {
+        val request = Request.Builder().url(url).get()
+            .apply { headers.forEach { (key, value) -> header(key, value) } }.build()
+        val requestClient = client.newBuilder().cookieJar(cookieJarFor(channelId)).build()
+        requestClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return@use ""
+            val finalUrl = response.request.url
+            val body = response.body?.string().orEmpty()
+            val trimmed = body.trim()
+            // PHP endpoints may return an HLS manifest directly or redirect to its final URL.
+            if (trimmed.startsWith("#EXTM3U") ||
+                (finalUrl.encodedPath.endsWith(".m3u8", true) &&
+                    (trimmed.isBlank() || response.header("Content-Type").orEmpty().contains("mpegurl", true)))) {
+                return@use finalUrl.toString()
+            }
+            val extracted = if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+                trimmed.lineSequence().firstOrNull()?.trim()?.trim('"', '\'')
+            } else {
+                extractResolverValue(body, config).ifBlank {
+                    Regex("""["']([^"'\\s<>]+\\.m3u8(?:\\?[^"'\\s<>]*)?)["']""", RegexOption.IGNORE_CASE)
+                        .find(body)?.groupValues?.getOrNull(1).orEmpty()
+                }
+            }
+            if (extracted.isBlank()) "" else finalUrl.resolve(extracted)?.toString().orEmpty()
+        }
+    } catch (e: Exception) {
+        Log.w(TAG, "Resolver entry failed", e)
+        ""
     }
 
     private fun extractResolverValue(body: String, config: StreamConfig): String {
@@ -295,12 +332,17 @@ object UniversalStreamEngine {
         val staticCookie = configured.entries.firstOrNull { it.key.equals("Cookie", true) }?.value.orEmpty()
         val requestHeaders = configured.filterKeys { !it.equals("Cookie", true) }
         val channelCookieJar = cookieJarFor(config.id)
+        val cookieHost = try {
+            (config.url.ifBlank { config.resolverUrl }).toHttpUrl().host
+        } catch (_: Exception) { "" }
         val channelClient = client.newBuilder().cookieJar(channelCookieJar).addNetworkInterceptor { chain ->
             val original = chain.request()
             val jarCookies = channelCookieJar.loadForRequest(original.url).map { it.name + "=" + it.value }
             val supplied = original.header("Cookie").orEmpty()
+            // Never forward a static channel cookie to a different host after redirects.
+            val hostCookie = if (cookieHost.isNotBlank() && original.url.host.equals(cookieHost, true)) staticCookie else ""
             val merged = linkedMapOf<String, String>()
-            (listOf(supplied, staticCookie) + jarCookies).forEach { header ->
+            (listOf(supplied, hostCookie) + jarCookies).forEach { header ->
                 header.split(";").forEach { part ->
                     val pair = part.trim().split("=", limit = 2)
                     if (pair.size == 2 && pair[0].isNotBlank()) merged[pair[0].trim()] = pair[1].trim()
