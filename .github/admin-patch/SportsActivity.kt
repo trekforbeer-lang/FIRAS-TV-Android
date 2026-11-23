@@ -29,6 +29,7 @@ class SportsActivity : AppCompatActivity() {
     private lateinit var content: LinearLayout
     private lateinit var status: TextView
     private val matches = mutableListOf<MatchCard>()
+    @Volatile private var loadGeneration = 0
     private val leagues = listOf(
         "eng.1" to "الدوري الإنجليزي",
         "esp.1" to "الدوري الإسباني",
@@ -38,6 +39,12 @@ class SportsActivity : AppCompatActivity() {
         "uefa.champions" to "دوري أبطال أوروبا",
         "uefa.europa" to "الدوري الأوروبي"
     )
+
+    override fun onDestroy() {
+        loadGeneration++
+        io.shutdownNow()
+        super.onDestroy()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -92,9 +99,10 @@ class SportsActivity : AppCompatActivity() {
     }
 
     private fun loadMatches() {
+        val generation = ++loadGeneration
         status.text = "جارٍ تحديث النتائج..."
         content.removeAllViews()
-        matches.clear()
+        synchronized(matches) { matches.clear() }
         val date = SimpleDateFormat("yyyyMMdd", Locale.US).format(Date())
         var completed = 0
         for ((code, leagueName) in leagues) {
@@ -105,8 +113,11 @@ class SportsActivity : AppCompatActivity() {
                         connectTimeout = 12000; readTimeout = 15000
                         setRequestProperty("User-Agent", "RAHMANI/1.0")
                     }
-                    val json = try { conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() } }
-                        finally { conn.disconnect() }
+                    val json = try {
+                        val code = conn.responseCode
+                        if (code !in 200..299) throw java.io.IOException("ESPN HTTP $code")
+                        conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                    } finally { conn.disconnect() }
                     val events = JSONObject(json).optJSONArray("events")
                     val found = mutableListOf<MatchCard>()
                     if (events != null) for (i in 0 until events.length()) {
@@ -141,9 +152,10 @@ class SportsActivity : AppCompatActivity() {
                             ?.takeIf { !it.isNullOrBlank() } ?: "غير متاح من المصدر"
                         found.add(MatchCard(leagueName, home, away, hs, ascore, time, statusText, isLive, channel, commentator))
                     }
-                    synchronized(matches) { matches.addAll(found) }
+                    if (generation == loadGeneration) synchronized(matches) { matches.addAll(found) }
                 } catch (_: Exception) { }
                 runOnUiThread {
+                    if (isFinishing || isDestroyed || generation != loadGeneration) return@runOnUiThread
                     completed++
                     if (completed == leagues.size) renderMatches()
                 }
