@@ -66,6 +66,7 @@ class MainActivity : AppCompatActivity() {
         restoreButton = findViewById(R.id.restoreChannelsButton)
         applyHomePreferences()
         findViewById<TextView>(R.id.customizeButton).setOnClickListener { showHomePreferences() }
+        findViewById<TextView>(R.id.homeModeButton).setOnClickListener { showHomeModePicker() }
         rebuildChips(chips)
         findViewById<EditText>(R.id.search).addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) { query = s?.toString()?.trim().orEmpty(); refresh() }
@@ -94,6 +95,23 @@ class MainActivity : AppCompatActivity() {
     }
 
 
+    private fun showHomeModePicker() {
+        val modes = arrayOf("مختلط — كل الأقسام", "القنوات المباشرة", "الرياضة والمباريات", "الأفلام")
+        val values = arrayOf("mixed", "live", "sports", "movies")
+        val current = homePrefs.getString("home_mode", "mixed") ?: "mixed"
+        val selectedIndex = values.indexOf(current).coerceAtLeast(0)
+        AlertDialog.Builder(this)
+            .setTitle("اختر شكل الصفحة الرئيسية")
+            .setSingleChoiceItems(modes, selectedIndex) { dialog, which ->
+                homePrefs.edit().putString("home_mode", values[which]).apply()
+                applyHomePreferences()
+                dialog.dismiss()
+                Toast.makeText(this, "تم تغيير نمط الصفحة الرئيسية", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("إغلاق", null)
+            .show()
+    }
+
     private fun showHomePreferences() {
         val options = arrayOf("عرض بانر الأعمال المميزة", "عرض قسم المباريات الرياضية", "عرض القنوات المباشرة", "عرض شريط البحث")
         val keys = arrayOf("hero", "sports", "channels", "search")
@@ -116,14 +134,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyHomePreferences() {
-        findViewById<View>(R.id.homeHeroSection)?.visibility =
-            if (homePrefs.getBoolean("hero", true)) View.VISIBLE else View.GONE
-        findViewById<View>(R.id.homeSportsSection)?.visibility =
-            if (homePrefs.getBoolean("sports", true)) View.VISIBLE else View.GONE
-        findViewById<View>(R.id.homeChannelsSection)?.visibility =
-            if (homePrefs.getBoolean("channels", true)) View.VISIBLE else View.GONE
-        findViewById<View>(R.id.search)?.visibility =
-            if (homePrefs.getBoolean("search", true)) View.VISIBLE else View.GONE
+        val mode = homePrefs.getString("home_mode", "mixed") ?: "mixed"
+        val showHero = homePrefs.getBoolean("hero", true) && mode != "live"
+        val showSports = homePrefs.getBoolean("sports", true) && mode != "live" && mode != "movies"
+        val showChannels = homePrefs.getBoolean("channels", true) && mode != "sports" && mode != "movies"
+        val showSearch = homePrefs.getBoolean("search", true)
+        findViewById<View>(R.id.homeHeroSection)?.visibility = if (showHero) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.homeSportsSection)?.visibility = if (showSports) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.homeChannelsSection)?.visibility = if (showChannels) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.chips)?.parent?.let { it.visibility = if (showChannels) View.VISIBLE else View.GONE }
+        findViewById<View>(R.id.list)?.visibility = if (showChannels) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.restoreChannelsButton)?.visibility = if (showChannels) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.search)?.visibility = if (showSearch) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.empty)?.visibility =
+            if (showChannels && adapter.currentList.isEmpty()) View.VISIBLE else View.GONE
     }
 
     private fun selectCategory(keyword: String) {
