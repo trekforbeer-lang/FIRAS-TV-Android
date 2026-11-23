@@ -426,18 +426,15 @@ class AdminActivity : Activity() {
                 break
             }
         }
-        if (config == null) {
-            config = JSONObject().put("mode", "direct")
-            array.put(config)
-        }
-        val headers = config.optJSONObject("headers") ?: JSONObject().also { config.put("headers", it) }
+        val targetConfig = config ?: JSONObject().put("mode", "direct").also { array.put(it) }
+        val headers = targetConfig.optJSONObject("headers") ?: JSONObject().also { targetConfig.put("headers", it) }
         val ua = channel.optString("userAgent").trim()
         val refererValue = channel.optString("referer").trim()
         if (ua.isNotBlank()) headers.put("User-Agent", ua) else headers.remove("User-Agent")
         if (refererValue.isNotBlank()) headers.put("Referer", refererValue) else headers.remove("Referer")
-        config.put("id", id).put("name", name).put("url", channel.optString("url"))
+        targetConfig.put("id", id).put("name", name).put("url", channel.optString("url"))
             .put("cookie", cookieValue)
-        config.put("urls", channel.optJSONArray("alts") ?: JSONArray())
+        targetConfig.put("urls", channel.optJSONArray("alts") ?: JSONArray())
         val temp = File(filesDir, "channels_stream_config.json.tmp")
         temp.writeText(rootConfig.toString(2), Charsets.UTF_8)
         if (!temp.renameTo(file)) {
