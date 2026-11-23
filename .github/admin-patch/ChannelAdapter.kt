@@ -96,34 +96,55 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
         val cached = synchronized(cache) { cache[channel.logo] }
         holder.logo.setImageBitmap(cached ?: fallbackLogo(channel.name))
         if (cached == null && channel.logo.startsWith("http", true)) {
+            val imageView = holder.logo
+            val cacheFile = java.io.File(holder.itemView.context.cacheDir, "rahmani-logo-${channel.logo.hashCode()}.png")
             io.execute {
                 var bitmap: Bitmap? = null
                 try {
-                    val connection = URL(channel.logo).openConnection() as HttpURLConnection
-                    connection.connectTimeout = 5000
-                    connection.readTimeout = 5000
-                    connection.instanceFollowRedirects = true
-                    connection.setRequestProperty("User-Agent", "RAHMANI/1.0")
-                    connection.setRequestProperty("Accept", "image/avif,image/webp,image/svg+xml,image/png,image/*;q=0.9,*/*;q=0.5")
-                    bitmap = try {
-                        val bytes = connection.inputStream.use { it.readBytes() }
-                        val type = connection.contentType.orEmpty().lowercase()
-                        val prefix = bytes.take(512).toByteArray().toString(Charsets.UTF_8).trimStart()
-                        if (type.contains("svg") || prefix.startsWith("<svg") || prefix.startsWith("<?xml") && prefix.contains("<svg")) {
-                            val svg = SVG.getFromString(bytes.toString(Charsets.UTF_8))
-                            val rendered = Bitmap.createBitmap(192, 192, Bitmap.Config.ARGB_8888)
-                            val canvas = Canvas(rendered)
-                            svg.renderToCanvas(canvas, 192, 192)
-                            rendered
-                        } else {
-                            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    if (cacheFile.isFile && cacheFile.length() in 1..(4L * 1024L * 1024L)) {
+                        bitmap = BitmapFactory.decodeFile(cacheFile.absolutePath)
+                    }
+                    if (bitmap == null) {
+                        val connection = URL(channel.logo).openConnection() as HttpURLConnection
+                        connection.connectTimeout = 8000
+                        connection.readTimeout = 8000
+                        connection.instanceFollowRedirects = true
+                        connection.setRequestProperty("User-Agent", "RAHMANI/1.0")
+                        connection.setRequestProperty("Accept", "image/avif,image/webp,image/svg+xml,image/png,image/*;q=0.9,*/*;q=0.5")
+                        bitmap = try {
+                            val bytes = connection.inputStream.use { input ->
+                                val output = java.io.ByteArrayOutputStream()
+                                val buffer = ByteArray(8192)
+                                var total = 0
+                                while (true) {
+                                    val count = input.read(buffer)
+                                    if (count < 0) break
+                                    total += count
+                                    if (total > 4 * 1024 * 1024) throw IllegalStateException("Logo too large")
+                                    output.write(buffer, 0, count)
+                                }
+                                output.toByteArray()
+                            }
+                            val type = connection.contentType.orEmpty().lowercase()
+                            val prefix = bytes.take(512).toByteArray().toString(Charsets.UTF_8).trimStart()
+                            if (type.contains("svg") || prefix.startsWith("<svg") || prefix.startsWith("<?xml") && prefix.contains("<svg")) {
+                                val svg = SVG.getFromString(bytes.toString(Charsets.UTF_8))
+                                val rendered = Bitmap.createBitmap(192, 192, Bitmap.Config.ARGB_8888)
+                                svg.renderToCanvas(Canvas(rendered), 192, 192)
+                                rendered
+                            } else BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                        } finally { connection.disconnect() }
+                        bitmap?.let { image ->
+                            try {
+                                cacheFile.outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                            } catch (_: Exception) { }
                         }
-                    } finally { connection.disconnect() }
+                    }
                     if (bitmap != null) synchronized(cache) { cache[channel.logo] = bitmap!! }
                 } catch (_: Exception) { }
                 val result = bitmap
-                if (result != null) holder.logo.post {
-                    if (holder.logo.tag == channel.logo) holder.logo.setImageBitmap(result)
+                if (result != null) imageView.post {
+                    if (imageView.tag == channel.logo) imageView.setImageBitmap(result)
                 }
             }
         }
