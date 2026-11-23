@@ -77,6 +77,17 @@ class MainActivity : AppCompatActivity() {
         if (returningFromAdmin) { returningFromAdmin = false; recreate() }
     }
 
+    private fun selectCategory(keyword: String) {
+        val section = sections.firstOrNull { it.title.contains(keyword, ignoreCase = true) || (keyword == "رياضة" && it.title.contains("sport", ignoreCase = true)) }
+        if (section == null) { Toast.makeText(this, "لا يوجد تصنيف رياضي حالياً. أضف قنوات رياضية من لوحة الإدارة.", Toast.LENGTH_LONG).show(); return }
+        selected = section.title
+        for (i in 0 until chips.childCount) {
+            val chip = chips.getChildAt(i) as? Chip ?: continue
+            chip.isChecked = (chip.tag as? String) == selected
+        }
+        refresh()
+    }
+
     private fun rebuildChips(group: ChipGroup) {
         group.removeAllViews()
         fun addChip(label: String, tag: String, checked: Boolean) {
