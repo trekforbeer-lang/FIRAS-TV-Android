@@ -637,6 +637,8 @@ class PlayerActivity : AppCompatActivity() {
     override fun onPause() {
         handler.removeCallbacks(refreshTask)
         player?.pause()
+        // Defensive cleanup: never keep the device awake after leaving the player screen.
+        window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         super.onPause()
     }
 
