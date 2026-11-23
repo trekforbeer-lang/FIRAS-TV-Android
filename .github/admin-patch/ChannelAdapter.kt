@@ -99,7 +99,7 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
         holder.title.text = channel.name
         holder.subtitle.text = if (channel.url.isBlank()) "الرابط غير متوفر" else "● رابط مضاف"
         holder.subtitle.setTextColor(if (channel.url.isBlank()) Color.rgb(235, 170, 105) else Color.rgb(91, 205, 157))
-        holder.card.contentDescription = if (channel.url.isBlank()) "${channel.name}، الرابط غير متوفر" else "${channel.name}، جاهزة للتشغيل"
+        holder.card.contentDescription = if (channel.url.isBlank()) "${channel.name}، الرابط غير متوفر" else "${channel.name}، رابط البث مضاف"
         holder.card.setOnClickListener { onClick(channel) }
         holder.logo.tag = channel.logo
         val cached = synchronized(cache) { cache[channel.logo] }
