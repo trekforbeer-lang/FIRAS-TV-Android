@@ -20,6 +20,12 @@
             android:layout_width="match_parent" android:layout_height="match_parent"
             app:use_controller="true" app:show_timeout="3000" app:show_buffering="when_playing"
             app:resize_mode="zoom" app:show_subtitle_button="true"/>
+        <ImageView android:id="@+id/channelWatermark"
+            android:layout_width="58dp" android:layout_height="58dp"
+            android:layout_gravity="top|end" android:layout_margin="16dp"
+            android:scaleType="fitCenter" android:padding="4dp"
+            android:contentDescription="شعار القناة"
+            android:background="#55000000" android:visibility="gone"/>
     </FrameLayout>
 
     <LinearLayout android:id="@+id/bottomPanel" android:layout_width="match_parent"
