@@ -29,7 +29,7 @@ object ChannelRepository {
                 val item = items.optJSONObject(j) ?: return@mapNotNull null
                 if (item.optBoolean("priv", false)) return@mapNotNull null
                 val url = item.optString("url", item.optString("stream")).trim()
-                if (!(url.startsWith("http://", true) || url.startsWith("https://", true))) return@mapNotNull null
+                if (url.isNotBlank() && !(url.startsWith("http://", true) || url.startsWith("https://", true))) return@mapNotNull null
                 Channel(item.optString("name", "قناة"), item.optString("logo"), url,
                     item.optString("referer"), item.optString("id"), item.optBoolean("priv", false))
             }
