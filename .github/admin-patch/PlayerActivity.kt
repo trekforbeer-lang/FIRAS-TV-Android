@@ -336,7 +336,13 @@ class PlayerActivity : AppCompatActivity() {
 
                     override fun onIsPlayingChanged(isPlaying: Boolean) {
                         playPause.text = if (isPlaying) "Ⅱ" else "▶"
-                        if (isPlaying) scheduleOverlayHide() else handler.removeCallbacks(hideOverlayTask)
+                        if (isPlaying) {
+                            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                            scheduleOverlayHide()
+                        } else {
+                            window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                            handler.removeCallbacks(hideOverlayTask)
+                        }
                     }
                 })
             }
