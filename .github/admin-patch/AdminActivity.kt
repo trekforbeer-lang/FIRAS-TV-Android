@@ -304,7 +304,7 @@ class AdminActivity : Activity() {
         for (i in 0 until groups.length()) {
             val list = groups.optJSONObject(i)?.optJSONArray("items") ?: continue
             total += list.length()
-            for (j in visibleItems) {
+            for (j in 0 until list.length()) {
                 val channel = list.optJSONObject(j) ?: continue
                 if (channel.optString("url").isBlank()) missing++
                 else if (channel.has("ok")) {
@@ -410,7 +410,7 @@ class AdminActivity : Activity() {
                 else Toast.makeText(this@AdminActivity, "التصنيف يحتوي قنوات أصلية؛ لن نحذفه.", Toast.LENGTH_LONG).show()
             }, LinearLayout.LayoutParams(0, -2, 1f))
             sectionBox.addView(categoryActions)
-            for (j in 0 until list.length()) {
+            for (j in visibleItems) {
                 val channel = list.optJSONObject(j) ?: continue
                 val row = LinearLayout(this).apply {
                     orientation = LinearLayout.VERTICAL; setPadding(9, 9, 9, 9)
