@@ -283,7 +283,7 @@ object UniversalStreamEngine {
                 trimmed.endsWith(".m3u8", true) -> trimmed.trim('"')
                 else -> extractResolverValue(body, config)
             }
-            if (extracted.isBlank()) "" else finalUrl.resolve(extracted)?.toString().orEmpty()
+            extracted?.takeIf { it.isNotBlank() }?.let { finalUrl.resolve(it)?.toString() }.orEmpty()
         }
     } catch (e: Exception) {
         Log.w(TAG, "Resolver entry failed", e)
