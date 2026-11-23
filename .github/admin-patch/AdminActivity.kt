@@ -26,6 +26,7 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.SecureRandom
+import java.util.concurrent.Executors
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 
@@ -789,24 +790,40 @@ class AdminActivity : Activity() {
     private fun checkChannels() {
         Toast.makeText(this, "جارٍ فحص استجابة روابط القنوات...", Toast.LENGTH_SHORT).show()
         Thread {
-            var good = 0
-            var bad = 0
-            val groups = sections()
-            for (i in 0 until groups.length()) {
-                val arr = groups.optJSONObject(i)?.optJSONArray("items") ?: continue
-                for (j in 0 until arr.length()) {
-                    val item = arr.optJSONObject(j) ?: continue
-                    val stream = item.optString("url")
-                    if (!safe(stream)) continue
-                    val ok = probe(item)
-                    item.put("ok", ok).put("chk", System.currentTimeMillis())
+            // Keep network work off the UI thread and cap concurrency to avoid
+            // opening dozens of connections at once on a mobile device.
+            val executor = Executors.newFixedThreadPool(4)
+            try {
+                val checks = mutableListOf<Pair<JSONObject, java.util.concurrent.Future<Boolean>>>()
+                val groups = sections()
+                for (i in 0 until groups.length()) {
+                    val arr = groups.optJSONObject(i)?.optJSONArray("items") ?: continue
+                    for (j in 0 until arr.length()) {
+                        val item = arr.optJSONObject(j) ?: continue
+                        val stream = item.optString("url")
+                        if (!safe(stream)) continue
+                        val snapshot = JSONObject(item.toString())
+                        checks += item to executor.submit<Boolean> { probe(snapshot) }
+                    }
+                }
+
+                var good = 0
+                var bad = 0
+                val completedAt = System.currentTimeMillis()
+                checks.forEach { (original, future) ->
+                    val ok = try { future.get() } catch (_: Exception) { false }
+                    // JSONObject is updated only after returning to the main thread.
+                    original.put("ok", ok).put("chk", completedAt)
                     if (ok) good++ else bad++
                 }
-            }
-            runOnUiThread {
-                save()
-                Toast.makeText(this, "انتهى فحص استجابة الخوادم: ناجح $good • فاشل $bad. هذا ليس اختبار تشغيل فيديو.", Toast.LENGTH_LONG).show()
-                render()
+                runOnUiThread {
+                    if (isFinishing || isDestroyed) return@runOnUiThread
+                    save()
+                    Toast.makeText(this, "انتهى فحص استجابة الخوادم: ناجح $good • فاشل $bad. هذا ليس اختبار تشغيل فيديو.", Toast.LENGTH_LONG).show()
+                    render()
+                }
+            } finally {
+                executor.shutdownNow()
             }
         }.start()
     }
