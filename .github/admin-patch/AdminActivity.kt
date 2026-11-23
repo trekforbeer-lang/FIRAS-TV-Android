@@ -63,10 +63,18 @@ class AdminActivity : Activity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (authenticated) {
+            handler.removeCallbacks(autoLogout)
+            handler.postDelayed(autoLogout, 10 * 60 * 1000L)
+        }
+    }
+
     override fun onPause() {
         if (authenticated) {
-            authenticated = false
             handler.removeCallbacks(autoLogout)
+            handler.postDelayed(autoLogout, 10 * 60 * 1000L)
         }
         super.onPause()
     }
