@@ -129,7 +129,7 @@ class MainActivity : AppCompatActivity() {
             }
             .setNegativeButton("إلغاء", null)
             .setNeutralButton("إظهار الكل") { _, _ ->
-                keys.forEach { homePrefs.edit().putBoolean(it, true).apply() }
+                keys.forEach { key -> homePrefs.edit().putBoolean(key, key != "compact_grid").apply() }
                 applyHomePreferences()
             }
             .show()
