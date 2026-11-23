@@ -295,7 +295,7 @@ object UniversalStreamEngine {
         val staticCookie = configured.entries.firstOrNull { it.key.equals("Cookie", true) }?.value.orEmpty()
         val requestHeaders = configured.filterKeys { !it.equals("Cookie", true) }
         val channelCookieJar = cookieJarFor(config.id)
-        val channelClient = client.newBuilder().cookieJar(channelCookieJar).addInterceptor { chain ->
+        val channelClient = client.newBuilder().cookieJar(channelCookieJar).addNetworkInterceptor { chain ->
             val original = chain.request()
             val jarCookies = channelCookieJar.loadForRequest(original.url).map { it.name + "=" + it.value }
             val supplied = original.header("Cookie").orEmpty()
