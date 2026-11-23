@@ -18,6 +18,7 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -214,17 +215,24 @@ class PlayerActivity : AppCompatActivity() {
             .setPrioritizeTimeOverSizeThresholds(true)
             .build()
 
-        // DefaultHttpDataSource applies these channel headers to the HLS playlist,
-        // child playlists, encryption keys and media segments requested by Media3.
-        val httpFactory = DefaultHttpDataSource.Factory()
-            .setUserAgent(userAgent)
-            .setDefaultRequestProperties(headers)
-            .setAllowCrossProtocolRedirects(true)
-            .setConnectTimeoutMs(15000)
-            .setReadTimeoutMs(25000)
-
-        val sourceFactory = DefaultMediaSourceFactory(this)
-            .setDataSourceFactory(httpFactory)
+        // Advanced channels use an isolated OkHttp cookie jar. The same DataSource
+        // factory is used for playlists, child playlists, keys and media segments.
+        val sourceFactory = if (currentAdvanced != null) {
+            val advancedConfig = currentAdvanced!!.copy(
+                headers = requestHeaders(channel),
+                cookie = ""
+            )
+            DefaultMediaSourceFactory(this)
+                .setDataSourceFactory(UniversalStreamEngine.okhttpFactory(advancedConfig))
+        } else {
+            val httpFactory = DefaultHttpDataSource.Factory()
+                .setUserAgent(userAgent)
+                .setDefaultRequestProperties(headers)
+                .setAllowCrossProtocolRedirects(true)
+                .setConnectTimeoutMs(15000)
+                .setReadTimeoutMs(25000)
+            DefaultMediaSourceFactory(this).setDataSourceFactory(httpFactory)
+        }
 
         player = ExoPlayer.Builder(this)
             .setLoadControl(loadControl)
@@ -240,7 +248,12 @@ class PlayerActivity : AppCompatActivity() {
                     override fun onPlaybackStateChanged(state: Int) {
                         status.text = when (state) {
                             Player.STATE_BUFFERING -> "جارٍ تحميل البث..."
-                            Player.STATE_READY -> "FIRAS TV • البث جاهز"
+                            Player.STATE_READY -> {
+                                recoveryAttempts = 0
+                                recoveryTask?.let(handler::removeCallbacks)
+                                recoveryTask = null
+                                "FIRAS TV • البث جاهز"
+                            }
                             Player.STATE_ENDED -> "انتهى البث"
                             else -> "FIRAS TV • بث مباشر"
                         }
