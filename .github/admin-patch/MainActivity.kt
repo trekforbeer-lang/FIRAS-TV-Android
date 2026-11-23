@@ -40,6 +40,10 @@ class MainActivity : AppCompatActivity() {
         val appCtx = applicationContext
         Thread { StreamConfigStore.ensureLoaded(appCtx) }.start()
         adapter = ChannelAdapter { c ->
+            if (c.url.isBlank()) {
+                Toast.makeText(this, "رابط البث غير مضاف لهذه القناة بعد. أضفه من لوحة الإدارة.", Toast.LENGTH_LONG).show()
+                return@ChannelAdapter
+            }
             val now = SystemClock.elapsedRealtime()
             if (now - lastLaunchAt >= 800L) {
                 lastLaunchAt = now
