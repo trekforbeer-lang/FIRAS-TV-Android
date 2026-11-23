@@ -271,13 +271,17 @@ object UniversalStreamEngine {
                     (trimmed.isBlank() || response.header("Content-Type").orEmpty().contains("mpegurl", true)))) {
                 return@use finalUrl.toString()
             }
-            val extracted = if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-                trimmed.lineSequence().firstOrNull()?.trim()?.trim('"', '\'')
-            } else {
-                extractResolverValue(body, config).ifBlank {
-                    Regex("""["']([^"'\\s<>]+\\.m3u8(?:\\?[^"'\\s<>]*)?)["']""", RegexOption.IGNORE_CASE)
-                        .find(body)?.groupValues?.getOrNull(1).orEmpty()
-                }
+            val quotedM3u8 = Regex("""["']([^"'\s<>]+\.m3u8(?:\?[^"'\s<>]*)?)["']""", RegexOption.IGNORE_CASE)
+                .find(body)?.groupValues?.getOrNull(1).orEmpty()
+            val absoluteM3u8 = Regex("""https?://[^\s"'<>]+\.m3u8[^\s"'<>]*""", RegexOption.IGNORE_CASE)
+                .find(body)?.value?.trimEnd(',', ';', ')').orEmpty()
+            val extracted = when {
+                trimmed.startsWith("http://") || trimmed.startsWith("https://") ->
+                    trimmed.lineSequence().firstOrNull()?.trim()?.trim('"')
+                quotedM3u8.isNotBlank() -> quotedM3u8
+                absoluteM3u8.isNotBlank() -> absoluteM3u8
+                trimmed.endsWith(".m3u8", true) -> trimmed.trim('"')
+                else -> extractResolverValue(body, config)
             }
             if (extracted.isBlank()) "" else finalUrl.resolve(extracted)?.toString().orEmpty()
         }
