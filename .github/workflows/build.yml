@@ -23,6 +23,7 @@ jobs:
           cp .github/admin-patch/AdminActivity.kt app/src/main/java/com/firas/tv/AdminActivity.kt
           cp .github/admin-patch/MainActivity.kt app/src/main/java/com/firas/tv/MainActivity.kt
           cp .github/admin-patch/Models.kt app/src/main/java/com/firas/tv/Models.kt
+          cp .github/admin-patch/UniversalStreamEngine.kt app/src/main/java/com/firas/tv/UniversalStreamEngine.kt
           cp .github/admin-patch/ChannelAdapter.kt app/src/main/java/com/firas/tv/ChannelAdapter.kt
           cp .github/admin-patch/activity_main.xml app/src/main/res/layout/activity_main.xml
           mkdir -p app/src/main/res/drawable
