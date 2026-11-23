@@ -20,11 +20,14 @@ import com.caverock.androidsvg.SVG
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
+import java.util.concurrent.ConcurrentHashMap
 
 class ChannelAdapter(private val onClick: (Channel) -> Unit) :
     ListAdapter<Channel, ChannelAdapter.Holder>(Diff) {
 
     private val io = Executors.newFixedThreadPool(3)
+    private val inFlight = ConcurrentHashMap.newKeySet<String>()
+    private val failedUntil = ConcurrentHashMap<String, Long>()
     private val cache = object : LinkedHashMap<String, Bitmap>(48, .75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Bitmap>?): Boolean = size > 48
     }
@@ -109,7 +112,9 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
         } else null
         if (localBitmap != null) synchronized(cache) { cache[channel.logo] = localBitmap }
         holder.logo.setImageBitmap(cached ?: localBitmap ?: fallbackLogo(channel.name))
-        if (cached == null && localBitmap == null && channel.logo.startsWith("http", true)) {
+        val retryAt = failedUntil[channel.logo] ?: 0L
+        if (cached == null && localBitmap == null && channel.logo.startsWith("http", true) &&
+            System.currentTimeMillis() >= retryAt && inFlight.add(channel.logo)) {
             val imageView = holder.logo
             val cacheFile = java.io.File(holder.itemView.context.cacheDir, "rahmani-logo-${channel.logo.hashCode()}.png")
             io.execute {
@@ -155,7 +160,12 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
                         }
                     }
                     if (bitmap != null) synchronized(cache) { cache[channel.logo] = bitmap!! }
-                } catch (_: Exception) { }
+                } catch (_: Exception) {
+                    failedUntil[channel.logo] = System.currentTimeMillis() + 60_000L
+                } finally {
+                    if (bitmap == null) failedUntil[channel.logo] = System.currentTimeMillis() + 60_000L
+                    inFlight.remove(channel.logo)
+                }
                 val result = bitmap
                 if (result != null) imageView.post {
                     if (imageView.tag == channel.logo) imageView.setImageBitmap(result)
