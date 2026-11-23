@@ -39,22 +39,34 @@ object UniversalStreamEngine {
     private const val TAG = "FIRASStream"
     private const val CONFIG = "channels_stream_config.json"
     private const val LEGACY = "channels.json"
-    private val cookieStore = mutableMapOf<String, MutableList<Cookie>>()
-    private val cookieJar = object : CookieJar {
-        override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
-            synchronized(cookieStore) {
-                val current = cookieStore[url.host]?.toMutableList() ?: mutableListOf()
-                cookies.forEach { c -> current.removeAll { it.name == c.name }; current.add(c) }
-                cookieStore[url.host] = current
-            }
-        }
-        override fun loadForRequest(url: HttpUrl): List<Cookie> =
-            synchronized(cookieStore) { cookieStore[url.host]?.filter { it.matches(url) } ?: emptyList() }
-    }
+    private val channelCookieStores = mutableMapOf<String, MutableMap<String, MutableList<Cookie>>>()
+    private val channelCookieJars = mutableMapOf<String, CookieJar>()
     val client: OkHttpClient by lazy {
-        OkHttpClient.Builder().cookieJar(cookieJar)
+        OkHttpClient.Builder().cookieJar(CookieJar.NO_COOKIES)
             .connectTimeout(15, TimeUnit.SECONDS).readTimeout(25, TimeUnit.SECONDS)
             .followRedirects(true).followSslRedirects(true).build()
+    }
+
+    private fun cookieJarFor(channelId: String): CookieJar = synchronized(channelCookieJars) {
+        channelCookieJars.getOrPut(channelId) {
+            object : CookieJar {
+                override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
+                    synchronized(channelCookieStores) {
+                        val store = channelCookieStores.getOrPut(channelId) { mutableMapOf() }
+                        val current = store[url.host]?.toMutableList() ?: mutableListOf()
+                        cookies.forEach { cookie ->
+                            current.removeAll { it.name == cookie.name && it.path == cookie.path }
+                            current.add(cookie)
+                        }
+                        store[url.host] = current
+                    }
+                }
+                override fun loadForRequest(url: HttpUrl): List<Cookie> =
+                    synchronized(channelCookieStores) {
+                        channelCookieStores[channelId]?.get(url.host)?.filter { it.matches(url) } ?: emptyList()
+                    }
+            }
+        }
     }
 
     private fun readConfig(context: Context): String? {
@@ -220,7 +232,7 @@ object UniversalStreamEngine {
                 var body: String? = null
                 repeat(2) { attempt ->
                     if (body.isNullOrBlank()) {
-                        body = requestText(requestUrl.toString(), headers)
+                        body = requestText(requestUrl.toString(), headers, config.id)
                         if (body.isNullOrBlank() && attempt == 0) Thread.sleep(350)
                     }
                 }
@@ -229,7 +241,7 @@ object UniversalStreamEngine {
             }
             "sequential" -> {
                 val candidates = sequentialCandidates(config)
-                val liveEdge = candidates.firstOrNull { probe(it, headers) }
+                val liveEdge = candidates.firstOrNull { probe(it, headers, config.id) }
                 if (liveEdge != null) listOf(liveEdge) + candidates.filter { it != liveEdge }
                 else candidates
             }
@@ -282,9 +294,10 @@ object UniversalStreamEngine {
         val configured = mergedHeaders(config)
         val staticCookie = configured.entries.firstOrNull { it.key.equals("Cookie", true) }?.value.orEmpty()
         val requestHeaders = configured.filterKeys { !it.equals("Cookie", true) }
-        val channelClient = client.newBuilder().addInterceptor { chain ->
+        val channelCookieJar = cookieJarFor(config.id)
+        val channelClient = client.newBuilder().cookieJar(channelCookieJar).addInterceptor { chain ->
             val original = chain.request()
-            val jarCookies = client.cookieJar.loadForRequest(original.url).map { it.name + "=" + it.value }
+            val jarCookies = channelCookieJar.loadForRequest(original.url).map { it.name + "=" + it.value }
             val supplied = original.header("Cookie").orEmpty()
             // Merge cookies by name: cookies refreshed by Set-Cookie must replace
             // expired values stored in the channel configuration.
@@ -304,13 +317,15 @@ object UniversalStreamEngine {
         return OkHttpDataSource.Factory(channelClient).setDefaultRequestProperties(requestHeaders)
     }
 
-    fun requestText(url: String, headers: Map<String, String> = emptyMap()): String? = try {
+    fun requestText(url: String, headers: Map<String, String> = emptyMap(), channelId: String? = null): String? = try {
         val request = Request.Builder().url(url).get().apply { headers.forEach { (k, v) -> header(k, v) } }.build()
-        client.newCall(request).execute().use { response -> if (response.isSuccessful) response.body?.string() else null }
+        val requestClient = channelId?.let { client.newBuilder().cookieJar(cookieJarFor(it)).build() } ?: client
+        requestClient.newCall(request).execute().use { response -> if (response.isSuccessful) response.body?.string() else null }
     } catch (e: Exception) { Log.w(TAG, "Resolver request failed", e); null }
 
-    fun probe(url: String, headers: Map<String, String> = emptyMap()): Boolean = try {
+    fun probe(url: String, headers: Map<String, String> = emptyMap(), channelId: String? = null): Boolean = try {
         val request = Request.Builder().url(url).head().apply { headers.forEach { (k, v) -> header(k, v) } }.build()
-        client.newCall(request).execute().use { it.isSuccessful || it.code == 405 }
+        val requestClient = channelId?.let { client.newBuilder().cookieJar(cookieJarFor(it)).build() } ?: client
+        requestClient.newCall(request).execute().use { it.isSuccessful || it.code == 405 }
     } catch (e: Exception) { false }
 }
