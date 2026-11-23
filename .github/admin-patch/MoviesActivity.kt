@@ -217,7 +217,11 @@ class MoviesActivity : AppCompatActivity() {
     }
 
     private inner class FilmAdapter : RecyclerView.Adapter<FilmHolder>() {
-        private val cache = java.util.Collections.synchronizedMap(mutableMapOf<String, android.graphics.Bitmap>())
+        // Keep poster memory bounded; the cache evicts least-recently-used images.
+        private val cache = object : android.util.LruCache<String, android.graphics.Bitmap>(16 * 1024) {
+            override fun sizeOf(key: String, value: android.graphics.Bitmap): Int =
+                (value.byteCount / 1024).coerceAtLeast(1)
+        }
         private val loading = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<String, Boolean>())
 
         override fun onCreateViewHolder(parent: ViewGroup, type: Int): FilmHolder {
@@ -235,7 +239,7 @@ class MoviesActivity : AppCompatActivity() {
             val film = films[position]
             holder.title.text = film.title
             holder.image.tag = film.id
-            val cached = cache[film.id]
+            val cached = cache.get(film.id)
             holder.image.setImageBitmap(cached)
             if (cached == null && loading.add(film.id)) {
                 io.execute {
@@ -254,7 +258,7 @@ class MoviesActivity : AppCompatActivity() {
                         } finally {
                             connection.disconnect()
                         }
-                        bitmap?.let { cache[film.id] = it }
+                        bitmap?.let { cache.put(film.id, it) }
                     } catch (_: Exception) {
                     } finally {
                         loading.remove(film.id)
