@@ -19,10 +19,16 @@ jobs:
           cp -a FIRAS_TV_ULTIMATE/. .
           rm -rf FIRAS_TV_ULTIMATE
           rm -f .github/workflows/v4-source-*.b64
-          # Ensure this v4 build upgrades over the older v3.0.3 app (versionCode 303).
+          # Apply maintained admin-panel source patch after restoring the archived app.
+          cp .github/admin-patch/ChannelStore.kt app/src/main/java/com/firas/tv/ChannelStore.kt
+          cp .github/admin-patch/AdminActivity.kt app/src/main/java/com/firas/tv/AdminActivity.kt
+          cp .github/admin-patch/MainActivity.kt app/src/main/java/com/firas/tv/MainActivity.kt
+          cp .github/admin-patch/AndroidManifest.xml app/src/main/AndroidManifest.xml
+          sed -i 's/UniversalStreamEngine.loadLegacy(this)/ChannelStore.loadLegacy(this)/' app/src/main/java/com/firas/tv/PlayerActivity.kt
+          # Ensure this build upgrades over the previous v4 test build.
           grep -q 'versionCode = 40' app/build.gradle.kts
-          sed -i 's/versionCode = 40/versionCode = 400/' app/build.gradle.kts
-          grep -q 'versionCode = 400' app/build.gradle.kts
+          sed -i 's/versionCode = 40/versionCode = 401/' app/build.gradle.kts
+          grep -q 'versionCode = 401' app/build.gradle.kts
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -35,14 +41,14 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FIRAS-TV-APK-v4
+          name: FIRAS-TV-APK-v4-admin
           path: app/build/outputs/apk/**/*.apk
           if-no-files-found: error
           retention-days: 14
       - name: Publish direct APK download
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: firas-tv-v4.0.0-build-${{ github.run_number }}
-          name: FIRAS TV v4.0.0 (Build ${{ github.run_number }})
+          tag_name: firas-tv-v4-admin-build-${{ github.run_number }}
+          name: FIRAS TV v4 Admin (Build ${{ github.run_number }})
           files: app/build/outputs/apk/release/app-release.apk
           generate_release_notes: true
