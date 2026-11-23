@@ -286,12 +286,18 @@ object UniversalStreamEngine {
             val original = chain.request()
             val jarCookies = client.cookieJar.loadForRequest(original.url).map { it.name + "=" + it.value }
             val supplied = original.header("Cookie").orEmpty()
-            val combined = (listOf(supplied, staticCookie) + jarCookies)
-                .flatMap { it.split(";") }.map { it.trim() }
-                .filter { it.isNotBlank() }.distinct()
+            // Merge cookies by name: cookies refreshed by Set-Cookie must replace
+            // expired values stored in the channel configuration.
+            val merged = linkedMapOf<String, String>()
+            (listOf(supplied, staticCookie) + jarCookies).forEach { header ->
+                header.split(";").forEach { part ->
+                    val pair = part.trim().split("=", limit = 2)
+                    if (pair.size == 2 && pair[0].isNotBlank()) merged[pair[0].trim()] = pair[1].trim()
+                }
+            }
             val request = original.newBuilder().apply {
                 removeHeader("Cookie")
-                if (combined.isNotEmpty()) header("Cookie", combined.joinToString("; "))
+                if (merged.isNotEmpty()) header("Cookie", merged.entries.joinToString("; ") { "${it.key}=${it.value}" })
             }.build()
             chain.proceed(request)
         }.build()
