@@ -66,7 +66,7 @@ class MoviePlayerActivity : AppCompatActivity() {
         val root = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
         playerView = PlayerView(this).apply {
             useController = true
-            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+            resizeMode = if (zoomed) AspectRatioFrameLayout.RESIZE_MODE_ZOOM else AspectRatioFrameLayout.RESIZE_MODE_FIT
             setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
             controllerShowTimeoutMs = 3500
             setKeepContentOnPlayerReset(true)
@@ -163,6 +163,7 @@ class MoviePlayerActivity : AppCompatActivity() {
             textSize = 11f
             setOnClickListener { toggleResize() }
         }
+        resizeButton.text = if (zoomed) "زووم" else "ملاءمة"
         topBar.addView(resizeButton, LinearLayout.LayoutParams(dp(78), dp(42)))
         val qualityButton = Button(this).apply {
             text = "الجودة"
