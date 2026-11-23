@@ -590,10 +590,25 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun setOverlayVisible(visible: Boolean) {
-        val value = if (visible) View.VISIBLE else View.GONE
-        findViewById<View>(R.id.topBar).visibility = value
-        findViewById<View>(R.id.bottomPanel).visibility = value
-        centerControls.visibility = value
+        val overlays = listOf(
+            findViewById<View>(R.id.topBar),
+            findViewById<View>(R.id.bottomPanel),
+            centerControls
+        )
+        overlays.forEach { view ->
+            view.animate().cancel()
+            if (visible) {
+                if (view.visibility != View.VISIBLE) {
+                    view.alpha = 0f
+                    view.visibility = View.VISIBLE
+                }
+                view.animate().alpha(1f).setDuration(200L).start()
+            } else if (view.visibility == View.VISIBLE) {
+                view.animate().alpha(0f).setDuration(200L).withEndAction {
+                    if (view.alpha == 0f) view.visibility = View.GONE
+                }.start()
+            }
+        }
         handler.removeCallbacks(hideOverlayTask)
         if (visible) scheduleOverlayHide()
     }
