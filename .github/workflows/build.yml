@@ -11,16 +11,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Restore original FIRAS TV Kotlin source
+      - name: Restore FIRAS TV Kotlin source and native admin
         shell: bash
         run: |
           set -euo pipefail
           cat .github/workflows/v4-source-*.b64 | base64 --decode | tar -xJf -
           rm -rf app/src/main
           cp -a FIRAS_TV_ULTIMATE/. .
-          # Retain the original full-featured administration interface from the supplied APK.
-          mkdir -p app/src/main/assets
-          cp _backup_original_unpacked_apk/assets/index.html app/src/main/assets/admin.html
           rm -rf FIRAS_TV_ULTIMATE
           rm -f .github/workflows/v4-source-*.b64
           # Apply only the admin bridge + native channel persistence integration.
@@ -29,16 +26,6 @@ jobs:
           cp .github/admin-patch/Models.kt app/src/main/java/com/firas/tv/Models.kt
           cp .github/admin-patch/activity_main.xml app/src/main/res/layout/activity_main.xml
           cp .github/admin-patch/AndroidManifest.xml app/src/main/AndroidManifest.xml
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("app/src/main/assets/admin.html")
-          s = p.read_text(encoding="utf-8")
-          old = "function save(){sv('fr_ch',ch);sv('fr_cats',cats);sv('fr_fav',favs);sv('fr_hist',hist);sv('fr_cfg',cfg)}"
-          new = "function save(){sv('fr_ch',ch);sv('fr_cats',cats);sv('fr_fav',favs);sv('fr_hist',hist);sv('fr_cfg',cfg);try{if(window.FirasBridge&&window.FirasBridge.saveAdminState)window.FirasBridge.saveAdminState(JSON.stringify({ch:ch,cats:cats,favs:favs,hist:hist,cfg:cfg}))}catch(e){console.warn('Native channel sync failed',e)}}"
-          if old not in s:
-              raise SystemExit("Original admin save() function was not found; refusing to build with an unsynced admin panel.")
-          p.write_text(s.replace(old, new, 1), encoding="utf-8")
-          PY
           # Guard the user's required Android/Kotlin/Media3 configuration.
           grep -q 'minSdk = 21' app/build.gradle.kts
           grep -q 'okhttp:4.12.0' app/build.gradle.kts
