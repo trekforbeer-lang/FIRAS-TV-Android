@@ -73,7 +73,7 @@ class PlayerActivity : AppCompatActivity() {
     private var currentUrlIndex = 0
     private var isFullscreen = false
     private var recoveryAttempts = 0
-    private var zoomed = true
+    private var zoomed = false
     private var recoveryTask: Runnable? = null
     private val worker = Executors.newSingleThreadExecutor()
     private val handler = Handler(Looper.getMainLooper())
@@ -89,8 +89,8 @@ class PlayerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_player)
         playerView = findViewById(R.id.playerView)
-        // Start in edge-to-edge zoom mode so widescreen broadcasts fill the player area.
-        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+        // Preserve the complete picture by default on phones; zoom remains user-selectable.
+        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
         title = findViewById(R.id.channelTitle)
         watermark = findViewById(R.id.channelWatermark)
         status = findViewById(R.id.statusText)
@@ -98,7 +98,7 @@ class PlayerActivity : AppCompatActivity() {
         playPause = findViewById(R.id.playPauseButton)
         fullscreen = findViewById(R.id.fullscreenButton)
         zoom = findViewById(R.id.zoomButton)
-        zoom.text = "ملاءمة"
+        zoom.text = "زووم"
         retry = findViewById(R.id.retryButton)
         server = findViewById(R.id.serverButton)
         quality = findViewById(R.id.qualityButton)
@@ -524,7 +524,8 @@ class PlayerActivity : AppCompatActivity() {
     private fun handleBackAction() {
         if (isFullscreen) {
             isFullscreen = false
-            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            // Return to the normal phone portrait screen after leaving fullscreen.
+            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
             fullscreen.text = "⛶"
         } else {
