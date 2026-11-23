@@ -518,9 +518,20 @@ class PlayerActivity : AppCompatActivity() {
         }
         window.decorView.systemUiVisibility = flags
         // Keep the overlay controls visible over the video in fullscreen mode.
-        fullscreen.text = "⛶"
+        fullscreen.text = if (isFullscreen) "⤡" else "⛶"
     }
 
+    @Suppress("DEPRECATION")
+    override fun onBackPressed() {
+        if (isFullscreen) {
+            isFullscreen = false
+            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
+            fullscreen.text = "⛶"
+        } else {
+            super.onBackPressed()
+        }
+    }
 
     private fun setOverlayVisible(visible: Boolean) {
         val value = if (visible) View.VISIBLE else View.GONE
