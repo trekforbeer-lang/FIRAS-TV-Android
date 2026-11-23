@@ -1,4 +1,5 @@
 name: FIRAS TV v4 Build APK
+# Build includes the latest committed admin-patch Kotlin sources.
 on:
   push:
     branches: [kotlin-v3]
