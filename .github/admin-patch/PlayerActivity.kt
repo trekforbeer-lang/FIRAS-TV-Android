@@ -536,12 +536,11 @@ class PlayerActivity : AppCompatActivity() {
             View.SYSTEM_UI_FLAG_VISIBLE
         }
         window.decorView.systemUiVisibility = flags
-        // In landscape fullscreen, fill the screen by default. In portrait, preserve
-        // the complete frame; users can still switch modes with the zoom control.
-        zoomed = isFullscreen
-        playerView.resizeMode = if (zoomed) AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-            else AspectRatioFrameLayout.RESIZE_MODE_FIT
-        zoom.text = if (zoomed) "ملاءمة" else "زووم"
+        // Always show the complete video frame, including in landscape fullscreen.
+        // FIT preserves the source aspect ratio and never crops the picture.
+        zoomed = false
+        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+        zoom.text = "زووم"
         fullscreen.text = if (isFullscreen) "⤡" else "⛶"
     }
 
