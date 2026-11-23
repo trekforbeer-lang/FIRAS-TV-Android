@@ -22,6 +22,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.session.MediaSession
@@ -48,6 +49,7 @@ class MoviePlayerActivity : AppCompatActivity() {
     private var topBarView: View? = null
     private var restorePositionMs: Long = C.TIME_UNSET
     private var movieUrl: String? = null
+    private var movieTitleForSession: String = "فيلم"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,6 +61,7 @@ class MoviePlayerActivity : AppCompatActivity() {
         window.navigationBarColor = Color.BLACK
 
         val movieTitle = intent.getStringExtra("movie_title") ?: "فيلم"
+        movieTitleForSession = movieTitle
         val url = intent.getStringExtra("movie_url")
         if (url.isNullOrBlank()) {
             Toast.makeText(this, "رابط الفيلم غير صالح", Toast.LENGTH_LONG).show()
@@ -258,12 +261,23 @@ class MoviePlayerActivity : AppCompatActivity() {
                         else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     }
                 })
-                exo.setMediaItem(MediaItem.fromUri(url))
+                exo.setMediaItem(buildMovieMediaItem(url))
                 if (restorePositionMs > 0L) exo.seekTo(restorePositionMs)
                 exo.prepare()
                 exo.playWhenReady = true
             }
     }
+
+    private fun buildMovieMediaItem(url: String): MediaItem =
+        MediaItem.Builder()
+            .setUri(url)
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setTitle(movieTitleForSession)
+                    .setArtist("RAHMANI")
+                    .build()
+            )
+            .build()
 
     private fun retryMoviePlayback() {
         val active = player ?: return
@@ -271,7 +285,7 @@ class MoviePlayerActivity : AppCompatActivity() {
         val position = active.currentPosition.coerceAtLeast(0L)
         active.stop()
         active.clearMediaItems()
-        active.setMediaItem(MediaItem.fromUri(url))
+        active.setMediaItem(buildMovieMediaItem(url))
         active.prepare()
         if (position > 0L) active.seekTo(position)
         active.playWhenReady = true
