@@ -55,7 +55,7 @@ jobs:
           sed -i -E 's#(androidx\.media3:[^:]+):[0-9.]+#\1:1.5.1#g' app/build.gradle.kts
           grep -q 'media3-exoplayer:1.5.1' app/build.gradle.kts
           grep -q 'media3-ui:1.5.1' app/build.gradle.kts
-          sed -i '/implementation("androidx.media3:media3-ui:1.5.1")/a\\    implementation("androidx.media3:media3-session:1.5.1")' app/build.gradle.kts
+          sed -i '/implementation("androidx.media3:media3-ui:1.5.1")/a\    implementation("androidx.media3:media3-session:1.5.1")' app/build.gradle.kts
           grep -q 'media3-session:1.5.1' app/build.gradle.kts
           grep -q 'media3-datasource-okhttp:1.5.1' app/build.gradle.kts
           # Media3 1.5.1 requires compileSdk 35; AGP 8.6.1 supports it with Gradle 8.7.
