@@ -80,8 +80,8 @@
         android:imeOptions="actionSearch" android:inputType="text"
         android:paddingStart="16dp" android:paddingEnd="16dp" android:textSize="13sp"/>
 
-    <FrameLayout android:id="@+id/homeHeroSection" android:layout_width="match_parent" android:layout_height="158dp"
-        android:layout_marginStart="16dp" android:layout_marginEnd="16dp"
+    <FrameLayout android:id="@+id/homeHeroSection" android:layout_width="match_parent" android:layout_height="208dp"
+        android:layout_marginStart="18dp" android:layout_marginEnd="18dp"
         android:background="@drawable/home_hero_bg" android:foreground="@drawable/rahmani_card_stroke">
         <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
             android:orientation="vertical" android:gravity="center_vertical"
@@ -91,7 +91,7 @@
                 android:textStyle="bold" android:textSize="10sp"/>
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:text="عِش أجواء المشاهدة" android:textColor="#FFFFFF"
-                android:textSize="23sp" android:textStyle="bold" android:layout_marginTop="4dp"/>
+                android:textSize="26sp" android:textStyle="bold" android:layout_marginTop="7dp"/>
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:text="قنوات مباشرة  •  أفلام  •  بطولات كبرى" android:textColor="#D4D9E5"
                 android:textSize="11sp" android:layout_marginTop="4dp"/>
@@ -102,11 +102,11 @@
         </LinearLayout>
     </FrameLayout>
 
-    <HorizontalScrollView android:layout_width="match_parent" android:layout_height="76dp"
-        android:layout_marginTop="9dp" android:scrollbars="none" android:paddingStart="12dp" android:paddingEnd="12dp">
+    <HorizontalScrollView android:layout_width="match_parent" android:layout_height="82dp"
+        android:layout_marginTop="12dp" android:scrollbars="none" android:paddingStart="12dp" android:paddingEnd="12dp">
         <LinearLayout android:layout_width="wrap_content" android:layout_height="match_parent"
             android:orientation="horizontal" android:gravity="center_vertical">
-            <TextView android:id="@+id/quickLiveButton" android:layout_width="94dp" android:layout_height="60dp"
+            <TextView android:id="@+id/quickLiveButton" android:layout_width="106dp" android:layout_height="64dp"
                 android:layout_marginEnd="8dp" android:gravity="center"
                 android:text="●  مباشر\nالقنوات الآن" android:textColor="#FFFFFF" android:textStyle="bold"
                 android:textSize="12sp" android:background="#1C1C1E" android:clickable="true" android:focusable="true"/>
