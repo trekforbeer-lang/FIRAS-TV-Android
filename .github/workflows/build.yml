@@ -45,8 +45,8 @@ jobs:
           # Admin-picked logo files are stored in app-private storage and decoded locally.
           sed -i '/^dependencies[[:space:]]*{/a\    implementation("com.caverock:androidsvg-aar:1.4")' app/build.gradle.kts
           grep -q 'com.caverock:androidsvg-aar:1.4' app/build.gradle.kts
-          sed -i '/implementation("androidx.recyclerview:recyclerview:1.3.2")/a\    implementation("androidx.work:work-runtime-ktx:2.10.0")' app/build.gradle.kts
-          grep -q 'androidx.work:work-runtime-ktx:2.10.0' app/build.gradle.kts
+          sed -i '/implementation("androidx.recyclerview:recyclerview:1.3.2")/a\    implementation("androidx.work:work-runtime-ktx:2.9.1")' app/build.gradle.kts
+          grep -q 'androidx.work:work-runtime-ktx:2.9.1' app/build.gradle.kts
           # The archived v4 source still declares Media3 1.3.1. Align every
           # Media3 module before compiling so ExoPlayer/UI/OkHttp stay in sync.
           sed -i -E 's#(androidx\.media3:[^:]+):[0-9.]+#\1:1.5.1#g' app/build.gradle.kts
@@ -61,10 +61,10 @@ jobs:
           ! grep -R '127.0.0.1' app/src/main
           # Normalize the APK version for this v4 build, regardless of the
           # previous source bundle's versionCode.
-          sed -i -E 's/versionCode = [0-9]+/versionCode = 403/' app/build.gradle.kts
-          sed -i 's/versionName = "[^"]*"/versionName = "4.0.3"/' app/build.gradle.kts
-          grep -q 'versionCode = 403' app/build.gradle.kts
-          grep -q 'versionName = "4.0.3"' app/build.gradle.kts
+          sed -i -E 's/versionCode = [0-9]+/versionCode = 404/' app/build.gradle.kts
+          sed -i 's/versionName = "[^"]*"/versionName = "4.0.4"/' app/build.gradle.kts
+          grep -q 'versionCode = 404' app/build.gradle.kts
+          grep -q 'versionName = "4.0.4"' app/build.gradle.kts
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
