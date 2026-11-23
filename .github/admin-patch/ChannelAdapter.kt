@@ -170,14 +170,15 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
         val size = 160
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        val lower = name.lowercase()
+        val normalized = name.trim().replace(Regex("\\s+"), " ")
+        val lower = normalized.lowercase()
         val isBein = lower.contains("bein")
-        val isMbc = lower.contains("mbc")
+        val isMbc = lower.startsWith("mbc")
         val isCountry = lower == "egypt" || lower == "algeria" || lower == "morocco"
 
         val backgroundColor = when {
             isBein -> Color.rgb(25, 28, 58)
-            isMbc -> Color.rgb(250, 250, 250)
+            isMbc -> Color.WHITE
             isCountry -> Color.rgb(245, 245, 245)
             else -> Color.rgb(48, 42, 67)
         }
@@ -223,51 +224,63 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
             return bitmap
         }
 
-        val white = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = if (isMbc) Color.rgb(35, 35, 45) else Color.WHITE
+        if (isBein) {
+            val white = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.WHITE
+                textAlign = Paint.Align.CENTER
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            }
+            white.textSize = 45f
+            canvas.drawText("beIN", 80f, 66f, white)
+            white.textSize = 19f
+            canvas.drawText("SPORTS", 80f, 91f, white)
+            val variant = when {
+                lower.contains("xtra") -> "XTRA " + (Regex("\\d+").find(normalized)?.value ?: "")
+                lower.contains("news") -> "NEWS"
+                Regex("\\ben\\b").containsMatchIn(lower) -> "EN " + (Regex("\\d+").find(normalized)?.value ?: "")
+                else -> Regex("\\d+").find(normalized)?.value?.let { "SPORTS $it" } ?: "SPORTS"
+            }
+            white.textSize = if (variant.length > 9) 14f else 17f
+            canvas.drawText(variant, 80f, 126f, white)
+            return bitmap
+        }
+
+        val dark = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.rgb(35, 35, 45)
             textAlign = Paint.Align.CENTER
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
-        if (isBein) {
-            white.textSize = 49f
-            canvas.drawText("beIN", 80f, 75f, white)
-            white.textSize = 19f
-            white.letterSpacing = 1.5f
-            canvas.drawText("SPORTS", 80f, 101f, white)
-            val number = Regex("(\\d+)").find(name)?.groupValues?.getOrNull(1)
-            if (number != null) {
-                white.textSize = 17f
-                canvas.drawText(number, 80f, 133f, white)
-            }
-        } else if (isMbc) {
+        if (isMbc) {
             val letters = listOf("M", "B", "C")
             val colors = listOf(Color.rgb(0, 150, 210), Color.rgb(235, 65, 105), Color.rgb(245, 155, 35))
-            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                textAlign = Paint.Align.CENTER
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                textSize = 55f
-            }
             val xs = listOf(48f, 82f, 116f)
+            dark.textSize = 55f
             letters.forEachIndexed { index, letter ->
-                paint.color = colors[index]
-                canvas.drawText(letter, xs[index], 91f, paint)
+                dark.color = colors[index]
+                canvas.drawText(letter, xs[index], 83f, dark)
             }
-            val suffix = name.substringAfter("MBC", "").trim()
+            val suffix = normalized.substring(3).trim()
             if (suffix.isNotBlank()) {
-                white.color = Color.DKGRAY
-                white.textSize = if (suffix.length > 10) 13f else 17f
-                canvas.drawText(suffix.uppercase(), 80f, 126f, white)
+                dark.color = Color.DKGRAY
+                dark.textSize = if (suffix.length > 11) 12f else 16f
+                canvas.drawText(suffix.uppercase(), 80f, 126f, dark)
             }
-        } else {
-            val parts = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
-            val label = when {
-                parts.isEmpty() -> "TV"
-                parts.size > 1 -> parts.take(2).joinToString(" ") { it.uppercase() }
-                else -> parts[0].take(8).uppercase()
-            }
-            white.textSize = if (label.length > 9) 22f else 34f
-            canvas.drawText(label, 80f, 91f, white)
+            return bitmap
         }
+
+        val white = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textAlign = Paint.Align.CENTER
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        }
+        val parts = normalized.split(Regex("\\s+")).filter { it.isNotBlank() }
+        val label = when {
+            parts.isEmpty() -> "TV"
+            parts.size > 1 -> parts.take(2).joinToString(" ") { it.uppercase() }
+            else -> parts[0].take(8).uppercase()
+        }
+        white.textSize = if (label.length > 9) 22f else 34f
+        canvas.drawText(label, 80f, 91f, white)
         return bitmap
     }
 
