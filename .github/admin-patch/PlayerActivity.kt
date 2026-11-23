@@ -150,7 +150,7 @@ class PlayerActivity : AppCompatActivity() {
                     override fun onPlaybackStateChanged(state: Int) {
                         status.text = when (state) {
                             Player.STATE_BUFFERING -> "جارٍ تحميل البث..."
-                            Player.STATE_READY -> { recoveryAttempts = 0; "FIRAS TV • البث جاهز" }
+                            Player.STATE_READY -> "FIRAS TV • البث جاهز"
                             Player.STATE_ENDED -> "انتهى البث"
                             else -> "FIRAS TV • بث مباشر"
                         }
@@ -209,10 +209,15 @@ class PlayerActivity : AppCompatActivity() {
             runOnUiThread {
                 resolving = false
                 if (current?.id != channel.id) return@runOnUiThread
-                currentUrls = urls
-                currentUrlIndex = 0
                 if (urls.isEmpty()) {
                     status.text = "لم يتم العثور على رابط صالح"
+                    return@runOnUiThread
+                }
+                val previousUrl = currentUrls.firstOrNull()
+                currentUrls = urls
+                currentUrlIndex = 0
+                if (keepPosition && previousUrl == urls.first()) {
+                    status.text = "FIRAS TV • البث مستمر"
                     return@runOnUiThread
                 }
                 playUrl(urls.first(), oldPosition)
