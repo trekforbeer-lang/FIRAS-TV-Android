@@ -64,11 +64,15 @@ class MainActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
         })
         findViewById<Button>(R.id.moviesButton).setOnClickListener { startActivity(Intent(this, MoviesActivity::class.java)) }
+        findViewById<Button>(R.id.adminButton).setOnClickListener { returningFromAdmin = true; startActivity(Intent(this, AdminActivity::class.java)) }
+        findViewById<TextView>(R.id.homeTab).setOnClickListener { selected = ""; rebuildChips(chips); refresh(); rv.smoothScrollToPosition(0) }
+        findViewById<TextView>(R.id.channelsTab).setOnClickListener { rv.smoothScrollToPosition(0) }
+        findViewById<TextView>(R.id.sportsTab).setOnClickListener { selectCategory("رياضة") }
+        findViewById<TextView>(R.id.navHome).setOnClickListener { selected = ""; rebuildChips(chips); refresh(); rv.smoothScrollToPosition(0) }
+        findViewById<TextView>(R.id.navChannels).setOnClickListener { rv.smoothScrollToPosition(0) }
+        findViewById<TextView>(R.id.navMovies).setOnClickListener { startActivity(Intent(this, MoviesActivity::class.java)) }
+        findViewById<TextView>(R.id.navAdmin).setOnClickListener { returningFromAdmin = true; startActivity(Intent(this, AdminActivity::class.java)) }
         restoreButton.setOnClickListener { restoreOriginalLists() }
-        findViewById<Button>(R.id.adminButton).setOnClickListener {
-            returningFromAdmin = true
-            startActivity(Intent(this, AdminActivity::class.java))
-        }
         refresh()
     }
 
