@@ -117,7 +117,9 @@ object UniversalStreamEngine {
     }
 
     fun loadLegacy(context: Context): List<LegacyChannel> = try {
-        val raw = context.assets.open(LEGACY).bufferedReader().use { it.readText() }
+        val override = File(context.filesDir, LEGACY)
+        val raw = if (override.isFile) override.readText(Charsets.UTF_8)
+            else context.assets.open(LEGACY).bufferedReader().use { it.readText() }
         val parsed = org.json.JSONTokener(raw).nextValue()
         val result = mutableListOf<LegacyChannel>()
         when (parsed) {
@@ -220,7 +222,7 @@ object UniversalStreamEngine {
                 if (liveEdge != null) listOf(liveEdge) + candidates.filter { it != liveEdge }
                 else candidates
             }
-            else -> listOf(config.url, config.fallbackUrl).filter { it.isNotBlank() }.distinct()
+            else -> (config.urls + config.url + config.fallbackUrl).filter { it.isNotBlank() }.distinct()
         }
     }
 
