@@ -318,7 +318,9 @@ class AdminActivity : Activity() {
             .setMessage("سيُنقل محتوى التصنيف إلى «بدون تصنيف»، ولن تُحذف القنوات.")
             .setPositiveButton("متابعة") { _, _ ->
                 val groups = sections()
-                var target = (0 until groups.length()).firstOrNull { groups.optJSONObject(it)?.optString("title") == "بدون تصنيف" }
+                var target = (0 until groups.length()).firstOrNull {
+                    it != index && groups.optJSONObject(it)?.optString("title") == "بدون تصنيف"
+                }
                 if (target == null) {
                     groups.put(JSONObject().put("title", "بدون تصنيف").put("items", JSONArray()))
                     target = groups.length() - 1
