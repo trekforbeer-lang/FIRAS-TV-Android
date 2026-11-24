@@ -112,6 +112,8 @@ class PlayerActivity : AppCompatActivity() {
         setContentView(R.layout.activity_player)
         applyFullscreenSystemUi()
         playerView = findViewById(R.id.playerView)
+        // Initialize every view used by applyDisplayMode before calling it.
+        zoom = findViewById(R.id.zoomButton)
         // Default to ZOOM so the video fills the landscape phone display.
         // Respect a mode explicitly selected and saved by the viewer.
         displayMode = if (playerPrefs.contains("display_mode")) {
@@ -126,7 +128,6 @@ class PlayerActivity : AppCompatActivity() {
         list = findViewById(R.id.channelList)
         playPause = findViewById(R.id.playPauseButton)
         fullscreen = findViewById(R.id.fullscreenButton)
-        zoom = findViewById(R.id.zoomButton)
         zoom.text = "تكبير"
         fullscreen.text = "⤢"
         retry = findViewById(R.id.retryButton)
