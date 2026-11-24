@@ -125,13 +125,60 @@ class AdminActivity : Activity() {
     private val ownerAdminUid = "fpmTwA03drg2QF04qefubOdfmjf1"
 
     private fun authenticate() {
-        val user = FirebaseAuth.getInstance().currentUser
-        if (user == null) {
-            Toast.makeText(this, "هذه لوحة خاصة بمالك التطبيق", Toast.LENGTH_LONG).show()
-            finish()
+        val auth = FirebaseAuth.getInstance()
+        val current = auth.currentUser
+        if (current != null && current.uid == ownerAdminUid) {
+            enterPanel()
             return
         }
-        verifyAdminRole()
+        if (current != null) auth.signOut()
+        val email = EditText(this).apply {
+            hint = "البريد الإلكتروني للمالك"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+        }
+        val password = EditText(this).apply {
+            hint = "كلمة المرور"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+        val form = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(24, 8, 24, 0)
+            addView(email)
+            addView(password)
+        }
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("دخول مالك التطبيق")
+            .setMessage("سجّل الدخول مرة واحدة، وسيحتفظ التطبيق بالجلسة.")
+            .setView(form)
+            .setPositiveButton("دخول", null)
+            .setNegativeButton("إلغاء") { _, _ -> finish() }
+            .setCancelable(false)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val mail = email.text.toString().trim()
+                val pass = password.text.toString()
+                if (mail.isBlank() || pass.isBlank()) {
+                    Toast.makeText(this, "أدخل البريد وكلمة المرور", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = false
+                auth.signInWithEmailAndPassword(mail, pass).addOnCompleteListener { task ->
+                    val signedIn = auth.currentUser
+                    if (task.isSuccessful && signedIn != null && signedIn.uid == ownerAdminUid) {
+                        dialog.dismiss()
+                        enterPanel()
+                    } else {
+                        auth.signOut()
+                        if (!isFinishing && !isDestroyed) {
+                            dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
+                            Toast.makeText(this, "تعذر الدخول أو أن الحساب ليس حساب المالك", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }
+        }
+        dialog.show()
     }
 
     private fun verifyAdminRole() {
