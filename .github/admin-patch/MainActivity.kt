@@ -37,6 +37,8 @@ class MainActivity : AppCompatActivity() {
     private var query = ""
     private var lastLaunchAt = 0L
     private var returningFromAdmin = false
+    private var adminTapCount = 0
+    private var adminTapStarted = 0L
     private lateinit var adapter: ChannelAdapter
     private lateinit var empty: TextView
     private lateinit var chips: ChipGroup
@@ -47,6 +49,20 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        // Hidden owner-only entry: seven quick taps on the RAHMANI wordmark.
+        findViewById<TextView>(R.id.adminSecretTrigger).setOnClickListener {
+            val now = SystemClock.elapsedRealtime()
+            if (now - adminTapStarted > 2500L) {
+                adminTapCount = 0
+                adminTapStarted = now
+            }
+            adminTapCount++
+            if (adminTapCount >= 7) {
+                adminTapCount = 0
+                returningFromAdmin = true
+                startActivity(Intent(this, AdminActivity::class.java))
+            }
+        }
         sections = ChannelRepository.load(this)
         val appCtx = applicationContext
         Thread { StreamConfigStore.ensureLoaded(appCtx) }.start()
@@ -95,11 +111,6 @@ class MainActivity : AppCompatActivity() {
         }
         findViewById<View>(R.id.quickSportsButton).setOnClickListener { startActivity(Intent(this, SportsActivity::class.java)) }
         findViewById<View>(R.id.quickMoviesButton).setOnClickListener { startActivity(Intent(this, MoviesActivity::class.java)) }
-        findViewById<View>(R.id.quickAdminButton).setOnClickListener {
-            returningFromAdmin = true
-            startActivity(Intent(this, AdminActivity::class.java))
-        }
-        findViewById<Button>(R.id.adminButton).setOnClickListener { returningFromAdmin = true; startActivity(Intent(this, AdminActivity::class.java)) }
         findViewById<TextView>(R.id.homeTab).setOnClickListener { selected = ""; rebuildChips(chips); refresh(); rv.smoothScrollToPosition(0) }
         findViewById<TextView>(R.id.channelsTab).setOnClickListener { rv.smoothScrollToPosition(0) }
         findViewById<TextView>(R.id.sportsTab).setOnClickListener { startActivity(Intent(this, SportsActivity::class.java)) }
