@@ -395,6 +395,12 @@ class MainActivity : AppCompatActivity() {
     private fun restoreOriginalLists() {
         restoreButton.isEnabled = false
         restoreButton.text = "جارٍ استعادة القنوات..."
+        val progress = AlertDialog.Builder(this)
+            .setTitle("استعادة القنوات")
+            .setMessage("يتم تحميل القوائم وتحضير القنوات في الخلفية. قد يستغرق ذلك بعض الوقت.")
+            .setCancelable(false)
+            .create()
+        progress.show()
         Thread {
             var added = 0
             val sources = listOf(
@@ -448,14 +454,20 @@ class MainActivity : AppCompatActivity() {
                 val temp = File(filesDir, "channels.json.tmp")
                 temp.writeText(root.toString(2), Charsets.UTF_8)
                 if (!temp.renameTo(target)) { temp.copyTo(target, overwrite = true); temp.delete() }
+                // Parsing a large restored catalogue is also kept off the UI thread.
+                val loadedSections = ChannelRepository.load(applicationContext)
                 runOnUiThread {
-                    sections = ChannelRepository.load(this); selected = ""
+                    if (isFinishing || isDestroyed) { progress.dismiss(); return@runOnUiThread }
+                    progress.dismiss()
+                    sections = loadedSections; selected = ""
                     rebuildChips(chips); refresh()
                     restoreButton.isEnabled = true; restoreButton.text = "استعادة القنوات القديمة"
                     Toast.makeText(this, "أضيفت " + added + " قناة. افحص الروابط من لوحة الإدارة لأن توفر البث يتغير.", Toast.LENGTH_LONG).show()
                 }
             } catch (_: Exception) {
                 runOnUiThread {
+                    if (isFinishing || isDestroyed) { progress.dismiss(); return@runOnUiThread }
+                    progress.dismiss()
                     restoreButton.isEnabled = true; restoreButton.text = "إعادة محاولة استعادة القنوات"
                     Toast.makeText(this, "تعذّر تحميل القوائم؛ تحقق من اتصال الإنترنت", Toast.LENGTH_LONG).show()
                 }
