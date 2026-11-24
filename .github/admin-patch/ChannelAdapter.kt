@@ -221,6 +221,12 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
 
     // A neutral fallback is used only when the official logo cannot be loaded.
     // Never draw an imitation of a broadcaster's trademark as if it were its real logo.
+    fun shutdown() {
+        // Stop outstanding logo downloads when the owning screen is destroyed.
+        io.shutdownNow()
+        inFlight.clear()
+    }
+
     private fun fallbackLogo(name: String): Bitmap {
         val size = 160
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)

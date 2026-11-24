@@ -162,7 +162,7 @@ class MoviesActivity : AppCompatActivity() {
         io.execute {
             try {
                 val base = "collection:feature_films AND mediatype:movies"
-                val clean = query.replace(Regex("[^A-Za-z0-9 ]"), " ").take(70)
+                val clean = query.replace(Regex("[^\\p{L}\\p{N} ]"), " ").trim().take(70)
                 val term = if (clean.isBlank()) base else base + " AND title:(" + clean + ")"
                 val address = "https://archive.org/advancedsearch.php?q=" + URLEncoder.encode(term, "UTF-8") + "&fl[]=identifier&fl[]=title&sort[]=downloads+desc&rows=30&page=" + page + "&output=json"
                 val docs = JSONObject(request(address)).optJSONObject("response")?.optJSONArray("docs")

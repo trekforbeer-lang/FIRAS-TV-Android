@@ -54,6 +54,11 @@ class AdminActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Keep administrator data out of screenshots, screen recordings and recent-app previews.
+        window.setFlags(
+            android.view.WindowManager.LayoutParams.FLAG_SECURE,
+            android.view.WindowManager.LayoutParams.FLAG_SECURE
+        )
         authenticate()
     }
 
@@ -81,8 +86,20 @@ class AdminActivity : Activity() {
         super.onPause()
     }
 
+    override fun onStop() {
+        // Lock immediately when the admin screen leaves the foreground.
+        // Keep the session only while the system document picker is opened for a logo.
+        if (authenticated && pendingLogoField == null) {
+            authenticated = false
+            handler.removeCallbacks(autoLogout)
+            finish()
+        }
+        super.onStop()
+    }
+
     override fun onDestroy() {
         handler.removeCallbacks(autoLogout)
+        authenticated = false
         super.onDestroy()
     }
 
@@ -124,6 +141,13 @@ class AdminActivity : Activity() {
             return
         }
         val salt = prefs.getString("salt", null)
+        // Fail closed: clearing app data must never expose first-run admin enrollment.
+        // Owner provisioning needs a trusted bootstrap credential; ordinary users cannot create admin access.
+        if (salt.isNullOrBlank() || prefs.getString("hash", null).isNullOrBlank()) {
+            Toast.makeText(this, "لوحة الإدارة غير مهيأة على هذا الجهاز. يلزم تفعيل المالك.", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(32, 20, 32, 8)
@@ -131,50 +155,49 @@ class AdminActivity : Activity() {
         val first = EditText(this).apply {
             hint = if (salt == null) "كلمة مرور الإدارة (10 أحرف على الأقل)" else "كلمة مرور الإدارة"
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            isLongClickable = false
+            setTextIsSelectable(false)
+            if (android.os.Build.VERSION.SDK_INT >= 26) {
+                setAutofillHints()
+                importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO
+            }
         }
         box.addView(first)
-        val second = if (salt == null) EditText(this).apply {
-            hint = "أعد كتابة كلمة المرور"
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-        } else null
-        second?.let(box::addView)
         val dialog = AlertDialog.Builder(this)
-            .setTitle(if (salt == null) "إنشاء كلمة مرور الإدارة" else "دخول الإدارة")
-            .setMessage(if (salt == null) "استخدم 10 أحرف على الأقل مع حرف ورقم." else "أدخل كلمة المرور للمتابعة.")
+            .setTitle("دخول الإدارة")
+            .setMessage("أدخل كلمة مرور المالك للمتابعة.")
             .setView(box)
-            .setPositiveButton(if (salt == null) "إنشاء" else "دخول", null)
+            .setPositiveButton("دخول", null)
             .setNegativeButton("إلغاء") { _, _ -> finish() }
             .create()
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 val password = first.text.toString()
-                if (salt == null) {
-                    if (!strong(password) || password != second?.text?.toString()) {
-                        Toast.makeText(this, "كلمة المرور ضعيفة أو غير متطابقة", Toast.LENGTH_LONG).show()
-                        return@setOnClickListener
+                val decoded = try { Base64.decode(salt, Base64.NO_WRAP) } catch (_: Exception) { ByteArray(0) }
+                val expected = prefs.getString("hash", "").orEmpty()
+                val version = prefs.getInt("hash_version", 1)
+                val valid = if (decoded.isEmpty()) false
+                    else if (version >= 2) constantTimeEquals(hashPassword(password, decoded), expected)
+                    else constantTimeEquals(hashPasswordLegacy(password, decoded), expected)
+                if (valid) {
+                    val edit = prefs.edit().putInt("fails", 0).putLong("lock_until", 0L)
+                    if (version < 2) {
+                        edit.putString("hash", hashPassword(password, decoded)).putInt("hash_version", 2)
                     }
-                    val newSalt = ByteArray(16).also { SecureRandom().nextBytes(it) }
-                    prefs.edit().putString("salt", Base64.encodeToString(newSalt, Base64.NO_WRAP))
-                        .putString("hash", hashPassword(password, newSalt)).putInt("fails", 0).apply()
+                    edit.apply()
                     dialog.dismiss()
                     enterPanel()
                 } else {
-                    val decoded = try { Base64.decode(salt, Base64.NO_WRAP) } catch (_: Exception) { ByteArray(0) }
-                    val expected = prefs.getString("hash", "").orEmpty()
-                    if (decoded.isNotEmpty() && constantTimeEquals(hashPassword(password, decoded), expected)) {
-                        prefs.edit().putInt("fails", 0).putLong("lock_until", 0L).apply()
-                        dialog.dismiss()
-                        enterPanel()
-                    } else {
-                        val fails = prefs.getInt("fails", 0) + 1
-                        val edit = prefs.edit().putInt("fails", fails)
-                        if (fails >= 5) {
-                            val exponent = (fails - 5).coerceAtMost(8)
-                            edit.putLong("lock_until", System.currentTimeMillis() + minOf(24L * 60 * 60 * 1000, 5L * 60 * 1000 * (1L shl exponent)))
-                        }
-                        edit.apply()
-                        Toast.makeText(this, "كلمة المرور غير صحيحة", Toast.LENGTH_SHORT).show()
+                    val fails = prefs.getInt("fails", 0) + 1
+                    val edit = prefs.edit().putInt("fails", fails)
+                    if (fails >= 5) {
+                        val exponent = (fails - 5).coerceAtMost(8)
+                        edit.putLong("lock_until", System.currentTimeMillis() +
+                            minOf(24L * 60 * 60 * 1000, 5L * 60 * 1000 * (1L shl exponent)))
                     }
+                    edit.apply()
+                    first.text?.clear()
+                    Toast.makeText(this, "كلمة المرور غير صحيحة", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -184,7 +207,19 @@ class AdminActivity : Activity() {
     private fun strong(value: String) =
         value.length >= 10 && value.any { it.isLetter() } && value.any { it.isDigit() }
 
+    // Version 2: stronger PBKDF2 work factor and SHA-256 where the Android provider supports it.
     private fun hashPassword(password: String, salt: ByteArray): String {
+        val algorithm = try { "PBKDF2WithHmacSHA256" } catch (_: Exception) { "PBKDF2WithHmacSHA1" }
+        val spec = PBEKeySpec(password.toCharArray(), salt, 310_000, 256)
+        return try {
+            val factory = try { SecretKeyFactory.getInstance(algorithm) }
+                catch (_: Exception) { SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1") }
+            factory.generateSecret(spec).encoded.joinToString("") { "%02x".format(it) }
+        } finally { spec.clearPassword() }
+    }
+
+    // Read-only compatibility verifier for passwords created by the older app build.
+    private fun hashPasswordLegacy(password: String, salt: ByteArray): String {
         val spec = PBEKeySpec(password.toCharArray(), salt, 120_000, 256)
         return try {
             SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1").generateSecret(spec).encoded
@@ -242,8 +277,8 @@ class AdminActivity : Activity() {
     }
 
     private fun isOriginal(channel: JSONObject): Boolean {
-        val name = channel.optString("name")
-        val url = channel.optString("url")
+        val id = channel.optString("id").trim()
+        val url = channel.optString("url").trim()
         return try {
             val raw = JSONObject(assets.open("channels.json").bufferedReader(Charsets.UTF_8).use { it.readText() })
             val groups = raw.optJSONArray("sections") ?: return false
@@ -251,7 +286,10 @@ class AdminActivity : Activity() {
                 val list = groups.optJSONObject(i)?.optJSONArray("items") ?: continue
                 for (j in 0 until list.length()) {
                     val item = list.optJSONObject(j) ?: continue
-                    if (item.optString("name") == name && item.optString("url") == url) return true
+                    val originalId = item.optString("id").trim()
+                    val originalUrl = item.optString("url").trim()
+                    if ((id.isNotBlank() && originalId.isNotBlank() && id == originalId) ||
+                        (url.isNotBlank() && originalUrl.isNotBlank() && url == originalUrl)) return true
                 }
             }
             false
@@ -450,8 +488,17 @@ class AdminActivity : Activity() {
                     setPadding(0, 5, 0, 5)
                 })
                 val buttons = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-                buttons.addView(action("تعديل") { editChannel(i, j) }, LinearLayout.LayoutParams(0, -2, 1f))
-                buttons.addView(action("حذف") { deleteChannel(i, j, channel.optString("name")) }, LinearLayout.LayoutParams(0, -2, 1f))
+                if (isOriginal(channel)) {
+                    buttons.addView(TextView(this).apply {
+                        text = "قناة أصلية محمية"
+                        textSize = 11f
+                        setTextColor(0xFF34D399.toInt())
+                        setPadding(8, 12, 8, 12)
+                    })
+                } else {
+                    buttons.addView(action("تعديل") { editChannel(i, j) }, LinearLayout.LayoutParams(0, -2, 1f))
+                    buttons.addView(action("حذف") { deleteChannel(i, j, channel.optString("name")) }, LinearLayout.LayoutParams(0, -2, 1f))
+                }
                 row.addView(buttons)
                 sectionBox.addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 7 })
             }
@@ -506,7 +553,10 @@ class AdminActivity : Activity() {
 
     private fun editChannel(sectionIndex: Int?, itemIndex: Int?) {
         val old = if (sectionIndex != null && itemIndex != null) items(sectionIndex).optJSONObject(itemIndex) else null
-        if (old != null && isOriginal(old)) { /* originals can now be managed by the owner */ }
+        if (old != null && isOriginal(old)) {
+            Toast.makeText(this, "هذه قناة أصلية محمية ولا يمكن تعديلها.", Toast.LENGTH_LONG).show()
+            return
+        }
         val form = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(24, 8, 24, 8) }
         fun field(hintText: String, value: String = "", multiline: Boolean = false): EditText {
             val e = EditText(this).apply {
@@ -672,6 +722,10 @@ class AdminActivity : Activity() {
             .setPositiveButton("حذف") { _, _ ->
                 val channel = items(sectionIndex).optJSONObject(itemIndex)
                 if (channel != null) {
+                    if (isOriginal(channel)) {
+                        Toast.makeText(this, "لا يمكن حذف قناة أصلية محمية.", Toast.LENGTH_LONG).show()
+                        return@setPositiveButton
+                    }
                     removeStreamConfig(channel)
                     items(sectionIndex).remove(itemIndex); save(); render()
                 }

@@ -1,0 +1,1 @@
+Country browsing is lazy-loaded per selected country. The Android build copies CountriesActivity.kt and countries.csv into the app source and assets. The restore worker uses bounded playlist parsing and per-source progress.

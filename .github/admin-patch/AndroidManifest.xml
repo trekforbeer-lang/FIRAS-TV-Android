@@ -7,6 +7,7 @@
     <uses-feature android:name="android.hardware.touchscreen" android:required="true" />
     <application android:allowBackup="false" android:icon="@drawable/ic_launcher" android:roundIcon="@drawable/ic_launcher"
         android:label="RAHMANI" android:supportsRtl="true" android:usesCleartextTraffic="true" android:hardwareAccelerated="true" android:theme="@style/Theme.FirasTV">
+        <activity android:name=".CountriesActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".MoreActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".AdminActivity" android:exported="false" android:screenOrientation="portrait" />
         <activity android:name=".TeamPreferencesActivity" android:exported="false" android:screenOrientation="portrait" />
