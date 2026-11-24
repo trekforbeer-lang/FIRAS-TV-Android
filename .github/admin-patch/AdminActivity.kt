@@ -860,8 +860,9 @@ class AdminActivity : Activity() {
                             val candidate = groups.optJSONObject(i)
                             if (candidate?.optString("title") == sectionName) { section = candidate; break }
                         }
-                        if (section == null) { section = JSONObject().put("title", sectionName).put("items", JSONArray()); groups.put(section) }
-                        val destination = section.optJSONArray("items") ?: JSONArray().also { section.put("items", it) }
+                        val destinationSection = section ?: JSONObject().put("title", sectionName).put("items", JSONArray()).also { groups.put(it) }
+                        val destination = destinationSection.optJSONArray("items")
+                            ?: JSONArray().also { destinationSection.put("items", it) }
                         var added = 0
                         parsed.forEach { channel ->
                             val url = channel.optString("url")
