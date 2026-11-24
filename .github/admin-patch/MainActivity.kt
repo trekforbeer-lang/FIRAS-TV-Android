@@ -45,11 +45,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var chips: ChipGroup
     private lateinit var restoreButton: Button
     private lateinit var channelRecycler: RecyclerView
+    private var drawerOverlay: View? = null
     private val homePrefs by lazy { getSharedPreferences("rahmani_home_preferences", MODE_PRIVATE) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        findViewById<TextView>(R.id.drawerMenuButton).setOnClickListener { openSideDrawer() }
         // Hidden owner-only entry: seven quick taps on the RAHMANI wordmark.
         findViewById<TextView>(R.id.adminSecretTrigger).setOnClickListener {
             val now = SystemClock.elapsedRealtime()
@@ -272,6 +274,155 @@ class MainActivity : AppCompatActivity() {
         root.addView(overlay, FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
         ))
+    }
+
+
+    private fun openSideDrawer() {
+        if (drawerOverlay != null) return
+        val root = findViewById<FrameLayout>(android.R.id.content)
+        val panelWidth = (resources.displayMetrics.widthPixels * 0.84f).toInt().coerceAtMost(dp(340))
+        val overlay = FrameLayout(this).apply {
+            setBackgroundColor(Color.TRANSPARENT)
+            isClickable = true
+            isFocusable = true
+        }
+        val scrim = View(this).apply {
+            setBackgroundColor(Color.argb(178, 0, 0, 0))
+            setOnClickListener { closeSideDrawer() }
+        }
+        overlay.addView(scrim, FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+        ))
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            setPadding(dp(18), dp(22), dp(18), dp(18))
+            background = GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                intArrayOf(Color.rgb(24, 28, 40), Color.rgb(9, 13, 22), Color.rgb(8, 10, 16))
+            ).apply {
+                cornerRadii = floatArrayOf(dp(24).toFloat(), dp(24).toFloat(), 0f, 0f, 0f, 0f, dp(24).toFloat(), dp(24).toFloat())
+                setStroke(dp(1), Color.rgb(91, 77, 57))
+            }
+            elevation = dp(18).toFloat()
+        }
+        val panelParams = FrameLayout.LayoutParams(panelWidth, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT)
+        overlay.addView(panel, panelParams)
+
+        val brand = TextView(this).apply {
+            text = "RAHMANI TV"
+            textSize = 23f
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(Color.rgb(224, 190, 126))
+            gravity = Gravity.CENTER_VERTICAL
+            letterSpacing = 0.05f
+        }
+        panel.addView(brand, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, dp(42)
+        ))
+        val subtitle = TextView(this).apply {
+            text = "عالمك الترفيهي في مكان واحد"
+            textSize = 11f
+            setTextColor(Color.rgb(158, 169, 188))
+            setPadding(0, 0, 0, dp(15))
+        }
+        panel.addView(subtitle)
+        val line = View(this).apply { setBackgroundColor(Color.argb(90, 198, 166, 106)) }
+        panel.addView(line, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)))
+
+        fun entry(label: String, description: String, action: () -> Unit) {
+            val item = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(14), dp(8), dp(14), dp(8))
+                background = GradientDrawable().apply {
+                    setColor(Color.argb(24, 255, 255, 255))
+                    cornerRadius = dp(13).toFloat()
+                    setStroke(dp(1), Color.argb(30, 198, 166, 106))
+                }
+                isClickable = true
+                isFocusable = true
+                setOnClickListener { closeSideDrawer(); action() }
+            }
+            val title = TextView(this).apply {
+                text = label
+                textSize = 14f
+                setTypeface(typeface, Typeface.BOLD)
+                setTextColor(Color.rgb(238, 241, 247))
+            }
+            val detail = TextView(this).apply {
+                text = description
+                textSize = 10f
+                setTextColor(Color.rgb(145, 157, 177))
+                setPadding(0, dp(3), 0, 0)
+            }
+            item.addView(title)
+            item.addView(detail)
+            panel.addView(item, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(58)
+            ).apply { topMargin = dp(8) })
+        }
+        entry("الرئيسية", "العودة إلى الصفحة الرئيسية") {
+            selected = ""; selectedRegion = ""; rebuildChips(chips); refresh()
+            updateBottomNavigation(R.id.navHome)
+            channelRecycler.smoothScrollToPosition(0)
+        }
+        entry("القنوات المباشرة", "تصفح القنوات المتاحة") {
+            selected = ""; selectedRegion = ""; rebuildChips(chips); refresh()
+            updateBottomNavigation(R.id.navChannels)
+            channelRecycler.smoothScrollToPosition(0)
+        }
+        entry("الدول العربية", "قنوات البلدان العربية") {
+            selected = ""; selectedRegion = "arab"; rebuildChips(chips); refresh()
+            updateBottomNavigation(R.id.navChannels)
+            channelRecycler.smoothScrollToPosition(0)
+        }
+        entry("الدول الأجنبية", "قنوات البلدان الأجنبية") {
+            selected = ""; selectedRegion = "foreign"; rebuildChips(chips); refresh()
+            updateBottomNavigation(R.id.navChannels)
+            channelRecycler.smoothScrollToPosition(0)
+        }
+        entry("الرياضة", "المباريات والأقسام الرياضية") {
+            startActivity(Intent(this, SportsActivity::class.java))
+        }
+        entry("الأفلام", "اكتشف مكتبة الأفلام") {
+            startActivity(Intent(this, MoviesActivity::class.java))
+        }
+        entry("قائمتي", "المفضلة والمحفوظات") {
+            startActivity(Intent(this, MyListActivity::class.java))
+        }
+        entry("اكتشف", "استكشف المزيد من المحتوى") {
+            startActivity(Intent(this, DiscoverActivity::class.java))
+        }
+        entry("المزيد والإعدادات", "خيارات التطبيق والمعلومات") {
+            startActivity(Intent(this, MoreActivity::class.java))
+        }
+        val footer = TextView(this).apply {
+            text = "RAHMANI  •  تجربة مشاهدة أنيقة"
+            textSize = 10f
+            gravity = Gravity.CENTER
+            setTextColor(Color.rgb(121, 132, 151))
+        }
+        panel.addView(footer, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f
+        ))
+        drawerOverlay = overlay
+        root.addView(overlay, FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+        ))
+        panel.translationX = panelWidth.toFloat()
+        panel.animate().translationX(0f).setDuration(220).start()
+    }
+
+    private fun closeSideDrawer() {
+        val overlay = drawerOverlay as? FrameLayout ?: return
+        val root = findViewById<FrameLayout>(android.R.id.content)
+        val panel = overlay.getChildAt(1)
+        val distance = panel.width.toFloat().takeIf { it > 0f } ?: dp(300).toFloat()
+        panel.animate().translationX(distance).setDuration(180).withEndAction {
+            root.removeView(overlay)
+            drawerOverlay = null
+        }.start()
     }
 
     private fun dp(value: Int): Int =
