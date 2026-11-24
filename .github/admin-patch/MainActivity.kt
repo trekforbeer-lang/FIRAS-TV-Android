@@ -98,6 +98,7 @@ class MainActivity : AppCompatActivity() {
             channelRecycler.smoothScrollToPosition(0)
         }
         findViewById<View>(R.id.quickSportsButton).setOnClickListener { startActivity(Intent(this, SportsActivity::class.java)) }
+        findViewById<View>(R.id.quickCountriesButton).setOnClickListener { startActivity(Intent(this, CountriesActivity::class.java)) }
         findViewById<View>(R.id.quickMoviesButton).setOnClickListener { startActivity(Intent(this, MoviesActivity::class.java)) }
         findViewById<View>(R.id.quickAdminButton).setOnClickListener {
             returningFromAdmin = true
