@@ -201,7 +201,8 @@ class AdminActivity : Activity() {
                 }
             }
         }
-
+        dialog.show()
+    }
 
     private fun strong(value: String) =
         value.length >= 10 && value.any { it.isLetter() } && value.any { it.isDigit() }
