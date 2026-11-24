@@ -144,10 +144,9 @@ class AdminActivity : Activity() {
         box.addView(password)
         val dialog = AlertDialog.Builder(this)
             .setTitle("دخول الإدارة الآمن")
-            .setMessage("أنشئ حساب Firebase أولاً، ثم يضيف مالك المشروع UID الخاص بك إلى قائمة المديرين.")
+            .setMessage("هذا الدخول مخصص لحساب المدير المعتمد فقط.")
             .setView(box)
             .setPositiveButton("دخول", null)
-            .setNeutralButton("إنشاء حساب", null)
             .setNegativeButton("إلغاء") { _, _ -> finish() }
             .create()
         dialog.setOnShowListener {
@@ -162,28 +161,6 @@ class AdminActivity : Activity() {
                     .addOnSuccessListener { dialog.dismiss(); verifyAdminRole() }
                     .addOnFailureListener {
                         Toast.makeText(this, "تعذّر تسجيل الدخول. تحقق من الحساب أو إعداد Firebase.", Toast.LENGTH_LONG).show()
-                    }
-            }
-            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
-                val mail = email.text.toString().trim()
-                val pass = password.text.toString()
-                if (mail.isBlank() || pass.length < 10) {
-                    Toast.makeText(this, "أدخل بريداً صالحاً وكلمة مرور لا تقل عن 10 أحرف", Toast.LENGTH_LONG).show()
-                    return@setOnClickListener
-                }
-                auth.createUserWithEmailAndPassword(mail, pass)
-                    .addOnSuccessListener { result ->
-                        val uid = result.user?.uid
-                        auth.signOut()
-                        dialog.dismiss()
-                        if (uid.isNullOrBlank()) {
-                            Toast.makeText(this, "أُنشئ الحساب لكن تعذّر قراءة UID", Toast.LENGTH_LONG).show()
-                        } else {
-                            showAdminUid(uid)
-                        }
-                    }
-                    .addOnFailureListener {
-                        Toast.makeText(this, "تعذّر إنشاء الحساب. قد يكون البريد مستخدماً بالفعل.", Toast.LENGTH_LONG).show()
                     }
             }
         }
@@ -204,9 +181,9 @@ class AdminActivity : Activity() {
                 if (document.getString("role") == "admin" && document.getBoolean("active") == true) {
                     enterPanel()
                 } else {
-                    val uid = user.uid
                     FirebaseAuth.getInstance().signOut()
-                    showAdminUid(uid)
+                    Toast.makeText(this, "هذا الحساب غير مخوّل للإدارة", Toast.LENGTH_LONG).show()
+                    finish()
                 }
             }
             .addOnFailureListener {
