@@ -1,51 +1,158 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent" android:layout_height="match_parent"
-    android:orientation="vertical" android:background="#080808">
-    <LinearLayout android:id="@+id/topBar" android:layout_width="match_parent"
-        android:layout_height="56dp" android:gravity="center_vertical"
-        android:paddingLeft="@dimen/player_side_padding" android:paddingRight="@dimen/player_side_padding"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#080808"
+    android:fitsSystemWindows="false">
+
+    <LinearLayout
+        android:id="@+id/topBar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:gravity="center_vertical"
+        android:paddingLeft="@dimen/player_side_padding"
+        android:paddingRight="@dimen/player_side_padding"
         android:background="#111111">
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="FIRAS TV" android:textColor="#FFFFFF" android:textStyle="bold"
-            android:textSize="@dimen/player_title_size"/>
-        <TextView android:id="@+id/channelTitle" android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_weight="1" android:gravity="end" android:text="اختر قناة"
-            android:textColor="#EEEEEE" android:textSize="16sp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="FIRAS TV"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="@dimen/player_title_size" />
+
+        <TextView
+            android:id="@+id/channelTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="end"
+            android:text="اختر قناة"
+            android:textColor="#EEEEEE"
+            android:textSize="16sp" />
     </LinearLayout>
-    <FrameLayout android:id="@+id/playerFrame" android:layout_width="match_parent"
-        android:layout_height="0dp" android:layout_weight="1" android:background="#000000">
-        <androidx.media3.ui.PlayerView android:id="@+id/playerView"
-            android:layout_width="match_parent" android:layout_height="match_parent"
-            app:use_controller="true" app:show_timeout="3500" app:show_buffering="when_playing"
-            app:resize_mode="fit" app:show_subtitle_button="true"/>
+
+    <FrameLayout
+        android:id="@+id/playerFrame"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="#000000"
+        android:clipToPadding="false">
+
+        <androidx.media3.ui.PlayerView
+            android:id="@+id/playerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#000000"
+            app:use_controller="true"
+            app:show_timeout="3500"
+            app:show_buffering="never"
+            app:resize_mode="fit"
+            app:show_subtitle_button="true"
+            app:keep_content_on_player_reset="false" />
+
+        <ProgressBar
+            android:id="@+id/loadingIndicator"
+            style="?android:attr/progressBarStyleLarge"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_gravity="center"
+            android:indeterminate="true"
+            android:indeterminateTint="#FFFFFF"
+            android:visibility="gone" />
     </FrameLayout>
-    <LinearLayout android:id="@+id/bottomPanel" android:layout_width="match_parent"
-        android:layout_height="wrap_content" android:orientation="vertical" android:background="#101010">
-        <TextView android:id="@+id/statusText" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:padding="8dp"
-            android:text="FIRAS TV • بث مباشر" android:textColor="#BDBDBD" android:gravity="center"/>
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:gravity="center" android:orientation="horizontal" android:paddingLeft="8dp" android:paddingRight="8dp">
-            <Button android:id="@+id/playPauseButton" android:layout_width="0dp" android:layout_height="@dimen/player_control_size"
-                android:layout_weight="1" android:text="تشغيل" android:textAllCaps="false"/>
-            <Button android:id="@+id/zoomButton" android:layout_width="0dp" android:layout_height="@dimen/player_control_size"
-                android:layout_weight="1" android:text="زووم" android:textAllCaps="false"/>
-            <Button android:id="@+id/fullscreenButton" android:layout_width="0dp" android:layout_height="@dimen/player_control_size"
-                android:layout_weight="1" android:text="ملء الشاشة" android:textAllCaps="false"/>
+
+    <LinearLayout
+        android:id="@+id/bottomPanel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#101010">
+
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="FIRAS TV • بث مباشر"
+            android:textColor="#BDBDBD"
+            android:gravity="center" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp">
+
+            <Button
+                android:id="@+id/playPauseButton"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/player_control_size"
+                android:layout_weight="1"
+                android:text="تشغيل"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/zoomButton"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/player_control_size"
+                android:layout_weight="1"
+                android:text="تكبير"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/fullscreenButton"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/player_control_size"
+                android:layout_weight="1"
+                android:text="ملء الشاشة"
+                android:textAllCaps="false" />
         </LinearLayout>
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:gravity="center" android:orientation="horizontal" android:paddingLeft="8dp" android:paddingRight="8dp">
-            <Button android:id="@+id/retryButton" android:layout_width="0dp" android:layout_height="@dimen/player_control_size"
-                android:layout_weight="1" android:text="تحديث" android:textAllCaps="false"/>
-            <Button android:id="@+id/serverButton" android:layout_width="0dp" android:layout_height="@dimen/player_control_size"
-                android:layout_weight="1" android:text="السيرفر" android:textAllCaps="false"/>
-            <Button android:id="@+id/qualityButton" android:layout_width="0dp" android:layout_height="@dimen/player_control_size"
-                android:layout_weight="1" android:text="الجودة" android:textAllCaps="false"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp">
+
+            <Button
+                android:id="@+id/retryButton"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/player_control_size"
+                android:layout_weight="1"
+                android:text="تحديث"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/serverButton"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/player_control_size"
+                android:layout_weight="1"
+                android:text="السيرفر"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/qualityButton"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/player_control_size"
+                android:layout_weight="1"
+                android:text="الجودة"
+                android:textAllCaps="false" />
         </LinearLayout>
-        <androidx.recyclerview.widget.RecyclerView android:id="@+id/channelList"
-            android:layout_width="match_parent" android:layout_height="88dp"
-            android:padding="8dp" android:clipToPadding="false"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/channelList"
+            android:layout_width="match_parent"
+            android:layout_height="88dp"
+            android:padding="8dp"
+            android:clipToPadding="false" />
     </LinearLayout>
 </LinearLayout>
