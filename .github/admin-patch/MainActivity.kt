@@ -351,7 +351,7 @@ class MainActivity : AppCompatActivity() {
         addChip("الدول العربية", "__region_arab__", selectedRegion == "arab")
         addChip("الدول الأجنبية", "__region_foreign__", selectedRegion == "foreign")
         sections.filter { selectedRegion.isEmpty() || it.region == selectedRegion }.forEach {
-            addChip(it.title, it.title, selected == it.title)
+            addChip(countryFlag(it.countryCode) + " " + it.title, it.title, selected == it.title)
         }
         group.setOnCheckedStateChangeListener { g, ids ->
             val tag = ids.firstOrNull()?.let { g.findViewById<Chip>(it)?.tag as? String }.orEmpty()
@@ -364,6 +364,13 @@ class MainActivity : AppCompatActivity() {
             rebuildChips(group)
             refresh()
         }
+    }
+
+    private fun countryFlag(code: String): String {
+        val normalized = code.trim().uppercase()
+        if (normalized.length != 2 || normalized.any { it !in 'A'..'Z' }) return "🌐"
+        return String(Character.toChars(0x1F1E6 + normalized[0] - 'A')) +
+            String(Character.toChars(0x1F1E6 + normalized[1] - 'A'))
     }
 
     private fun refresh() {
