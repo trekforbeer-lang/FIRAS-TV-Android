@@ -837,7 +837,12 @@ class AdminActivity : Activity() {
 
                 importButton.isEnabled = false
                 importButton.text = "جارٍ التحليل..."
-                Toast.makeText(this, "جارٍ تحليل القائمة في الخلفية، يمكنك الانتظار دون تجمّد الواجهة", Toast.LENGTH_LONG).show()
+                val progress = AlertDialog.Builder(this)
+                    .setTitle("استيراد القنوات")
+                    .setMessage("يتم تحليل القائمة وحفظها في الخلفية. قد يستغرق ذلك وقتاً حسب حجم الملف.")
+                    .setCancelable(false)
+                    .create()
+                progress.show()
 
                 val snapshot = root.toString()
                 Thread {
@@ -876,7 +881,11 @@ class AdminActivity : Activity() {
                     } catch (_: Exception) { }
                     val completed = outcome
                     runOnUiThread {
-                        if (isFinishing || isDestroyed) return@runOnUiThread
+                        if (isFinishing || isDestroyed) {
+                            progress.dismiss()
+                            return@runOnUiThread
+                        }
+                        progress.dismiss()
                         if (completed == null) {
                             importButton.isEnabled = true
                             importButton.text = "إعادة المحاولة"
