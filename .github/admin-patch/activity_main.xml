@@ -37,6 +37,20 @@
                 android:textColor="#9CA8BC"
                 android:textSize="10sp"/>
         </LinearLayout>
+        <TextView
+            android:id="@+id/drawerMenuButton"
+            android:layout_width="46dp"
+            android:layout_height="46dp"
+            android:layout_marginStart="8dp"
+            android:gravity="center"
+            android:text="☰"
+            android:textColor="#E8C98E"
+            android:textSize="23sp"
+            android:background="@drawable/rahmani_action_button"
+            android:contentDescription="فتح القائمة الجانبية"
+            android:clickable="true"
+            android:focusable="true"
+            android:stateListAnimator="@null"/>
         <Button
             android:id="@+id/adminButton"
             android:visibility="gone"
