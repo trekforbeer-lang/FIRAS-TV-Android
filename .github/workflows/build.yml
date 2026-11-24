@@ -122,6 +122,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/kotlin-v3'
         with:
           tag_name: rahmani-android-${{ github.run_number }}
           name: RAHMANI Android (Build ${{ github.run_number }})
