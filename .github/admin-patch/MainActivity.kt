@@ -33,6 +33,7 @@ import java.net.URL
 class MainActivity : AppCompatActivity() {
     private var sections: List<Section> = emptyList()
     private var selected = ""
+    private var selectedRegion = ""
     private var query = ""
     private var lastLaunchAt = 0L
     private var returningFromAdmin = false
@@ -345,16 +346,26 @@ class MainActivity : AppCompatActivity() {
             chip.id = View.generateViewId(); chip.text = label; chip.tag = tag; chip.isChecked = checked
             group.addView(chip)
         }
-        addChip("الكل", "", true)
-        sections.forEach { addChip(it.title, it.title, false) }
+        addChip("الكل", "", selected.isEmpty() && selectedRegion.isEmpty())
+        addChip("الدول العربية", "__region_arab__", selectedRegion == "arab")
+        addChip("الدول الأجنبية", "__region_foreign__", selectedRegion == "foreign")
+        sections.filter { selectedRegion.isEmpty() || it.region == selectedRegion }.forEach {
+            addChip(it.title, it.title, selected == it.title)
+        }
         group.setOnCheckedStateChangeListener { g, ids ->
-            selected = ids.firstOrNull()?.let { g.findViewById<Chip>(it)?.tag as? String } ?: ""
+            val tag = ids.firstOrNull()?.let { g.findViewById<Chip>(it)?.tag as? String }.orEmpty()
+            when (tag) {
+                "__region_arab__" -> { selectedRegion = "arab"; selected = "" }
+                "__region_foreign__" -> { selectedRegion = "foreign"; selected = "" }
+                else -> selected = tag
+            }
+            rebuildChips(group)
             refresh()
         }
     }
 
     private fun refresh() {
-        val list = sections.filter { selected.isEmpty() || it.title == selected }.flatMap { it.items }
+        val list = sections.filter { (selectedRegion.isEmpty() || it.region == selectedRegion) && (selected.isEmpty() || it.title == selected) }.flatMap { it.items }
             .filter { query.isEmpty() || it.name.contains(query, ignoreCase = true) }
         adapter.submitList(list)
         findViewById<TextView>(R.id.channelCount)?.text = "${list.size} قناة"
