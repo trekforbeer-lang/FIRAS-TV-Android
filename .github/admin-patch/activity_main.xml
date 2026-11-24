@@ -214,7 +214,7 @@
             android:layout_height="match_parent" android:gravity="center" android:background="@drawable/rahmani_nav_item_bg" android:paddingTop="5dp" android:paddingBottom="5dp" android:text="⚽\nالرياضة"
             android:textColor="#A9B5CA" android:textSize="10sp" android:clickable="true" android:focusable="true"/>
         <TextView android:id="@+id/navMovies" android:layout_width="0dp" android:layout_weight="1"
-            android:layout_height="match_parent" android:gravity="center" android:background="@drawable/rahmani_nav_item_bg" android:paddingTop="5dp" android:paddingBottom="5dp" android:text="▶\nالأفلام"
+            android:layout_height="match_parent" android:gravity="center" android:background="@drawable/rahmani_nav_item_bg" android:paddingTop="5dp" android:paddingBottom="5dp" android:text="★\nقائمتي"
             android:textColor="#A9B5CA" android:textSize="10sp" android:clickable="true" android:focusable="true"/>
         <TextView android:id="@+id/navAdmin" android:layout_width="0dp" android:layout_weight="1"
             android:layout_height="match_parent" android:gravity="center" android:background="@drawable/rahmani_nav_item_bg" android:paddingTop="5dp" android:paddingBottom="5dp" android:text="☰\nالمزيد"

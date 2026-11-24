@@ -114,7 +114,7 @@ class MainActivity : AppCompatActivity() {
         }
         findViewById<TextView>(R.id.navMovies).setOnClickListener {
             updateBottomNavigation(R.id.navMovies)
-            startActivity(Intent(this, MoviesActivity::class.java))
+            startActivity(Intent(this, MyListActivity::class.java))
         }
         findViewById<TextView>(R.id.navSports).setOnClickListener {
             updateBottomNavigation(R.id.navSports)

@@ -23,7 +23,7 @@ import java.security.MessageDigest
 import java.util.concurrent.Executors
 import java.util.concurrent.ConcurrentHashMap
 
-class ChannelAdapter(private val onClick: (Channel) -> Unit) :
+class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavoriteChanged: () -> Unit = {}) :
     ListAdapter<Channel, ChannelAdapter.Holder>(Diff) {
 
     private val io = Executors.newFixedThreadPool(3)
@@ -40,7 +40,7 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
         override fun areContentsTheSame(oldItem: Channel, newItem: Channel) = oldItem == newItem
     }
 
-    class Holder(val card: LinearLayout, val logo: ImageView, val title: TextView, val subtitle: TextView) :
+    class Holder(val card: LinearLayout, val logo: ImageView, val title: TextView, val subtitle: TextView, val favorite: TextView) :
         RecyclerView.ViewHolder(card)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
@@ -95,8 +95,19 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
             setPadding(0, dp(3), 0, 0)
         }
         card.addView(subtitle, LinearLayout.LayoutParams(-1, -2))
+        val favorite = TextView(context).apply {
+            textSize = 10f
+            gravity = Gravity.CENTER
+            setPadding(dp(10), dp(6), dp(10), dp(6))
+            setTextColor(Color.rgb(255, 190, 132))
+            background = GradientDrawable().apply {
+                setColor(Color.rgb(48, 31, 38))
+                cornerRadius = dp(10).toFloat()
+            }
+        }
+        card.addView(favorite, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
         card.setOnClickListener { }
-        return Holder(card, logo, title, subtitle)
+        return Holder(card, logo, title, subtitle, favorite)
     }
 
     override fun onBindViewHolder(holder: Holder, position: Int) {
@@ -111,6 +122,21 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit) :
         holder.subtitle.setPadding(dp(7), dp(3), dp(7), dp(3))
         holder.card.contentDescription = if (channel.url.isBlank()) "${channel.name}، الرابط غير مضاف" else "${channel.name}، جاهزة للتشغيل"
         holder.card.setOnClickListener { onClick(channel) }
+        fun updateFavoriteLabel() {
+            val saved = FavoriteChannels.contains(holder.itemView.context, channel)
+            holder.favorite.text = if (saved) "★  محفوظ في قائمتي" else "☆  أضف إلى قائمتي"
+            holder.favorite.setTextColor(if (saved) Color.rgb(255, 205, 92) else Color.rgb(255, 190, 132))
+            holder.favorite.contentDescription = if (saved) "إزالة من قائمتي" else "إضافة إلى قائمتي"
+        }
+        updateFavoriteLabel()
+        holder.favorite.setOnClickListener {
+            val saved = FavoriteChannels.toggle(holder.itemView.context, channel)
+            updateFavoriteLabel()
+            android.widget.Toast.makeText(holder.itemView.context,
+                if (saved) "أُضيفت إلى قائمتي" else "أُزيلت من قائمتي",
+                android.widget.Toast.LENGTH_SHORT).show()
+            onFavoriteChanged()
+        }
         holder.logo.tag = channel.logo
         val cached = synchronized(cache) { cache[channel.logo] }
         val localPath = channel.logo.removePrefix("file://")
