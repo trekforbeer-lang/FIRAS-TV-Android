@@ -51,7 +51,7 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
             gravity = Gravity.CENTER
             layoutDirection = View.LAYOUT_DIRECTION_RTL
             setPadding(dp(7), dp(10), dp(7), dp(9))
-            minimumHeight = dp(162)
+            minimumHeight = dp(174)
             elevation = dp(2).toFloat()
             background = android.graphics.drawable.RippleDrawable(
                 android.content.res.ColorStateList.valueOf(Color.rgb(105, 43, 61)),
@@ -76,8 +76,8 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
             setPadding(dp(5), dp(5), dp(5), dp(5))
             contentDescription = "شعار القناة"
         }
-        logoFrame.addView(logo, LinearLayout.LayoutParams(dp(76), dp(76)))
-        card.addView(logoFrame, LinearLayout.LayoutParams(dp(88), dp(88)))
+        logoFrame.addView(logo, LinearLayout.LayoutParams(dp(80), dp(80)))
+        card.addView(logoFrame, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(94)))
         val title = TextView(context).apply {
             setTextColor(Color.WHITE)
             textSize = 12.5f
