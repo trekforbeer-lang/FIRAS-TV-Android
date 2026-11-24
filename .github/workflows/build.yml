@@ -2,7 +2,7 @@ name: FIRAS TV v4 Build APK
 # Build includes the latest committed admin-patch Kotlin sources, RAHMANI UI resources, and saved-channel screen.
 on:
   push:
-    branches: [kotlin-v3, fix/restore-channels-background-parse]
+    branches: [kotlin-v3, fix/restore-channels-background-parse, fix/country-browser-and-safe-restore]
   workflow_dispatch:
 permissions:
   contents: write
@@ -25,6 +25,7 @@ jobs:
           rm -f .github/workflows/v4-source-*.b64
           cp .github/admin-patch/AdminActivity.kt app/src/main/java/com/firas/tv/AdminActivity.kt
           cp .github/admin-patch/MainActivity.kt app/src/main/java/com/firas/tv/MainActivity.kt
+          cp .github/admin-patch/CountriesActivity.kt app/src/main/java/com/firas/tv/CountriesActivity.kt
           cp .github/admin-patch/FavoriteChannels.kt app/src/main/java/com/firas/tv/FavoriteChannels.kt # saved-channel screen and favorites
           cp .github/admin-patch/DiscoverActivity.kt app/src/main/java/com/firas/tv/DiscoverActivity.kt # channel discovery and category search
           cp .github/admin-patch/MoreActivity.kt app/src/main/java/com/firas/tv/MoreActivity.kt # dedicated More hub
@@ -58,6 +59,7 @@ jobs:
           cp .github/admin-patch/MoviePlayerActivity.kt app/src/main/java/com/firas/tv/MoviePlayerActivity.kt
           mkdir -p app/src/main/assets
           cp .github/admin-patch/channels.json app/src/main/assets/channels.json
+          cp .github/admin-patch/countries.csv app/src/main/assets/countries.csv
           # RAHMANI architecture dependencies and modern Android configuration.
           sed -i 's/minSdk = 21/minSdk = 24/' app/build.gradle.kts
           sed -i -E 's/targetSdk = [0-9]+/targetSdk = 34/' app/build.gradle.kts
