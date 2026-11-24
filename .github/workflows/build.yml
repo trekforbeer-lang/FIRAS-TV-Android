@@ -31,6 +31,12 @@ jobs:
           cp .github/admin-patch/activity_main.xml app/src/main/res/layout/activity_main.xml
           cp .github/admin-patch/activity_player.xml app/src/main/res/layout/activity_player.xml
           mkdir -p app/src/main/res/drawable
+          mkdir -p app/src/main/res/values app/src/main/res/color
+          cp .github/admin-patch/colors.xml app/src/main/res/values/colors.xml
+          cp .github/admin-patch/dimens.xml app/src/main/res/values/dimens.xml
+          cp .github/admin-patch/themes.xml app/src/main/res/values/themes.xml
+          cp .github/admin-patch/styles.xml app/src/main/res/values/styles.xml
+          cp .github/admin-patch/strings.xml app/src/main/res/values/strings.xml
           cp .github/admin-patch/home_hero_bg.xml app/src/main/res/drawable/home_hero_bg.xml
           cp .github/admin-patch/rahmani_nav_capsule.xml app/src/main/res/drawable/rahmani_nav_capsule.xml
           cp .github/admin-patch/rahmani_card_stroke.xml app/src/main/res/drawable/rahmani_card_stroke.xml
@@ -42,7 +48,18 @@ jobs:
           cp .github/admin-patch/MoviePlayerActivity.kt app/src/main/java/com/firas/tv/MoviePlayerActivity.kt
           mkdir -p app/src/main/assets
           cp .github/admin-patch/channels.json app/src/main/assets/channels.json
-          grep -q 'minSdk = 21' app/build.gradle.kts
+          # RAHMANI architecture dependencies and modern Android configuration.
+          sed -i 's/minSdk = 21/minSdk = 24/' app/build.gradle.kts
+          sed -i -E 's/targetSdk = [0-9]+/targetSdk = 34/' app/build.gradle.kts
+          sed -i '/id("org.jetbrains.kotlin.android") version "2.0.21" apply false/a\    id("org.jetbrains.kotlin.kapt") version "2.0.21" apply false' build.gradle.kts
+          sed -i '/id("org.jetbrains.kotlin.android")/a\    id("org.jetbrains.kotlin.kapt")' app/build.gradle.kts
+          sed -i '/^android[[:space:]]*{/a\    buildFeatures { viewBinding = true }' app/build.gradle.kts
+          sed -i '/implementation("androidx.appcompat:appcompat:1.7.0")/a\    implementation("androidx.activity:activity-ktx:1.10.0")\n    implementation("androidx.fragment:fragment-ktx:1.8.5")\n    implementation("androidx.constraintlayout:constraintlayout:2.2.0")\n    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")\n    implementation("androidx.viewpager2:viewpager2:1.1.0")\n    implementation("androidx.navigation:navigation-fragment-ktx:2.8.5")\n    implementation("androidx.navigation:navigation-ui-ktx:2.8.5")\n    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")\n    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")\n    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")\n    implementation("androidx.room:room-runtime:2.6.1")\n    implementation("androidx.room:room-ktx:2.6.1")\n    kapt("androidx.room:room-compiler:2.6.1")\n    implementation("androidx.paging:paging-runtime-ktx:3.3.5")\n    implementation("androidx.datastore:datastore-preferences:1.1.1")\n    implementation("io.coil-kt:coil:2.7.0")' app/build.gradle.kts
+          grep -q 'minSdk = 24' app/build.gradle.kts
+          grep -q 'targetSdk = 34' app/build.gradle.kts
+          grep -q 'viewBinding = true' app/build.gradle.kts
+          grep -q 'androidx.navigation:navigation-fragment-ktx:2.8.5' app/build.gradle.kts
+          grep -q 'room-compiler:2.6.1' app/build.gradle.kts
           grep -q 'okhttp:4.12.0' app/build.gradle.kts
           # Render SVG channel logos natively on Android (PNG/JPEG remain supported).
           # Admin-picked logo files are stored in app-private storage and decoded locally.
