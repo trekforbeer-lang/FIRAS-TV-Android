@@ -19,6 +19,7 @@ object CloudChannelSync {
 
     private const val PREFS = "rahmani_cloud_sync"
     private const val PENDING_DELETES = "pending_deletes"
+    private const val CLOUD_IDS = "cloud_catalog_ids"
 
     fun publishAll(context: Context, root: JSONObject, onComplete: ((Boolean, String?) -> Unit)? = null) {
         if (FirebaseAuth.getInstance().currentUser == null) {
@@ -151,6 +152,9 @@ object CloudChannelSync {
                     }
                     val groups = root.optJSONArray("sections") ?: JSONArray().also { root.put("sections", it) }
                     var changed = 0
+                    val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                    val previousCloudIds = prefs.getStringSet(CLOUD_IDS, emptySet()).orEmpty().toSet()
+                    val currentCloudIds = rows.map { it.first }.toSet()
                     rows.forEach { (id, data) ->
                         val name = data["name"] as? String ?: return@forEach
                         val url = data["url"] as? String ?: return@forEach
@@ -191,6 +195,19 @@ object CloudChannelSync {
                         if (remoteAlts != null) item.put("alts", JSONArray(remoteAlts.filterIsInstance<String>()))
                         changed++
                     }
+                    val staleCloudIds = previousCloudIds - currentCloudIds
+                    if (staleCloudIds.isNotEmpty()) {
+                        for (i in 0 until groups.length()) {
+                            val items = groups.optJSONObject(i)?.optJSONArray("items") ?: continue
+                            for (j in items.length() - 1 downTo 0) {
+                                val item = items.optJSONObject(j) ?: continue
+                                if (staleCloudIds.contains(item.optString("id"))) {
+                                    items.remove(j)
+                                    changed++
+                                }
+                            }
+                        }
+                    }
                     if (changed > 0) {
                         val temp = File(context.filesDir, "channels.json.tmp")
                         temp.writeText(root.toString(2), Charsets.UTF_8)
@@ -199,6 +216,7 @@ object CloudChannelSync {
                             temp.delete()
                         }
                     }
+                    prefs.edit().putStringSet(CLOUD_IDS, currentCloudIds).apply()
                     onComplete?.invoke(changed)
                 }.start()
             }
