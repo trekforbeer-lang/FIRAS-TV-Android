@@ -47,11 +47,11 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
         val context = parent.context
         val card = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
-            setPadding(dp(7), dp(10), dp(7), dp(9))
-            minimumHeight = dp(174)
+            setPadding(dp(10), dp(10), dp(10), dp(10))
+            minimumHeight = dp(104)
             elevation = dp(2).toFloat()
             background = android.graphics.drawable.RippleDrawable(
                 android.content.res.ColorStateList.valueOf(Color.rgb(105, 43, 61)),
@@ -76,37 +76,43 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
             setPadding(dp(5), dp(5), dp(5), dp(5))
             contentDescription = "شعار القناة"
         }
-        logoFrame.addView(logo, LinearLayout.LayoutParams(dp(80), dp(80)))
-        card.addView(logoFrame, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(94)))
+        logoFrame.addView(logo, LinearLayout.LayoutParams(dp(72), dp(72)))
+        card.addView(logoFrame, LinearLayout.LayoutParams(dp(82), dp(82)))
+        val details = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), 0, dp(8), 0)
+        }
         val title = TextView(context).apply {
             setTextColor(Color.WHITE)
-            textSize = 12.5f
+            textSize = 14f
             typeface = Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
+            gravity = Gravity.RIGHT or Gravity.CENTER_VERTICAL
             maxLines = 2
             ellipsize = android.text.TextUtils.TruncateAt.END
-            setPadding(dp(2), dp(7), dp(2), 0)
+            setPadding(0, 0, 0, dp(4))
         }
-        card.addView(title, LinearLayout.LayoutParams(-1, -2))
+        details.addView(title, LinearLayout.LayoutParams(-1, -2))
         val subtitle = TextView(context).apply {
             setTextColor(Color.rgb(157, 160, 172))
-            textSize = 9f
-            gravity = Gravity.CENTER
+            textSize = 10f
+            gravity = Gravity.RIGHT
             text = "مباشر"
-            setPadding(0, dp(3), 0, 0)
+            setPadding(0, dp(2), 0, 0)
         }
-        card.addView(subtitle, LinearLayout.LayoutParams(-1, -2))
+        details.addView(subtitle, LinearLayout.LayoutParams(-1, -2))
         val favorite = TextView(context).apply {
             textSize = 10f
             gravity = Gravity.CENTER
-            setPadding(dp(10), dp(6), dp(10), dp(6))
+            setPadding(dp(9), dp(8), dp(9), dp(8))
             setTextColor(Color.rgb(255, 190, 132))
             background = GradientDrawable().apply {
                 setColor(Color.rgb(48, 31, 38))
                 cornerRadius = dp(10).toFloat()
             }
         }
-        card.addView(favorite, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
+        details.addView(favorite, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(8) })
+        card.addView(details, LinearLayout.LayoutParams(0, -2, 1f))
         card.setOnClickListener { }
         return Holder(card, logo, title, subtitle, favorite)
     }
