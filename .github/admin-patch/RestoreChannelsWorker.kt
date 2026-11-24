@@ -92,7 +92,8 @@ class RestoreChannelsWorker(context: Context, params: WorkerParameters) : Worker
                     section = JSONObject().put("title", title).put("items", JSONArray())
                     groups.put(section)
                 }
-                val items = section.optJSONArray("items") ?: JSONArray().also { section.put("items", it) }
+                val actualSection = section ?: continue
+                val items = actualSection.optJSONArray("items") ?: JSONArray().also { actualSection.put("items", it) }
                 val connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
                     connectTimeout = 15000
                     readTimeout = 30000
