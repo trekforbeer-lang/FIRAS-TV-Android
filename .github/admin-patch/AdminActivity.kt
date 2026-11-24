@@ -44,8 +44,9 @@ class AdminActivity : Activity() {
     private val autoLogout = Runnable {
         if (authenticated) {
             authenticated = false
-            FirebaseAuth.getInstance().signOut()
-            Toast.makeText(this, "انتهت جلسة الإدارة", Toast.LENGTH_LONG).show()
+            // Keep the Firebase owner session on this device. The admin role is
+            // re-checked from Firestore every time the hidden admin entry is opened.
+            Toast.makeText(this, "انتهت مهلة لوحة الإدارة", Toast.LENGTH_LONG).show()
             finish()
         }
     }
