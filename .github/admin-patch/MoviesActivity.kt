@@ -136,7 +136,7 @@ class MoviesActivity : AppCompatActivity() {
                 if (dy > 0 && !busy && lm.findLastVisibleItemPosition() >= films.size - 6) load(false)
             }
         })
-        load(true)
+        CloudMovieSync.refreshPublic(this) { load(true) }
     }
 
     private fun request(address: String): String {
