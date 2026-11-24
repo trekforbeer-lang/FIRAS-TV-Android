@@ -69,7 +69,7 @@ object CloudChannelSync {
                         writes += docId(item) to data
                     }
                 }
-                val chunks = writes.distinctBy { it.first }.chunked(400)
+                val chunks = writes.distinctBy { it.first }.chunked(100)
                 flushPendingDeletes(context) { deleted, deleteError ->
                     if (!deleted) {
                         onComplete?.invoke(false, deleteError ?: "تعذّر تطبيق عمليات الحذف المؤجلة")
