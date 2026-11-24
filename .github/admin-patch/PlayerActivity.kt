@@ -67,6 +67,7 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var status: TextView
     private lateinit var loadingIndicator: ProgressBar
     private lateinit var list: RecyclerView
+    private lateinit var channelPanel: View
     private lateinit var playPause: Button
     private lateinit var fullscreen: Button
     private lateinit var zoom: Button
@@ -122,6 +123,7 @@ class PlayerActivity : AppCompatActivity() {
         status = findViewById(R.id.statusText)
         loadingIndicator = findViewById(R.id.loadingIndicator)
         list = findViewById(R.id.channelList)
+        channelPanel = findViewById(R.id.channelPanel)
         playPause = findViewById(R.id.playPauseButton)
         fullscreen = findViewById(R.id.fullscreenButton)
         zoom = findViewById(R.id.zoomButton)
@@ -135,7 +137,10 @@ class PlayerActivity : AppCompatActivity() {
         findViewById<Button>(R.id.playerBackButton).setOnClickListener { handleBackAction() }
         lockButton.setOnClickListener { controlsLocked = !controlsLocked; setOverlayVisible(!controlsLocked); lockButton.text = if (controlsLocked) "🔒" else "♙" }
         findViewById<Button>(R.id.pictureInPictureButton).setOnClickListener { enterPictureInPictureIfSupported() }
-        findViewById<Button>(R.id.channelListButton).setOnClickListener { list.visibility = if (list.visibility == View.VISIBLE) View.GONE else View.VISIBLE }
+        findViewById<Button>(R.id.channelListButton).setOnClickListener {
+            channelPanel.visibility = if (channelPanel.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+            if (channelPanel.visibility == View.VISIBLE) setOverlayVisible(true)
+        }
         findViewById<Button>(R.id.subtitleButton).setOnClickListener {
             val active = player
             if (active == null) {
@@ -163,10 +168,10 @@ class PlayerActivity : AppCompatActivity() {
                 UniversalStreamEngine.match(advanced, legacy.id, legacy.name)
             )
         }
-        list.layoutManager = LinearLayoutManager(this, RecyclerView.HORIZONTAL, false)
+        list.layoutManager = LinearLayoutManager(this, RecyclerView.VERTICAL, false)
         list.adapter = PlayerChannelAdapter(channels) {
             play(it)
-            list.visibility = View.GONE
+            channelPanel.visibility = View.GONE
             setOverlayVisible(true)
         }
 
@@ -733,7 +738,8 @@ class PlayerActivity : AppCompatActivity() {
         val overlays = listOf(
             findViewById<View>(R.id.topBar),
             findViewById<View>(R.id.bottomPanel),
-            centerControls
+            centerControls,
+            channelPanel
         )
         overlays.forEach { view ->
             view.animate().cancel()
