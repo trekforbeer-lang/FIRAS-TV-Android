@@ -2,9 +2,6 @@ package com.firas.tv
 
 import android.app.Activity
 import android.app.AlertDialog
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
@@ -191,28 +188,6 @@ class AdminActivity : Activity() {
                 Toast.makeText(this, "تعذّر التحقق من صلاحيات الإدارة. تحقق من اتصال Firebase وقواعد Firestore.", Toast.LENGTH_LONG).show()
                 finish()
             }
-    }
-
-    private fun showAdminUid(uid: String) {
-        val value = TextView(this).apply {
-            text = uid
-            setTextIsSelectable(true)
-            textSize = 13f
-            setTextColor(0xFF111827.toInt())
-            setPadding(12, 12, 12, 12)
-        }
-        AlertDialog.Builder(this)
-            .setTitle("الحساب لا يملك صلاحية الإدارة بعد")
-            .setMessage("انسخ UID وأضف في Firebase Console وثيقة داخل collection باسم admins، واجعل معرّف الوثيقة هو UID، ثم أضف الحقول role = admin و active = true. لا يمكن للتطبيق إنشاء هذه الصلاحية.")
-            .setView(value)
-            .setPositiveButton("نسخ UID") { _, _ ->
-                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                clipboard.setPrimaryClip(ClipData.newPlainText("Admin UID", uid))
-                Toast.makeText(this, "تم نسخ UID", Toast.LENGTH_SHORT).show()
-                finish()
-            }
-            .setNegativeButton("إغلاق") { _, _ -> finish() }
-            .show()
     }
 
     private fun enterPanel() {
