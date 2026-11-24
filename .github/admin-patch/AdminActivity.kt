@@ -409,7 +409,19 @@ class AdminActivity : Activity() {
             setTextColor(0xFFF4F4F5.toInt()); setPadding(2, 22, 2, 7)
         })
         panel.addView(action("＋  إضافة قناة جديدة") { editChannel(null, null) })
-        panel.addView(action("＋  إضافة تصنيف") { addCategory() })
+        val movieRows = movieCatalog()
+        panel.addView(TextView(this).apply {
+            text = "مكتبة الأفلام  ·  " + movieRows.length() + " فيلم"
+            textSize = 15f; typeface = android.graphics.Typeface.DEFAULT_BOLD
+            setTextColor(0xFFF4F4F5.toInt()); setPadding(2, 22, 2, 7)
+        })
+        panel.addView(action("＋  إضافة فيلم") { editMovie(null) })
+        for (m in 0 until movieRows.length()) {
+            val film = movieRows.optJSONObject(m) ?: continue
+            panel.addView(action("🎬  " + film.optString("title") + "  ·  تعديل / حذف") { editMovie(m) })
+        }
+        panel.addView(action("＋  إضافة دولة (عربية / أجنبية)") { addCountry() })
+        panel.addView(action("＋  إضافة فيلم إلى المكتبة") { editMovie(null) })
         panel.addView(action("استيراد قائمة M3U / روابط") { importChannels() })
         panel.addView(action("فحص روابط القنوات") { checkChannels() })
         panel.addView(action("نسخ نسخة احتياطية آمنة") { backup() })
@@ -420,7 +432,7 @@ class AdminActivity : Activity() {
             render()
         })
         panel.addView(TextView(this).apply {
-            text = "القنوات والتصنيفات"; textSize = 15f
+            text = "الدول والقنوات"; textSize = 15f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             setTextColor(0xFFF4F4F5.toInt()); setPadding(2, 24, 2, 7)
         })
@@ -443,7 +455,7 @@ class AdminActivity : Activity() {
                 orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             }
             heading.addView(TextView(this@AdminActivity).apply {
-                text = section.optString("title"); textSize = 14f
+                text = section.optString("title") + "  ·  " + if (section.optString("region") == "foreign") "أجنبية" else if (section.optString("region") == "arab") "عربية" else "غير محدد"; textSize = 14f
                 typeface = android.graphics.Typeface.DEFAULT_BOLD
                 setTextColor(0xFFE4E4E7.toInt())
             }, LinearLayout.LayoutParams(0, -2, 1f))
@@ -510,6 +522,76 @@ class AdminActivity : Activity() {
         }
         panel.addView(action("إرسال رابط إعادة تعيين كلمة المرور") { changePassword() })
         panel.addView(action("تسجيل الخروج") { authenticated = false; handler.removeCallbacks(autoLogout); FirebaseAuth.getInstance().signOut(); finish() })
+    }
+
+
+    private fun addCountry() {
+        val form = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(22, 8, 22, 8) }
+        val name = EditText(this).apply { hint = "اسم الدولة (مثال: الجزائر)" }
+        val code = EditText(this).apply { hint = "رمز الدولة (DZ / SA / EG)" }
+        val region = android.widget.Spinner(this)
+        region.adapter = android.widget.ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, listOf("دولة عربية", "دولة أجنبية"))
+        form.addView(name); form.addView(code); form.addView(region)
+        AlertDialog.Builder(this).setTitle("إضافة دولة جديدة").setView(form)
+            .setPositiveButton("إضافة الدولة") { _, _ ->
+                val title = name.text.toString().trim()
+                val cc = code.text.toString().trim().uppercase()
+                if (title.isBlank() || cc.length !in 2..3) {
+                    Toast.makeText(this, "أدخل اسم الدولة ورمزاً صحيحاً", Toast.LENGTH_LONG).show()
+                    return@setPositiveButton
+                }
+                if ((0 until sections().length()).any { sections().optJSONObject(it)?.optString("title").equals(title, true) }) {
+                    Toast.makeText(this, "هذه الدولة موجودة بالفعل", Toast.LENGTH_LONG).show()
+                    return@setPositiveButton
+                }
+                sections().put(JSONObject().put("title", title).put("countryCode", cc)
+                    .put("region", if (region.selectedItemPosition == 0) "arab" else "foreign")
+                    .put("items", JSONArray()))
+                save(); render()
+            }.setNegativeButton("إلغاء", null).show()
+    }
+
+    private fun movieCatalog(): JSONArray {
+        val file = File(filesDir, "movies.json")
+        return try { JSONObject(file.readText(Charsets.UTF_8)).optJSONArray("movies") ?: JSONArray() }
+        catch (_: Exception) { JSONArray() }
+    }
+
+    private fun saveMovieCatalog(rows: JSONArray) {
+        val file = File(filesDir, "movies.json")
+        val temp = File(filesDir, "movies.json.tmp")
+        temp.writeText(JSONObject().put("movies", rows).toString(2), Charsets.UTF_8)
+        if (!temp.renameTo(file)) { temp.copyTo(file, overwrite = true); temp.delete() }
+    }
+
+    private fun editMovie(index: Int?) {
+        val rows = movieCatalog()
+        val old = index?.let { rows.optJSONObject(it) }
+        val form = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(22, 8, 22, 8) }
+        fun movieField(hint: String, value: String = "") = EditText(this).apply {
+            this.hint = hint; setText(value); setSingleLine(true); form.addView(this)
+        }
+        val title = movieField("اسم الفيلم", old?.optString("title").orEmpty())
+        val stream = movieField("رابط الفيلم MP4 أو M3U8", old?.optString("url").orEmpty())
+        val poster = movieField("رابط صورة الملصق (اختياري)", old?.optString("poster").orEmpty())
+        val country = movieField("الدولة (اختياري)", old?.optString("country").orEmpty())
+        AlertDialog.Builder(this).setTitle(if (old == null) "إضافة فيلم" else "تعديل الفيلم")
+            .setView(ScrollView(this).apply { addView(form) })
+            .setPositiveButton("حفظ") { _, _ ->
+                val t = title.text.toString().trim()
+                val u = stream.text.toString().trim()
+                val p = poster.text.toString().trim()
+                if (t.isBlank() || !safe(u) || (p.isNotBlank() && !safe(p))) {
+                    Toast.makeText(this, "أدخل اسم الفيلم ورابط مشاهدة HTTP/HTTPS صالحاً", Toast.LENGTH_LONG).show()
+                    return@setPositiveButton
+                }
+                val row = old ?: JSONObject().put("id", "movie-" + System.currentTimeMillis())
+                row.put("title", t).put("url", u).put("poster", p).put("country", country.text.toString().trim())
+                if (old == null) rows.put(row)
+                saveMovieCatalog(rows); Toast.makeText(this, "تم حفظ الفيلم محلياً", Toast.LENGTH_SHORT).show(); render()
+            }.setNeutralButton(if (old == null) "إغلاق" else "حذف") { _, _ ->
+                if (old != null) { rows.remove(index!!); saveMovieCatalog(rows); render() }
+            }.setNegativeButton("إلغاء", null).show()
     }
 
     private fun addCategory() {
