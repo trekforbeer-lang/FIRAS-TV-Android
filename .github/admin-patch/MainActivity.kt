@@ -604,6 +604,7 @@ class MainActivity : AppCompatActivity() {
                 val latest = workInfos.filter { !it.state.isFinished }.maxByOrNull { it.runAttemptCount }
                 val prefs = getSharedPreferences(RestoreChannelsWorker.PREFS, MODE_PRIVATE)
                 val total = prefs.getInt("total_added", 0)
+                val lastError = prefs.getString("last_error", "").orEmpty()
                 // Reload the on-device catalog after each completed batch so newly
                 // imported channels appear without forcing the user to restart the app.
                 val refreshedTotal = prefs.getInt("ui_refreshed_total", -1)
@@ -617,15 +618,17 @@ class MainActivity : AppCompatActivity() {
                 restoreButton.text = when {
                     active && !runningNow && total > 0 -> "تم تنزيل $total قناة • التالية بعد 30د"
                     active -> "استعادة القنوات..."
+                    !active && lastError.isNotBlank() -> "إعادة محاولة الاستعادة"
                     total > 0 -> "استعادة المزيد"
                     else -> "استعادة القنوات"
                 }
-                restoreStatusPanel.visibility = if (active || total > 0) View.VISIBLE else View.GONE
+                restoreStatusPanel.visibility = if (active || total > 0 || lastError.isNotBlank()) View.VISIBLE else View.GONE
                 restoreStatusProgress.isIndeterminate = runningNow
                 restoreStatusTitle.text = when {
                     runningNow -> "جارٍ استيراد القنوات"
                     active && total > 0 -> "اكتملت الدفعة الحالية"
                     active -> "الاستعادة بانتظار الاتصال"
+                    !active && lastError.isNotBlank() -> "تعذّر إكمال استعادة القنوات"
                     total > 0 -> "اكتملت الاستعادة"
                     else -> "استعادة القنوات"
                 }
@@ -633,10 +636,10 @@ class MainActivity : AppCompatActivity() {
                     runningNow -> "نفحص قوائم البث ونضيف حتى 100 قناة في هذه الدفعة. تمت إضافة $total قناة حتى الآن."
                     active && total > 0 -> "تمت إضافة $total قناة. الدفعة التالية مجدولة بعد 30 دقيقة."
                     active -> "سيبدأ التنزيل تلقائياً عند توفر اتصال بالإنترنت."
+                    !active && lastError.isNotBlank() -> "سبب الفشل: $lastError. تحقق من الإنترنت ثم اضغط إعادة المحاولة."
                     total > 0 -> "انتهت الدفعات الحالية. إجمالي القنوات التي أُضيفت: $total."
                     else -> "يمكنك استعادة القنوات يدوياً من هنا."
                 }
-                if (latest?.state?.isFinished == true) return@observe
                 if (!active && prefs.getBoolean("running", false)) {
                     restoreButton.isEnabled = false
                     restoreButton.text = "بانتظار اتصال الإنترنت..."
