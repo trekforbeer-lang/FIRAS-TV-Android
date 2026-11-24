@@ -1,5 +1,5 @@
 name: FIRAS TV v4 Build APK
-# Build includes the latest committed admin-patch Kotlin sources and RAHMANI UI resources.
+# Build includes the latest committed admin-patch Kotlin sources, RAHMANI UI resources, and saved-channel screen.
 on:
   push:
     branches: [kotlin-v3]
