@@ -124,6 +124,13 @@ class AdminActivity : Activity() {
             return
         }
         val salt = prefs.getString("salt", null)
+        // Fail closed: clearing app data must never expose first-run admin enrollment.
+        // Owner provisioning needs a trusted bootstrap credential; ordinary users cannot create admin access.
+        if (salt.isNullOrBlank() || prefs.getString("hash", null).isNullOrBlank()) {
+            Toast.makeText(this, "لوحة الإدارة غير مهيأة على هذا الجهاز. يلزم تفعيل المالك.", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(32, 20, 32, 8)
@@ -242,8 +249,8 @@ class AdminActivity : Activity() {
     }
 
     private fun isOriginal(channel: JSONObject): Boolean {
-        val name = channel.optString("name")
-        val url = channel.optString("url")
+        val id = channel.optString("id").trim()
+        val url = channel.optString("url").trim()
         return try {
             val raw = JSONObject(assets.open("channels.json").bufferedReader(Charsets.UTF_8).use { it.readText() })
             val groups = raw.optJSONArray("sections") ?: return false
@@ -251,7 +258,10 @@ class AdminActivity : Activity() {
                 val list = groups.optJSONObject(i)?.optJSONArray("items") ?: continue
                 for (j in 0 until list.length()) {
                     val item = list.optJSONObject(j) ?: continue
-                    if (item.optString("name") == name && item.optString("url") == url) return true
+                    val originalId = item.optString("id").trim()
+                    val originalUrl = item.optString("url").trim()
+                    if ((id.isNotBlank() && originalId.isNotBlank() && id == originalId) ||
+                        (url.isNotBlank() && originalUrl.isNotBlank() && url == originalUrl)) return true
                 }
             }
             false
@@ -450,8 +460,17 @@ class AdminActivity : Activity() {
                     setPadding(0, 5, 0, 5)
                 })
                 val buttons = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-                buttons.addView(action("تعديل") { editChannel(i, j) }, LinearLayout.LayoutParams(0, -2, 1f))
-                buttons.addView(action("حذف") { deleteChannel(i, j, channel.optString("name")) }, LinearLayout.LayoutParams(0, -2, 1f))
+                if (isOriginal(channel)) {
+                    buttons.addView(TextView(this).apply {
+                        text = "قناة أصلية محمية"
+                        textSize = 11f
+                        setTextColor(0xFF34D399.toInt())
+                        setPadding(8, 12, 8, 12)
+                    })
+                } else {
+                    buttons.addView(action("تعديل") { editChannel(i, j) }, LinearLayout.LayoutParams(0, -2, 1f))
+                    buttons.addView(action("حذف") { deleteChannel(i, j, channel.optString("name")) }, LinearLayout.LayoutParams(0, -2, 1f))
+                }
                 row.addView(buttons)
                 sectionBox.addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 7 })
             }
@@ -506,7 +525,10 @@ class AdminActivity : Activity() {
 
     private fun editChannel(sectionIndex: Int?, itemIndex: Int?) {
         val old = if (sectionIndex != null && itemIndex != null) items(sectionIndex).optJSONObject(itemIndex) else null
-        if (old != null && isOriginal(old)) { /* originals can now be managed by the owner */ }
+        if (old != null && isOriginal(old)) {
+            Toast.makeText(this, "هذه قناة أصلية محمية ولا يمكن تعديلها.", Toast.LENGTH_LONG).show()
+            return
+        }
         val form = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(24, 8, 24, 8) }
         fun field(hintText: String, value: String = "", multiline: Boolean = false): EditText {
             val e = EditText(this).apply {
@@ -672,6 +694,10 @@ class AdminActivity : Activity() {
             .setPositiveButton("حذف") { _, _ ->
                 val channel = items(sectionIndex).optJSONObject(itemIndex)
                 if (channel != null) {
+                    if (isOriginal(channel)) {
+                        Toast.makeText(this, "لا يمكن حذف قناة أصلية محمية.", Toast.LENGTH_LONG).show()
+                        return@setPositiveButton
+                    }
                     removeStreamConfig(channel)
                     items(sectionIndex).remove(itemIndex); save(); render()
                 }
