@@ -45,6 +45,7 @@ object CloudChannelSync {
                     "active" to item.optBoolean("active", true),
                     "priv" to item.optBoolean("priv", false),
                     "group" to sectionTitle,
+                    "region" to section.optString("region"),
                     "sortOrder" to item.optInt("sortOrder", j),
                     "updatedAt" to FieldValue.serverTimestamp()
                 )
@@ -169,7 +170,7 @@ object CloudChannelSync {
                             if (candidate?.optString("title") == groupName) { section = candidate; break }
                         }
                         if (section == null) {
-                            section = JSONObject().put("title", groupName).put("items", JSONArray())
+                            section = JSONObject().put("title", groupName).put("region", data["region"] as? String ?: "").put("countryCode", data["countryCode"] as? String ?: "").put("items", JSONArray())
                             groups.put(section)
                         }
                         val items = section?.optJSONArray("items")
@@ -184,6 +185,7 @@ object CloudChannelSync {
                         }
                         val item = existing ?: JSONObject().also { items.put(it) }
                         item.put("id", id).put("name", name).put("url", url).put("priv", false)
+                        putJsonString(item, "region", data["region"])
                         putJsonString(item, "logo", data["logo"])
                         putJsonString(item, "referer", data["referer"])
                         putJsonString(item, "userAgent", data["userAgent"])
