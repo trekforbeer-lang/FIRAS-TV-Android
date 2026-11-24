@@ -8,6 +8,32 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.active == true;
     }
 
+    function validChannel(data) {
+      return data.keys().hasAll(["name", "url", "active"])
+        && data.keys().hasOnly([
+          "name", "url", "logo", "referer", "userAgent", "countryCode",
+          "countryName", "category", "active", "sortOrder", "updatedAt",
+          "alts", "priv", "group"
+        ])
+        && data.name is string
+        && data.name.size() > 0
+        && data.name.size() <= 120
+        && data.url is string
+        && data.url.matches("^https?://.{1,2040}$")
+        && data.active is bool
+        && (!("logo" in data) || data.logo is string)
+        && (!("referer" in data) || data.referer is string)
+        && (!("userAgent" in data) || data.userAgent is string)
+        && (!("countryCode" in data) || data.countryCode is string)
+        && (!("countryName" in data) || data.countryName is string)
+        && (!("category" in data) || data.category is string)
+        && (!("sortOrder" in data) || data.sortOrder is int)
+        && (!("updatedAt" in data) || data.updatedAt is timestamp)
+        && (!("alts" in data) || data.alts is list)
+        && (!("priv" in data) || data.priv is bool)
+        && (!("group" in data) || data.group is string);
+    }
+
     // A user can read only their own role document. No client can create,
     // modify, enumerate, or delete admin grants. Project owners manage these
     // documents through Firebase Console / Admin SDK.
@@ -17,16 +43,11 @@ service cloud.firestore {
     }
 
     match /channels/{channelId} {
-      allow read: if resource.data.active == true || isAdmin();
-      allow create: if isAdmin()
-        && request.resource.data.keys().hasOnly([
-          "name", "url", "logo", "referer", "countryCode",
-          "countryName", "category", "active", "sortOrder", "updatedAt"
-        ])
-        && request.resource.data.name is string
-        && request.resource.data.url is string
-        && request.resource.data.url.matches("^https?://.*");
-      allow update: if isAdmin();
+      // Private channels are visible only to an authorized administrator.
+      allow read: if (resource.data.active == true
+          && resource.data.get("priv", false) == false) || isAdmin();
+      allow create: if isAdmin() && validChannel(request.resource.data);
+      allow update: if isAdmin() && validChannel(request.resource.data);
       allow delete: if isAdmin();
     }
 
