@@ -81,7 +81,8 @@ class PlayerActivity : AppCompatActivity() {
     private var resolving = false
     private var currentUrls: List<String> = emptyList()
     private var currentUrlIndex = 0
-    private var isFullscreen = false
+    // Start video playback in immersive landscape, like a dedicated streaming app.
+    private var isFullscreen = true
     private var resumePlaybackOnResume = false
     private var recoveryAttempts = 0
     private var zoomed = false
@@ -103,10 +104,15 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         setContentView(R.layout.activity_player)
+        applyFullscreenSystemUi()
         playerView = findViewById(R.id.playerView)
-        // Preserve the complete picture by default on phones; zoom remains user-selectable.
-        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+        // Fill the landscape display by default. The viewer can switch back to Fit
+        // from the zoom control when they prefer to see the complete uncropped frame.
+        zoomed = true
+        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+        zoom.text = "ملاءمة"
         title = findViewById(R.id.channelTitle)
         watermark = findViewById(R.id.channelWatermark)
         status = findViewById(R.id.statusText)
@@ -719,6 +725,7 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (isFullscreen) applyFullscreenSystemUi()
         // Resume only if playback was active before the Activity was paused.
         if (resumePlaybackOnResume) player?.playWhenReady = true
         resumePlaybackOnResume = false
