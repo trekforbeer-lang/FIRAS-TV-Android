@@ -17,7 +17,10 @@ import java.security.MessageDigest
 object CloudChannelSync {
     private val db: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
 
-    fun publishAll(root: JSONObject, onComplete: ((Boolean, String?) -> Unit)? = null) {
+    private const val PREFS = "rahmani_cloud_sync"
+    private const val PENDING_DELETES = "pending_deletes"
+
+    fun publishAll(context: Context, root: JSONObject, onComplete: ((Boolean, String?) -> Unit)? = null) {
         if (FirebaseAuth.getInstance().currentUser == null) {
             onComplete?.invoke(false, "لا توجد جلسة إدارة")
             return
@@ -60,6 +63,20 @@ object CloudChannelSync {
             }
         }
         val chunks = writes.distinctBy { it.first }.chunked(400)
+        flushPendingDeletes(context) { deleted, deleteError ->
+            if (!deleted) {
+                onComplete?.invoke(false, deleteError ?: "تعذّر تطبيق عمليات الحذف المؤجلة")
+                return@flushPendingDeletes
+            }
+            commitChunks(chunks, 0, onComplete)
+        }
+    }
+
+    private fun commitChunks(
+        chunks: List<List<Pair<String, Map<String, Any>>>>,
+        startIndex: Int,
+        onComplete: ((Boolean, String?) -> Unit)?
+    ) {
         fun commitChunk(index: Int) {
             if (index >= chunks.size) {
                 onComplete?.invoke(true, null)
@@ -71,16 +88,47 @@ object CloudChannelSync {
                 .addOnSuccessListener { commitChunk(index + 1) }
                 .addOnFailureListener { error -> onComplete?.invoke(false, error.localizedMessage) }
         }
-        commitChunk(0)
+        commitChunk(startIndex)
     }
 
-    fun delete(channel: JSONObject, onComplete: ((Boolean, String?) -> Unit)? = null) {
+    private fun flushPendingDeletes(context: Context, onComplete: (Boolean, String?) -> Unit) {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val pending = prefs.getStringSet(PENDING_DELETES, emptySet()).orEmpty().toList()
+        fun remove(id: String) {
+            val updated = prefs.getStringSet(PENDING_DELETES, emptySet()).orEmpty().toMutableSet()
+            updated.remove(id)
+            prefs.edit().putStringSet(PENDING_DELETES, updated).apply()
+        }
+        fun deleteAt(index: Int) {
+            if (index >= pending.size) {
+                onComplete(true, null)
+                return
+            }
+            val id = pending[index]
+            db.collection("channels").document(id).delete()
+                .addOnSuccessListener { remove(id); deleteAt(index + 1) }
+                .addOnFailureListener { onComplete(false, it.localizedMessage) }
+        }
+        deleteAt(0)
+    }
+
+    fun delete(context: Context, channel: JSONObject, onComplete: ((Boolean, String?) -> Unit)? = null) {
         if (FirebaseAuth.getInstance().currentUser == null) {
             onComplete?.invoke(false, "لا توجد جلسة إدارة")
             return
         }
-        db.collection("channels").document(docId(channel)).delete()
-            .addOnSuccessListener { onComplete?.invoke(true, null) }
+        val id = docId(channel)
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val pending = prefs.getStringSet(PENDING_DELETES, emptySet()).orEmpty().toMutableSet()
+        pending.add(id)
+        prefs.edit().putStringSet(PENDING_DELETES, pending).apply()
+        db.collection("channels").document(id).delete()
+            .addOnSuccessListener {
+                val updated = prefs.getStringSet(PENDING_DELETES, emptySet()).orEmpty().toMutableSet()
+                updated.remove(id)
+                prefs.edit().putStringSet(PENDING_DELETES, updated).apply()
+                onComplete?.invoke(true, null)
+            }
             .addOnFailureListener { onComplete?.invoke(false, it.localizedMessage) }
     }
 
