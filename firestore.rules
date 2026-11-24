@@ -1,0 +1,34 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    // The bootstrap ownership record is server-only. Callable Cloud Functions
+    // use the Admin SDK and are not restricted by these client rules.
+    match /system/{document=**} {
+      allow read, write: if false;
+    }
+
+    // Public clients may read published channel records only.
+    // Only accounts with a server-issued custom claim can change the catalog.
+    match /channels/{channelId} {
+      allow read: if resource.data.active == true;
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly([
+          "name", "url", "logo", "referer", "countryCode",
+          "countryName", "category", "active", "sortOrder", "updatedAt"
+        ])
+        && request.resource.data.name is string
+        && request.resource.data.url is string
+        && request.resource.data.url.matches("^https?://.*");
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
