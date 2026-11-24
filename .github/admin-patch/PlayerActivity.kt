@@ -108,11 +108,9 @@ class PlayerActivity : AppCompatActivity() {
         setContentView(R.layout.activity_player)
         applyFullscreenSystemUi()
         playerView = findViewById(R.id.playerView)
-        // Fill the landscape display by default. The viewer can switch back to Fit
-        // from the zoom control when they prefer to see the complete uncropped frame.
+        // Use the full landscape viewport; the viewer can switch to Fit when desired.
         zoomed = true
         playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-        zoom.text = "ملاءمة"
         title = findViewById(R.id.channelTitle)
         watermark = findViewById(R.id.channelWatermark)
         status = findViewById(R.id.statusText)
@@ -120,7 +118,8 @@ class PlayerActivity : AppCompatActivity() {
         playPause = findViewById(R.id.playPauseButton)
         fullscreen = findViewById(R.id.fullscreenButton)
         zoom = findViewById(R.id.zoomButton)
-        zoom.text = "زووم"
+        zoom.text = "ملاءمة"
+        fullscreen.text = "⤢"
         retry = findViewById(R.id.retryButton)
         server = findViewById(R.id.serverButton)
         quality = findViewById(R.id.qualityButton)
@@ -510,9 +509,10 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun loadWatermark(url: String) {
-        watermark.setImageDrawable(null)
-        watermark.visibility = if (isHttpUrl(url)) View.VISIBLE else View.GONE
-        if (watermark.visibility == View.GONE) return
+        val channelName = current?.name.orEmpty()
+        watermark.setImageBitmap(makeChannelLogo(channelName))
+        watermark.visibility = View.VISIBLE
+        if (!isHttpUrl(url)) return
         val expected = url
         worker.execute {
             var bitmap: android.graphics.Bitmap? = null
