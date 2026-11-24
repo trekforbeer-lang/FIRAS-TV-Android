@@ -126,7 +126,7 @@ class DiscoverActivity : AppCompatActivity() {
         val content = FrameLayout(this)
         adapter = ChannelAdapter(onClick = { channel -> openChannel(channel) }, onFavoriteChanged = { renderResults() })
         val recycler = RecyclerView(this).apply {
-            layoutManager = GridLayoutManager(this@DiscoverActivity, if (resources.configuration.screenWidthDp >= 600) 4 else 2)
+            layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this@DiscoverActivity)
             adapter = this@DiscoverActivity.adapter
             setHasFixedSize(false)
             clipToPadding = false
