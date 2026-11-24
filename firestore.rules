@@ -1,11 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // The single owner account is authorized by its Firebase Authentication UID.
+    // This keeps admin access independent of Firestore document-read permissions.
     function isAdmin() {
       return request.auth != null
-        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == "admin"
-        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.active == true;
+        && request.auth.uid == "fpmTwA03drg2QF04qefubOdfmjf1";
     }
 
     function validChannel(data) {
