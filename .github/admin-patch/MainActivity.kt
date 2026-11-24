@@ -369,8 +369,8 @@ class MainActivity : AppCompatActivity() {
     private fun countryFlag(code: String): String {
         val normalized = code.trim().uppercase()
         if (normalized.length != 2 || normalized.any { it !in 'A'..'Z' }) return "🌐"
-        return String(Character.toChars(0x1F1E6 + normalized[0] - 'A')) +
-            String(Character.toChars(0x1F1E6 + normalized[1] - 'A'))
+        return String(Character.toChars(0x1F1E6 + (normalized[0] - 'A'))) +
+            String(Character.toChars(0x1F1E6 + (normalized[1] - 'A')))
     }
 
     private fun refresh() {
