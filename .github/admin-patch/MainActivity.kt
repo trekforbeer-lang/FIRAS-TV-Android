@@ -84,7 +84,7 @@ class MainActivity : AppCompatActivity() {
         }, onFavoriteChanged = { refresh() })
         val rv = findViewById<RecyclerView>(R.id.list)
         channelRecycler = rv
-        rv.layoutManager = GridLayoutManager(this, if (resources.configuration.screenWidthDp >= 600) 4 else 2)
+        rv.layoutManager = GridLayoutManager(this, if (resources.configuration.screenWidthDp >= 600) 2 else 1)
         rv.adapter = adapter
         // This RecyclerView wraps its content inside a scrolling parent, so its size is not fixed.
         rv.setHasFixedSize(false)
@@ -299,7 +299,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showHomePreferences() {
-        val options = arrayOf("عرض بانر الأعمال المميزة", "عرض قسم المباريات الرياضية", "عرض القنوات المباشرة", "عرض شريط البحث", "عرض القنوات بثلاثة أعمدة على الهاتف")
+        val options = arrayOf("عرض بانر الأعمال المميزة", "عرض قسم المباريات الرياضية", "عرض القنوات المباشرة", "عرض شريط البحث", "عرض القنوات بعمودين صغيرين")
         val keys = arrayOf("hero", "sports", "channels", "search", "compact_grid")
         val checked = BooleanArray(keys.size) { i -> homePrefs.getBoolean(keys[i], true) }
         AlertDialog.Builder(this)
@@ -326,7 +326,7 @@ class MainActivity : AppCompatActivity() {
         val showChannels = homePrefs.getBoolean("channels", true) && mode != "sports" && mode != "movies"
         val showSearch = homePrefs.getBoolean("search", true)
         val compactGrid = homePrefs.getBoolean("compact_grid", false)
-        val columns = if (resources.configuration.screenWidthDp >= 600) 4 else if (compactGrid) 3 else 2
+        val columns = if (resources.configuration.screenWidthDp >= 600) 2 else if (compactGrid) 2 else 1
         (channelRecycler.layoutManager as? GridLayoutManager)?.spanCount = columns
         findViewById<View>(R.id.homeHeroSection)?.visibility = if (showHero) View.VISIBLE else View.GONE
         findViewById<View>(R.id.homeSportsSection)?.visibility = if (showSports) View.VISIBLE else View.GONE
