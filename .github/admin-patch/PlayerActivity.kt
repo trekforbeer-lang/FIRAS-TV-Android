@@ -315,7 +315,7 @@ class PlayerActivity : AppCompatActivity() {
                 buildUponParameters()
                     .setMaxVideoSize(3840, 2160)
                     .setMaxVideoBitrate(Int.MAX_VALUE)
-                    .setForceHighestSupportedBitrate(true)
+                    // Keep adaptive bitrate selection enabled for variable mobile connections.
                     .build()
             )
         }
