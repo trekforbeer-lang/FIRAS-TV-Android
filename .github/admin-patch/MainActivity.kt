@@ -126,6 +126,14 @@ class MainActivity : AppCompatActivity() {
         }
         restoreButton.setOnClickListener { restoreOriginalLists() }
         refresh()
+        CloudChannelSync.refreshPublic(applicationContext) { changed ->
+            if (changed > 0 && !isFinishing && !isDestroyed) runOnUiThread {
+                sections = ChannelRepository.load(this)
+                selected = ""
+                rebuildChips(chips)
+                refresh()
+            }
+        }
         FanMatchWorker.schedule(this)
         findViewById<View>(R.id.fanPreferencesButton).setOnClickListener { startActivity(Intent(this, TeamPreferencesActivity::class.java)) }
         showWelcomeScreen()
