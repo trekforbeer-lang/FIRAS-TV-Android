@@ -25,7 +25,7 @@ jobs:
           rm -f .github/workflows/v4-source-*.b64
           cp .github/admin-patch/AdminActivity.kt app/src/main/java/com/firas/tv/AdminActivity.kt
           cp .github/admin-patch/MainActivity.kt app/src/main/java/com/firas/tv/MainActivity.kt
-          cp .github/admin-patch/FavoriteChannels.kt app/src/main/java/com/firas/tv/FavoriteChannels.kt
+          cp .github/admin-patch/FavoriteChannels.kt app/src/main/java/com/firas/tv/FavoriteChannels.kt # saved-channel screen and favorites
           cp .github/admin-patch/Models.kt app/src/main/java/com/firas/tv/Models.kt
           cp .github/admin-patch/UniversalStreamEngine.kt app/src/main/java/com/firas/tv/UniversalStreamEngine.kt
           cp .github/admin-patch/ChannelAdapter.kt app/src/main/java/com/firas/tv/ChannelAdapter.kt
