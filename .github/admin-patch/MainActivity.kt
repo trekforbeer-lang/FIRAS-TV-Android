@@ -601,7 +601,6 @@ class MainActivity : AppCompatActivity() {
             .observe(this) { workInfos ->
                 val active = workInfos.any { !it.state.isFinished }
                 val runningNow = workInfos.any { it.state == androidx.work.WorkInfo.State.RUNNING }
-                val latest = workInfos.filter { !it.state.isFinished }.maxByOrNull { it.runAttemptCount }
                 val prefs = getSharedPreferences(RestoreChannelsWorker.PREFS, MODE_PRIVATE)
                 val total = prefs.getInt("total_added", 0)
                 val lastError = prefs.getString("last_error", "").orEmpty()
