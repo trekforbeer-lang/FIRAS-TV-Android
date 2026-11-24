@@ -256,6 +256,7 @@ class AdminActivity : Activity() {
         scroll.addView(panel)
         setContentView(scroll)
         render()
+        CloudMovieSync.refreshPublic(this) { if (authenticated) render() }
     }
 
     private fun readRoot(): JSONObject {
@@ -443,7 +444,7 @@ class AdminActivity : Activity() {
                 val item = list.optJSONObject(index) ?: return@filter false
                 !showOnlyMissingUrls || item.optString("url").isBlank()
             }
-            if (visibleItems.isEmpty()) continue
+            if (visibleItems.isEmpty() && section.optString("region").isBlank()) continue
             val sectionBox = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL; setPadding(12, 9, 12, 10)
                 background = android.graphics.drawable.GradientDrawable().apply {
@@ -472,6 +473,7 @@ class AdminActivity : Activity() {
                 if (!protected) deleteCategory(i)
                 else Toast.makeText(this@AdminActivity, "التصنيف يحتوي قنوات أصلية؛ لن نحذفه.", Toast.LENGTH_LONG).show()
             }, LinearLayout.LayoutParams(0, -2, 1f))
+            categoryActions.addView(action("＋ قناة لهذه الدولة") { editChannel(i, null) }, LinearLayout.LayoutParams(0, -2, 1f))
             sectionBox.addView(categoryActions)
             for (j in visibleItems) {
                 val channel = list.optJSONObject(j) ?: continue
@@ -674,7 +676,7 @@ class AdminActivity : Activity() {
         val cookie = field("Cookie (بيانات وصول خاصة بالقناة)", old?.let { readStreamCookie(it) }.orEmpty()).apply {
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
         }
-        val country = field("رمز الدولة مثل DZ أو SA", old?.optString("cc").orEmpty())
+        val country = field("رمز الدولة مثل DZ أو SA", old?.optString("cc")?.takeIf { it.isNotBlank() } ?: sectionIndex?.let { sections().optJSONObject(it)?.optString("countryCode") }.orEmpty())
         val category = field("التصنيف", sectionIndex?.let { sections().optJSONObject(it)?.optString("title") }.orEmpty())
         val alts = field("روابط بديلة - رابط في كل سطر", old?.optJSONArray("alts")?.let { a -> (0 until a.length()).joinToString("\n") { a.optString(it) } }.orEmpty(), true)
         val privateBox = CheckBox(this).apply { text = "قناة خاصة (لا تظهر في القائمة العامة)"; isChecked = old?.optBoolean("priv", false) ?: false }
