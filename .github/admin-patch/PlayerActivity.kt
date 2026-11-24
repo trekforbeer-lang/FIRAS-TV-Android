@@ -64,7 +64,6 @@ class PlayerActivity : AppCompatActivity() {
     private var mediaSession: MediaSession? = null
     private lateinit var playerView: PlayerView
     private lateinit var title: TextView
-    private lateinit var watermark: ImageView
     private lateinit var status: TextView
     private lateinit var loadingIndicator: ProgressBar
     private lateinit var list: RecyclerView
@@ -114,7 +113,6 @@ class PlayerActivity : AppCompatActivity() {
         zoomed = false
         playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
         title = findViewById(R.id.channelTitle)
-        watermark = findViewById(R.id.channelWatermark)
         status = findViewById(R.id.statusText)
         loadingIndicator = findViewById(R.id.loadingIndicator)
         list = findViewById(R.id.channelList)
@@ -397,7 +395,6 @@ class PlayerActivity : AppCompatActivity() {
         currentUrls = emptyList()
         showLoading(true)
         title.text = channel.name
-        loadWatermark(channel.logo)
         ensurePlayer(channel)
 
         if (currentAdvanced == null) {
@@ -546,7 +543,6 @@ class PlayerActivity : AppCompatActivity() {
                 currentUrls = emptyList()
                 currentUrlIndex = 0
                 resolving = false
-                loadWatermark(refreshedChannel.logo)
                 ensurePlayer(refreshedChannel)
 
                 if (refreshedConfig != null) {
@@ -580,37 +576,6 @@ class PlayerActivity : AppCompatActivity() {
         handler.postDelayed(task, delay)
     }
 
-    private fun loadWatermark(url: String) {
-        val channelName = current?.name.orEmpty()
-        watermark.setImageBitmap(makeChannelLogo(channelName))
-        watermark.visibility = View.VISIBLE
-        if (!isHttpUrl(url)) return
-        val expected = url
-        worker.execute {
-            var bitmap: android.graphics.Bitmap? = null
-            try {
-                val connection = URL(url).openConnection() as HttpURLConnection
-                connection.connectTimeout = 6000
-                connection.readTimeout = 6000
-                connection.setRequestProperty("User-Agent", "RAHMANI/1.0")
-                bitmap = try {
-                    connection.inputStream.use { BitmapFactory.decodeStream(it) }
-                } finally {
-                    connection.disconnect()
-                }
-            } catch (_: Exception) {
-            }
-            val result = bitmap
-            runOnUiThread {
-                if (!isFinishing && current?.logo == expected) {
-                    watermark.setImageBitmap(result ?: makeChannelLogo(current?.name.orEmpty()))
-                    watermark.visibility = View.VISIBLE
-                } else {
-                    result?.recycle()
-                }
-            }
-        }
-    }
 
     private fun nextCandidateOrRetry() {
         val channel = current ?: return
