@@ -285,7 +285,7 @@ class PlayerActivity : AppCompatActivity() {
         val userAgent = userAgentKey?.let { headers.remove(it) } ?: "RAHMANI/1.0"
 
         val loadControl = DefaultLoadControl.Builder()
-            .setBufferDurationsMs(2500, 15000, 750, 1500)
+            .setBufferDurationsMs(2500, 30000, 750, 1500)
             .setPrioritizeTimeOverSizeThresholds(true)
             .build()
 
@@ -315,7 +315,7 @@ class PlayerActivity : AppCompatActivity() {
                 buildUponParameters()
                     .setMaxVideoSize(3840, 2160)
                     .setMaxVideoBitrate(Int.MAX_VALUE)
-                    .setForceHighestSupportedBitrate(false)
+                    .setForceHighestSupportedBitrate(true)
                     .build()
             )
         }
