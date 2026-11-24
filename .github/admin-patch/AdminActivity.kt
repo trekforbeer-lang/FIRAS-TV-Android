@@ -19,23 +19,20 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
-import android.util.Base64
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
-import java.security.SecureRandom
 import java.util.concurrent.Executors
-import javax.crypto.SecretKeyFactory
-import javax.crypto.spec.PBEKeySpec
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.functions.FirebaseFunctions
 
 /**
  * Native port of the original FIRAS TV admin workflow.
  * Bundled channels are protected from edit/delete; user-added channels remain manageable.
  */
 class AdminActivity : Activity() {
-    private val prefs by lazy { getSharedPreferences("firas_admin_auth", MODE_PRIVATE) }
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var panel: LinearLayout
     private var root = JSONObject()
@@ -47,6 +44,7 @@ class AdminActivity : Activity() {
     private val autoLogout = Runnable {
         if (authenticated) {
             authenticated = false
+            FirebaseAuth.getInstance().signOut()
             Toast.makeText(this, "انتهت جلسة الإدارة", Toast.LENGTH_LONG).show()
             finish()
         }
@@ -116,87 +114,120 @@ class AdminActivity : Activity() {
         }
     }
 
+    /**
+     * الإدارة لا تعتمد على كلمة مرور محلية. لا يُسمح بالدخول إلا بعد أن
+     * يؤكد Firebase ID token أن الخادم منح الحساب claim باسم admin=true.
+     */
     private fun authenticate() {
-        val lockUntil = prefs.getLong("lock_until", 0L)
-        if (System.currentTimeMillis() < lockUntil) {
-            Toast.makeText(this, "محاولات كثيرة. حاول لاحقاً.", Toast.LENGTH_LONG).show()
-            finish()
+        val auth = FirebaseAuth.getInstance()
+        val current = auth.currentUser
+        if (current != null) {
+            verifyAdminClaim()
             return
         }
-        val salt = prefs.getString("salt", null)
+
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(32, 20, 32, 8)
+            setPadding(28, 12, 28, 8)
         }
-        val first = EditText(this).apply {
-            hint = if (salt == null) "كلمة مرور الإدارة (10 أحرف على الأقل)" else "كلمة مرور الإدارة"
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        val email = EditText(this).apply {
+            hint = "البريد الإلكتروني"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+            singleLine = true
         }
-        box.addView(first)
-        val second = if (salt == null) EditText(this).apply {
-            hint = "أعد كتابة كلمة المرور"
+        val password = EditText(this).apply {
+            hint = "كلمة المرور"
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-        } else null
-        second?.let(box::addView)
+            singleLine = true
+        }
+        val bootstrap = EditText(this).apply {
+            hint = "رمز تهيئة المدير الأول (من مسؤول Firebase)"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            singleLine = true
+        }
+        box.addView(email)
+        box.addView(password)
+        box.addView(bootstrap)
         val dialog = AlertDialog.Builder(this)
-            .setTitle(if (salt == null) "إنشاء كلمة مرور الإدارة" else "دخول الإدارة")
-            .setMessage(if (salt == null) "استخدم 10 أحرف على الأقل مع حرف ورقم." else "أدخل كلمة المرور للمتابعة.")
+            .setTitle("دخول الإدارة الآمن")
+            .setMessage("الدخول يتطلب حساب Firebase وصلاحية مدير معتمدة من الخادم.")
             .setView(box)
-            .setPositiveButton(if (salt == null) "إنشاء" else "دخول", null)
+            .setPositiveButton("دخول", null)
+            .setNeutralButton("تهيئة المدير الأول", null)
             .setNegativeButton("إلغاء") { _, _ -> finish() }
             .create()
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                val password = first.text.toString()
-                if (salt == null) {
-                    if (!strong(password) || password != second?.text?.toString()) {
-                        Toast.makeText(this, "كلمة المرور ضعيفة أو غير متطابقة", Toast.LENGTH_LONG).show()
-                        return@setOnClickListener
-                    }
-                    val newSalt = ByteArray(16).also { SecureRandom().nextBytes(it) }
-                    prefs.edit().putString("salt", Base64.encodeToString(newSalt, Base64.NO_WRAP))
-                        .putString("hash", hashPassword(password, newSalt)).putInt("fails", 0).apply()
-                    dialog.dismiss()
-                    enterPanel()
-                } else {
-                    val decoded = try { Base64.decode(salt, Base64.NO_WRAP) } catch (_: Exception) { ByteArray(0) }
-                    val expected = prefs.getString("hash", "").orEmpty()
-                    if (decoded.isNotEmpty() && constantTimeEquals(hashPassword(password, decoded), expected)) {
-                        prefs.edit().putInt("fails", 0).putLong("lock_until", 0L).apply()
-                        dialog.dismiss()
-                        enterPanel()
-                    } else {
-                        val fails = prefs.getInt("fails", 0) + 1
-                        val edit = prefs.edit().putInt("fails", fails)
-                        if (fails >= 5) {
-                            val exponent = (fails - 5).coerceAtMost(8)
-                            edit.putLong("lock_until", System.currentTimeMillis() + minOf(24L * 60 * 60 * 1000, 5L * 60 * 1000 * (1L shl exponent)))
-                        }
-                        edit.apply()
-                        Toast.makeText(this, "كلمة المرور غير صحيحة", Toast.LENGTH_SHORT).show()
-                    }
+                val mail = email.text.toString().trim()
+                val pass = password.text.toString()
+                if (mail.isBlank() || pass.isBlank()) {
+                    Toast.makeText(this, "أدخل البريد الإلكتروني وكلمة المرور", Toast.LENGTH_LONG).show()
+                    return@setOnClickListener
                 }
+                auth.signInWithEmailAndPassword(mail, pass)
+                    .addOnSuccessListener { dialog.dismiss(); verifyAdminClaim() }
+                    .addOnFailureListener {
+                        Toast.makeText(this, "تعذّر تسجيل الدخول. تحقق من الحساب أو إعداد Firebase.", Toast.LENGTH_LONG).show()
+                    }
+            }
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
+                val mail = email.text.toString().trim()
+                val pass = password.text.toString()
+                val token = bootstrap.text.toString().trim()
+                if (mail.isBlank() || pass.length < 10 || token.length < 24) {
+                    Toast.makeText(this, "أدخل بريداً صالحاً وكلمة مرور قوية ورمز التهيئة", Toast.LENGTH_LONG).show()
+                    return@setOnClickListener
+                }
+                val finishBootstrap: () -> Unit = {
+                    FirebaseFunctions.getInstance()
+                        .getHttpsCallable("bootstrapFirstAdmin")
+                        .call(mapOf("bootstrapToken" to token))
+                        .addOnSuccessListener {
+                            dialog.dismiss()
+                            verifyAdminClaim()
+                        }
+                        .addOnFailureListener {
+                            auth.signOut()
+                            Toast.makeText(this, "رفض الخادم تهيئة المدير. تحقق من الرمز أو أن المدير الأول لم يُسجّل بعد.", Toast.LENGTH_LONG).show()
+                        }
+                }
+                auth.createUserWithEmailAndPassword(mail, pass)
+                    .addOnSuccessListener { finishBootstrap() }
+                    .addOnFailureListener {
+                        // يسمح بإكمال التهيئة إذا كان الحساب قد أُنشئ سابقاً، لكن لا يمنح
+                        // الصلاحية إلا إذا كان رمز التهيئة صالحاً ولم يُعيّن مدير آخر.
+                        auth.signInWithEmailAndPassword(mail, pass)
+                            .addOnSuccessListener { finishBootstrap() }
+                            .addOnFailureListener {
+                                Toast.makeText(this, "تعذّر إنشاء الحساب أو تسجيل الدخول", Toast.LENGTH_LONG).show()
+                            }
+                    }
             }
         }
         dialog.show()
     }
 
-    private fun strong(value: String) =
-        value.length >= 10 && value.any { it.isLetter() } && value.any { it.isDigit() }
-
-    private fun hashPassword(password: String, salt: ByteArray): String {
-        val spec = PBEKeySpec(password.toCharArray(), salt, 120_000, 256)
-        return try {
-            SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1").generateSecret(spec).encoded
-                .joinToString("") { "%02x".format(it) }
-        } finally { spec.clearPassword() }
-    }
-
-    private fun constantTimeEquals(a: String, b: String): Boolean {
-        if (a.length != b.length) return false
-        var diff = 0
-        for (i in a.indices) diff = diff or (a[i].code xor b[i].code)
-        return diff == 0
+    private fun verifyAdminClaim() {
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user == null) {
+            authenticate()
+            return
+        }
+        user.getIdToken(true)
+            .addOnSuccessListener { token ->
+                if (token.claims["admin"] == true) {
+                    enterPanel()
+                } else {
+                    FirebaseAuth.getInstance().signOut()
+                    Toast.makeText(this, "هذا الحساب لا يملك صلاحية الإدارة", Toast.LENGTH_LONG).show()
+                    finish()
+                }
+            }
+            .addOnFailureListener {
+                FirebaseAuth.getInstance().signOut()
+                Toast.makeText(this, "تعذّر التحقق من صلاحية الإدارة", Toast.LENGTH_LONG).show()
+                finish()
+            }
     }
 
     private fun enterPanel() {
@@ -458,7 +489,7 @@ class AdminActivity : Activity() {
             panel.addView(sectionBox, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 10 })
         }
         panel.addView(action("تغيير كلمة مرور الإدارة") { changePassword() })
-        panel.addView(action("تسجيل الخروج") { authenticated = false; handler.removeCallbacks(autoLogout); finish() })
+        panel.addView(action("تسجيل الخروج") { authenticated = false; handler.removeCallbacks(autoLogout); FirebaseAuth.getInstance().signOut(); finish() })
     }
 
     private fun addCategory() {
@@ -891,26 +922,18 @@ class AdminActivity : Activity() {
     }
 
     private fun changePassword() {
-        val form = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(24, 8, 24, 8) }
-        val current = EditText(this).apply { hint = "كلمة المرور الحالية"; inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD }
-        val next = EditText(this).apply { hint = "كلمة المرور الجديدة"; inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD }
-        val confirm = EditText(this).apply { hint = "تأكيد كلمة المرور"; inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD }
-        form.addView(current); form.addView(next); form.addView(confirm)
-        AlertDialog.Builder(this).setTitle("تغيير كلمة المرور").setView(form)
-            .setPositiveButton("حفظ") { _, _ ->
-                val salt = try { Base64.decode(prefs.getString("salt", "").orEmpty(), Base64.NO_WRAP) } catch (_: Exception) { ByteArray(0) }
-                if (salt.isEmpty() || !constantTimeEquals(hashPassword(current.text.toString(), salt), prefs.getString("hash", "").orEmpty())) {
-                    Toast.makeText(this, "كلمة المرور الحالية خاطئة", Toast.LENGTH_LONG).show(); return@setPositiveButton
-                }
-                val value = next.text.toString()
-                if (!strong(value) || value != confirm.text.toString()) {
-                    Toast.makeText(this, "كلمة المرور الجديدة ضعيفة أو غير متطابقة", Toast.LENGTH_LONG).show(); return@setPositiveButton
-                }
-                val newSalt = ByteArray(16).also { SecureRandom().nextBytes(it) }
-                prefs.edit().putString("salt", Base64.encodeToString(newSalt, Base64.NO_WRAP))
-                    .putString("hash", hashPassword(value, newSalt)).apply()
-                Toast.makeText(this, "تم تغيير كلمة المرور", Toast.LENGTH_SHORT).show()
-            }.setNegativeButton("إلغاء", null).show()
+        val email = FirebaseAuth.getInstance().currentUser?.email
+        if (email.isNullOrBlank()) {
+            Toast.makeText(this, "لا يوجد بريد إلكتروني للحساب", Toast.LENGTH_LONG).show()
+            return
+        }
+        FirebaseAuth.getInstance().sendPasswordResetEmail(email)
+            .addOnSuccessListener {
+                Toast.makeText(this, "أرسلنا رابط إعادة تعيين كلمة المرور إلى بريدك", Toast.LENGTH_LONG).show()
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "تعذّر إرسال رابط إعادة التعيين", Toast.LENGTH_LONG).show()
+            }
     }
 
     private fun safe(url: String) = url.startsWith("http://", true) || url.startsWith("https://", true)
