@@ -54,11 +54,11 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
             minimumHeight = dp(104)
             elevation = dp(2).toFloat()
             background = android.graphics.drawable.RippleDrawable(
-                android.content.res.ColorStateList.valueOf(Color.rgb(105, 43, 61)),
+                android.content.res.ColorStateList.valueOf(Color.rgb(190, 157, 91)),
                 GradientDrawable().apply {
-                    setColor(Color.rgb(28, 18, 24))
+                    setColor(Color.rgb(19, 19, 20))
                     cornerRadius = dp(16).toFloat()
-                    setStroke(dp(1), Color.rgb(78, 43, 53))
+                    setStroke(dp(1), Color.rgb(86, 72, 48))
                 },
                 null
             )
@@ -68,7 +68,7 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
             background = GradientDrawable().apply {
                 setColor(Color.WHITE)
                 cornerRadius = dp(13).toFloat()
-                setStroke(dp(1), Color.rgb(92, 61, 70))
+                setStroke(dp(1), Color.rgb(116, 96, 61))
             }
         }
         val logo = ImageView(context).apply {
@@ -105,9 +105,9 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
             textSize = 10f
             gravity = Gravity.CENTER
             setPadding(dp(9), dp(8), dp(9), dp(8))
-            setTextColor(Color.rgb(255, 190, 132))
+            setTextColor(Color.rgb(210, 181, 125))
             background = GradientDrawable().apply {
-                setColor(Color.rgb(48, 31, 38))
+                setColor(Color.rgb(43, 37, 27))
                 cornerRadius = dp(10).toFloat()
             }
         }
@@ -121,9 +121,9 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
         val channel = getItem(position)
         holder.title.text = channel.name
         holder.subtitle.text = if (channel.url.isBlank()) "لا يوجد رابط" else "رابط مضاف"
-        holder.subtitle.setTextColor(if (channel.url.isBlank()) Color.rgb(255, 190, 132) else Color.rgb(255, 137, 158))
+        holder.subtitle.setTextColor(if (channel.url.isBlank()) Color.rgb(190, 164, 111) else Color.rgb(218, 190, 132))
         holder.subtitle.background = GradientDrawable().apply {
-            setColor(if (channel.url.isBlank()) Color.rgb(54, 39, 31) else Color.rgb(58, 28, 38))
+            setColor(if (channel.url.isBlank()) Color.rgb(42, 36, 27) else Color.rgb(48, 42, 31))
             cornerRadius = dp(9).toFloat()
         }
         holder.subtitle.setPadding(dp(7), dp(3), dp(7), dp(3))
@@ -132,7 +132,7 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
         fun updateFavoriteLabel() {
             val saved = FavoriteChannels.contains(holder.itemView.context, channel)
             holder.favorite.text = if (saved) "★  محفوظ في قائمتي" else "☆  أضف إلى قائمتي"
-            holder.favorite.setTextColor(if (saved) Color.rgb(255, 205, 92) else Color.rgb(255, 190, 132))
+            holder.favorite.setTextColor(if (saved) Color.rgb(235, 199, 118) else Color.rgb(205, 178, 124))
             holder.favorite.contentDescription = if (saved) "إزالة من قائمتي" else "إضافة إلى قائمتي"
         }
         updateFavoriteLabel()
@@ -231,7 +231,7 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
         val size = 160
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        val background = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(39, 29, 35) }
+        val background = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(30, 29, 25) }
         canvas.drawRoundRect(0f, 0f, size.toFloat(), size.toFloat(), 24f, 24f, background)
 
         val normalized = name.trim().replace(Regex("\\s+"), " ")
