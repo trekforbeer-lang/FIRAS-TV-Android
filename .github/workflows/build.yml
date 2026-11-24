@@ -2,7 +2,7 @@ name: FIRAS TV v4 Build APK
 # Build includes the latest committed admin-patch Kotlin sources, RAHMANI UI resources, and saved-channel screen.
 on:
   push:
-    branches: [kotlin-v3, fix/restore-channels-background-parse]
+    branches: [kotlin-v3, fix/restore-channels-background-parse, fix/country-browser-and-safe-restore]
   workflow_dispatch:
 permissions:
   contents: write
