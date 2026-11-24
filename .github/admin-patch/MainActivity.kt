@@ -136,12 +136,19 @@ class MainActivity : AppCompatActivity() {
         restoreButton.text = "جارٍ تحميل القنوات..."
         val initialLoadVersion = catalogVersion
         Thread {
-            val initialSections = ChannelRepository.load(applicationContext)
+            // A local catalog read failure must not leave the restore control disabled.
+            val initialSections = try {
+                ChannelRepository.load(applicationContext)
+            } catch (_: Exception) {
+                null
+            }
             runOnUiThread {
                 if (!isFinishing && !isDestroyed && catalogVersion == initialLoadVersion) {
-                    sections = initialSections
-                    rebuildChips(chips)
-                    refresh()
+                    if (initialSections != null) {
+                        sections = initialSections
+                        rebuildChips(chips)
+                        refresh()
+                    }
                     if (!restoreInProgress) {
                         restoreButton.isEnabled = true
                         restoreButton.text = "استعادة القنوات القديمة"
@@ -462,20 +469,29 @@ class MainActivity : AppCompatActivity() {
                 // Parse the potentially large restored JSON away from the UI thread.
                 val restoredSections = ChannelRepository.load(this)
                 runOnUiThread {
-                    sections = restoredSections; selected = ""
-                    rebuildChips(chips); refresh()
-                    restoreInProgress = false
-                    restoreButton.isEnabled = true; restoreButton.text = "استعادة القنوات القديمة"
-                    Toast.makeText(this, "أضيفت " + added + " قناة. افحص الروابط من لوحة الإدارة لأن توفر البث يتغير.", Toast.LENGTH_LONG).show()
+                    if (!isFinishing && !isDestroyed) {
+                        sections = restoredSections; selected = ""
+                        rebuildChips(chips); refresh()
+                        restoreInProgress = false
+                        restoreButton.isEnabled = true; restoreButton.text = "استعادة القنوات القديمة"
+                        Toast.makeText(this, "أضيفت " + added + " قناة. افحص الروابط من لوحة الإدارة لأن توفر البث يتغير.", Toast.LENGTH_LONG).show()
+                    }
                 }
             } catch (_: Exception) {
                 // Keep the last usable catalog visible if remote restoration fails.
-                val fallbackSections = ChannelRepository.load(applicationContext)
+                // Best-effort local reload; keep the in-memory catalog if the file is unreadable.
+                val fallbackSections = try {
+                    ChannelRepository.load(applicationContext)
+                } catch (_: Exception) {
+                    null
+                }
                 runOnUiThread {
                     if (!isFinishing && !isDestroyed) {
-                        sections = fallbackSections
-                        rebuildChips(chips)
-                        refresh()
+                        if (fallbackSections != null) {
+                            sections = fallbackSections
+                            rebuildChips(chips)
+                            refresh()
+                        }
                         restoreInProgress = false
                         restoreButton.isEnabled = true
                         restoreButton.text = "إعادة محاولة استعادة القنوات"
