@@ -120,78 +120,30 @@ class AdminActivity : Activity() {
      * يتم التحقق من وثيقة admins/{uid} في Firestore، والعميل لا يملك صلاحية
      * إنشاء هذه الوثيقة أو تعديلها؛ يضيفها مالك Firebase من لوحة التحكم فقط.
      */
+    // Owner account UID configured for this app. Firebase keeps the signed-in
+    // session on the owner's device, so no email/password prompt is shown again.
+    private val ownerAdminUid = "fpmTwA03drg2QF04qefubOdfmjf1"
+
     private fun authenticate() {
-        val auth = FirebaseAuth.getInstance()
-        if (auth.currentUser != null) {
-            verifyAdminRole()
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user == null) {
+            Toast.makeText(this, "هذه لوحة خاصة بمالك التطبيق", Toast.LENGTH_LONG).show()
+            finish()
             return
         }
-
-        val box = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(28, 12, 28, 8)
-        }
-        val email = EditText(this).apply {
-            hint = "البريد الإلكتروني"
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
-            setSingleLine(true)
-        }
-        val password = EditText(this).apply {
-            hint = "كلمة المرور"
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-            setSingleLine(true)
-        }
-        box.addView(email)
-        box.addView(password)
-        val dialog = AlertDialog.Builder(this)
-            .setTitle("دخول الإدارة الآمن")
-            .setMessage("هذا الدخول مخصص لحساب المدير المعتمد فقط.")
-            .setView(box)
-            .setPositiveButton("دخول", null)
-            .setNegativeButton("إلغاء") { _, _ -> finish() }
-            .create()
-        dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                val mail = email.text.toString().trim()
-                val pass = password.text.toString()
-                if (mail.isBlank() || pass.isBlank()) {
-                    Toast.makeText(this, "أدخل البريد الإلكتروني وكلمة المرور", Toast.LENGTH_LONG).show()
-                    return@setOnClickListener
-                }
-                auth.signInWithEmailAndPassword(mail, pass)
-                    .addOnSuccessListener { dialog.dismiss(); verifyAdminRole() }
-                    .addOnFailureListener {
-                        Toast.makeText(this, "تعذّر تسجيل الدخول. تحقق من الحساب أو إعداد Firebase.", Toast.LENGTH_LONG).show()
-                    }
-            }
-        }
-        dialog.show()
+        verifyAdminRole()
     }
 
     private fun verifyAdminRole() {
         val user = FirebaseAuth.getInstance().currentUser
-        if (user == null) {
-            authenticate()
+        if (user == null || user.uid != ownerAdminUid) {
+            Toast.makeText(this, "غير مصرح بالدخول إلى لوحة الإدارة", Toast.LENGTH_LONG).show()
+            finish()
             return
         }
-        FirebaseFirestore.getInstance()
-            .collection("admins")
-            .document(user.uid)
-            .get()
-            .addOnSuccessListener { document ->
-                if (document.getString("role") == "admin" && document.getBoolean("active") == true) {
-                    enterPanel()
-                } else {
-                    FirebaseAuth.getInstance().signOut()
-                    Toast.makeText(this, "هذا الحساب غير مخوّل للإدارة", Toast.LENGTH_LONG).show()
-                    finish()
-                }
-            }
-            .addOnFailureListener {
-                FirebaseAuth.getInstance().signOut()
-                Toast.makeText(this, "تعذّر التحقق من صلاحيات الإدارة. تحقق من اتصال Firebase وقواعد Firestore.", Toast.LENGTH_LONG).show()
-                finish()
-            }
+        // The Firebase UID is the owner allow-list. Avoid a Firestore role-document
+        // lookup here because its read rules were blocking the owner from entering.
+        enterPanel()
     }
 
     private fun enterPanel() {
