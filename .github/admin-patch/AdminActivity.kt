@@ -562,6 +562,10 @@ class AdminActivity : Activity() {
         val temp = File(filesDir, "movies.json.tmp")
         temp.writeText(JSONObject().put("movies", rows).toString(2), Charsets.UTF_8)
         if (!temp.renameTo(file)) { temp.copyTo(file, overwrite = true); temp.delete() }
+        CloudMovieSync.publishAll(this, rows) { success, error ->
+            if (!success && authenticated) Toast.makeText(this, "حُفظت الأفلام محلياً لكن تعذرت مزامنتها: " + (error ?: "تحقق من الاتصال"), Toast.LENGTH_LONG).show()
+            else if (success && authenticated) Toast.makeText(this, "تمت مزامنة مكتبة الأفلام", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun editMovie(index: Int?) {
