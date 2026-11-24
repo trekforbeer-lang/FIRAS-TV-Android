@@ -116,9 +116,9 @@ class MainActivity : AppCompatActivity() {
             updateBottomNavigation(R.id.navMovies)
             startActivity(Intent(this, MyListActivity::class.java))
         }
-        findViewById<TextView>(R.id.navSports).setOnClickListener {
-            updateBottomNavigation(R.id.navSports)
-            startActivity(Intent(this, SportsActivity::class.java))
+        findViewById<TextView>(R.id.navDiscover).setOnClickListener {
+            updateBottomNavigation(R.id.navDiscover)
+            startActivity(Intent(this, DiscoverActivity::class.java))
         }
         findViewById<TextView>(R.id.navAdmin).setOnClickListener {
             updateBottomNavigation(R.id.navAdmin)
@@ -133,7 +133,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateBottomNavigation(activeId: Int) {
-        val ids = intArrayOf(R.id.navHome, R.id.navChannels, R.id.navSports, R.id.navMovies, R.id.navAdmin)
+        val ids = intArrayOf(R.id.navHome, R.id.navChannels, R.id.navDiscover, R.id.navMovies, R.id.navAdmin)
         ids.forEach { id ->
             findViewById<TextView>(id)?.let { item ->
                 val active = id == activeId
