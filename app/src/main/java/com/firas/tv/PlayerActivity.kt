@@ -282,10 +282,9 @@ class PlayerActivity : AppCompatActivity() {
         if (channel.advanced == null) {
             // Reload the local channel record as well, so edited URL/headers are picked up.
             worker.execute {
-                val latestLegacy = UniversalStreamEngine.loadLegacy(this@PlayerActivity)
-                    .firstOrNull { it.id == channel.id }
-                    ?: UniversalStreamEngine.loadLegacy(this@PlayerActivity)
-                        .firstOrNull { it.name.equals(channel.name, ignoreCase = true) }
+                val latestLegacyChannels = UniversalStreamEngine.loadLegacy(this@PlayerActivity)
+                val latestLegacy = latestLegacyChannels.firstOrNull { it.id == channel.id }
+                    ?: latestLegacyChannels.firstOrNull { it.name.equals(channel.name, ignoreCase = true) }
                 runOnUiThread {
                     resolving = false
                     if (current?.id != channel.id || isFinishing || isDestroyed) return@runOnUiThread
