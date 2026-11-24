@@ -54,6 +54,11 @@ class AdminActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Keep administrator data out of screenshots, screen recordings and recent-app previews.
+        window.setFlags(
+            android.view.WindowManager.LayoutParams.FLAG_SECURE,
+            android.view.WindowManager.LayoutParams.FLAG_SECURE
+        )
         authenticate()
     }
 
@@ -81,8 +86,20 @@ class AdminActivity : Activity() {
         super.onPause()
     }
 
+    override fun onStop() {
+        // Lock immediately when the admin screen leaves the foreground.
+        // Keep the session only while the system document picker is opened for a logo.
+        if (authenticated && pendingLogoField == null) {
+            authenticated = false
+            handler.removeCallbacks(autoLogout)
+            finish()
+        }
+        super.onStop()
+    }
+
     override fun onDestroy() {
         handler.removeCallbacks(autoLogout)
+        authenticated = false
         super.onDestroy()
     }
 
@@ -138,60 +155,70 @@ class AdminActivity : Activity() {
         val first = EditText(this).apply {
             hint = if (salt == null) "كلمة مرور الإدارة (10 أحرف على الأقل)" else "كلمة مرور الإدارة"
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            isLongClickable = false
+            setTextIsSelectable(false)
+            if (android.os.Build.VERSION.SDK_INT >= 26) {
+                setAutofillHints()
+                importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO
+            }
         }
         box.addView(first)
-        val second = if (salt == null) EditText(this).apply {
-            hint = "أعد كتابة كلمة المرور"
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-        } else null
-        second?.let(box::addView)
         val dialog = AlertDialog.Builder(this)
-            .setTitle(if (salt == null) "إنشاء كلمة مرور الإدارة" else "دخول الإدارة")
-            .setMessage(if (salt == null) "استخدم 10 أحرف على الأقل مع حرف ورقم." else "أدخل كلمة المرور للمتابعة.")
+            .setTitle("دخول الإدارة")
+            .setMessage("أدخل كلمة مرور المالك للمتابعة.")
             .setView(box)
-            .setPositiveButton(if (salt == null) "إنشاء" else "دخول", null)
+            .setPositiveButton("دخول", null)
             .setNegativeButton("إلغاء") { _, _ -> finish() }
             .create()
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 val password = first.text.toString()
-                if (salt == null) {
-                    if (!strong(password) || password != second?.text?.toString()) {
-                        Toast.makeText(this, "كلمة المرور ضعيفة أو غير متطابقة", Toast.LENGTH_LONG).show()
-                        return@setOnClickListener
+                val decoded = try { Base64.decode(salt, Base64.NO_WRAP) } catch (_: Exception) { ByteArray(0) }
+                val expected = prefs.getString("hash", "").orEmpty()
+                val version = prefs.getInt("hash_version", 1)
+                val valid = if (decoded.isEmpty()) false
+                    else if (version >= 2) constantTimeEquals(hashPassword(password, decoded), expected)
+                    else constantTimeEquals(hashPasswordLegacy(password, decoded), expected)
+                if (valid) {
+                    val edit = prefs.edit().putInt("fails", 0).putLong("lock_until", 0L)
+                    if (version < 2) {
+                        edit.putString("hash", hashPassword(password, decoded)).putInt("hash_version", 2)
                     }
-                    val newSalt = ByteArray(16).also { SecureRandom().nextBytes(it) }
-                    prefs.edit().putString("salt", Base64.encodeToString(newSalt, Base64.NO_WRAP))
-                        .putString("hash", hashPassword(password, newSalt)).putInt("fails", 0).apply()
+                    edit.apply()
                     dialog.dismiss()
                     enterPanel()
                 } else {
-                    val decoded = try { Base64.decode(salt, Base64.NO_WRAP) } catch (_: Exception) { ByteArray(0) }
-                    val expected = prefs.getString("hash", "").orEmpty()
-                    if (decoded.isNotEmpty() && constantTimeEquals(hashPassword(password, decoded), expected)) {
-                        prefs.edit().putInt("fails", 0).putLong("lock_until", 0L).apply()
-                        dialog.dismiss()
-                        enterPanel()
-                    } else {
-                        val fails = prefs.getInt("fails", 0) + 1
-                        val edit = prefs.edit().putInt("fails", fails)
-                        if (fails >= 5) {
-                            val exponent = (fails - 5).coerceAtMost(8)
-                            edit.putLong("lock_until", System.currentTimeMillis() + minOf(24L * 60 * 60 * 1000, 5L * 60 * 1000 * (1L shl exponent)))
-                        }
-                        edit.apply()
-                        Toast.makeText(this, "كلمة المرور غير صحيحة", Toast.LENGTH_SHORT).show()
+                    val fails = prefs.getInt("fails", 0) + 1
+                    val edit = prefs.edit().putInt("fails", fails)
+                    if (fails >= 5) {
+                        val exponent = (fails - 5).coerceAtMost(8)
+                        edit.putLong("lock_until", System.currentTimeMillis() +
+                            minOf(24L * 60 * 60 * 1000, 5L * 60 * 1000 * (1L shl exponent)))
                     }
+                    edit.apply()
+                    first.text?.clear()
+                    Toast.makeText(this, "كلمة المرور غير صحيحة", Toast.LENGTH_SHORT).show()
                 }
             }
         }
-        dialog.show()
-    }
+
 
     private fun strong(value: String) =
         value.length >= 10 && value.any { it.isLetter() } && value.any { it.isDigit() }
 
+    // Version 2: stronger PBKDF2 work factor and SHA-256 where the Android provider supports it.
     private fun hashPassword(password: String, salt: ByteArray): String {
+        val algorithm = try { "PBKDF2WithHmacSHA256" } catch (_: Exception) { "PBKDF2WithHmacSHA1" }
+        val spec = PBEKeySpec(password.toCharArray(), salt, 310_000, 256)
+        return try {
+            val factory = try { SecretKeyFactory.getInstance(algorithm) }
+                catch (_: Exception) { SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1") }
+            factory.generateSecret(spec).encoded.joinToString("") { "%02x".format(it) }
+        } finally { spec.clearPassword() }
+    }
+
+    // Read-only compatibility verifier for passwords created by the older app build.
+    private fun hashPasswordLegacy(password: String, salt: ByteArray): String {
         val spec = PBEKeySpec(password.toCharArray(), salt, 120_000, 256)
         return try {
             SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1").generateSecret(spec).encoded
