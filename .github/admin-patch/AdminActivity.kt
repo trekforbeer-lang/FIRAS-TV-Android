@@ -595,7 +595,16 @@ class AdminActivity : Activity() {
                 if (old == null) rows.put(row)
                 saveMovieCatalog(rows); Toast.makeText(this, "تم حفظ الفيلم محلياً", Toast.LENGTH_SHORT).show(); render()
             }.setNeutralButton(if (old == null) "إغلاق" else "حذف") { _, _ ->
-                if (old != null) { rows.remove(index!!); saveMovieCatalog(rows); render() }
+                if (old != null) {
+                    AlertDialog.Builder(this).setTitle("حذف الفيلم")
+                        .setMessage("هل تريد حذف الفيلم: " + old.optString("title") + "؟")
+                        .setPositiveButton("حذف") { _, _ ->
+                            rows.remove(index!!)
+                            saveMovieCatalog(rows)
+                            render()
+                        }
+                        .setNegativeButton("إلغاء", null).show()
+                }
             }.setNegativeButton("إلغاء", null).show()
     }
 
