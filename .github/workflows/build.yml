@@ -42,6 +42,11 @@ jobs:
           cp .github/admin-patch/strings.xml app/src/main/res/values/strings.xml
           cp .github/admin-patch/home_hero_bg.xml app/src/main/res/drawable/home_hero_bg.xml
           cp .github/admin-patch/search_bg.xml app/src/main/res/drawable/search_bg.xml
+          cp .github/admin-patch/rahmani_action_button.xml app/src/main/res/drawable/rahmani_action_button.xml
+          cp .github/admin-patch/rahmani_primary_button.xml app/src/main/res/drawable/rahmani_primary_button.xml
+          cp .github/admin-patch/rahmani_action_card.xml app/src/main/res/drawable/rahmani_action_card.xml
+          cp .github/admin-patch/rahmani_panel_bg.xml app/src/main/res/drawable/rahmani_panel_bg.xml
+          cp .github/admin-patch/rahmani_icon_tile.xml app/src/main/res/drawable/rahmani_icon_tile.xml
           cp .github/admin-patch/rahmani_nav_capsule.xml app/src/main/res/drawable/rahmani_nav_capsule.xml
           cp .github/admin-patch/rahmani_nav_item_bg.xml app/src/main/res/drawable/rahmani_nav_item_bg.xml
           cp .github/admin-patch/rahmani_card_stroke.xml app/src/main/res/drawable/rahmani_card_stroke.xml
