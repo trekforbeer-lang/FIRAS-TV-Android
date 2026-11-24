@@ -1,3 +1,4 @@
+# RAHMANI luxury UI and immersive player build
 name: FIRAS TV v4 Build APK
 # Build includes the latest committed admin-patch Kotlin sources, RAHMANI UI resources, and saved-channel screen.
 on:
