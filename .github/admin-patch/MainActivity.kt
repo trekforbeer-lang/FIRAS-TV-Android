@@ -21,6 +21,7 @@ import android.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.work.WorkManager
 import com.firas.tv.stream.StreamConfigStore
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
@@ -136,7 +137,8 @@ class MainActivity : AppCompatActivity() {
             updateBottomNavigation(R.id.navAdmin)
             startActivity(Intent(this, MoreActivity::class.java))
         }
-        restoreButton.setOnClickListener { restoreOriginalLists() }
+        restoreButton.setOnClickListener { startManualChannelRestore() }
+        observeChannelRestore()
         refresh()
         CloudChannelSync.refreshPublic(applicationContext) { changed ->
             if (changed > 0 && !isFinishing && !isDestroyed) runOnUiThread {
@@ -392,86 +394,38 @@ class MainActivity : AppCompatActivity() {
         empty.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
     }
 
-    private fun restoreOriginalLists() {
+    private fun startManualChannelRestore() {
+        val started = RestoreChannelsWorker.start(applicationContext)
+        if (!started) {
+            Toast.makeText(this, "استعادة القنوات جارية بالفعل؛ الدفعة التالية بعد 30 دقيقة.", Toast.LENGTH_LONG).show()
+            return
+        }
         restoreButton.isEnabled = false
-        restoreButton.text = "جارٍ استعادة القنوات..."
-        val progress = AlertDialog.Builder(this)
-            .setTitle("استعادة القنوات")
-            .setMessage("يتم تحميل القوائم وتحضير القنوات في الخلفية. قد يستغرق ذلك بعض الوقت.")
-            .setCancelable(false)
-            .create()
-        progress.show()
-        Thread {
-            var added = 0
-            val sources = listOf(
-                Pair("قنوات عربية", "https://iptv-org.github.io/iptv/languages/ara.m3u"),
-                Pair("رياضة", "https://iptv-org.github.io/iptv/categories/sports.m3u"),
-                Pair("أخبار", "https://iptv-org.github.io/iptv/categories/news.m3u"),
-                Pair("أطفال", "https://iptv-org.github.io/iptv/categories/kids.m3u")
-            )
-            try {
-                val target = File(filesDir, "channels.json")
-                val raw = if (target.isFile) target.readText(Charsets.UTF_8)
-                    else assets.open("channels.json").bufferedReader(Charsets.UTF_8).use { it.readText() }
-                val root = JSONObject(raw)
-                val groups = root.optJSONArray("sections") ?: JSONArray().also { root.put("sections", it) }
-                for ((title, endpoint) in sources) {
-                    val connection = URL(endpoint).openConnection() as HttpURLConnection
-                    connection.connectTimeout = 15000; connection.readTimeout = 25000
-                    connection.setRequestProperty("User-Agent", "RAHMANI/1.0")
-                    val body = try {
-                        val code = connection.responseCode
-                        if (code !in 200..299) throw java.io.IOException("Playlist HTTP $code")
-                        connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-                    } finally { connection.disconnect() }
-                    var section: JSONObject? = null
-                    for (i in 0 until groups.length()) {
-                        val item = groups.optJSONObject(i)
-                        if (item?.optString("title") == title) { section = item; break }
-                    }
-                    if (section == null) {
-                        val created = JSONObject().put("title", title).put("items", JSONArray())
-                        groups.put(created)
-                        section = created
-                    }
-                    val actualSection = section ?: continue
-                    val items = actualSection.optJSONArray("items") ?: JSONArray().also { actualSection.put("items", it) }
-                    val known = HashSet<String>()
-                    for (i in 0 until items.length()) known.add(items.optJSONObject(i)?.optString("url").orEmpty())
-                    var name = ""; var logo = ""
-                    for (line in body.lineSequence()) {
-                        val value = line.trim()
-                        if (value.startsWith("#EXTINF", true)) {
-                            name = value.substringAfterLast(',').trim()
-                            logo = Regex("""tvg-logo="([^"]*)"""").find(value)?.groupValues?.getOrNull(1).orEmpty()
-                        } else if (value.startsWith("http", true) && name.isNotBlank() && value !in known) {
-                            items.put(JSONObject().put("id", "iptv-" + value.hashCode()).put("name", name)
-                                .put("logo", logo).put("url", value).put("referer", ""))
-                            known.add(value); added++; name = ""; logo = ""
-                        }
-                    }
+        restoreButton.text = "جارٍ تنزيل أول 100 قناة..."
+        Toast.makeText(this, "بدأت الاستعادة اليدوية. سيتم تنزيل 100 قناة كحد أقصى في كل دفعة، ثم الانتظار 30 دقيقة.", Toast.LENGTH_LONG).show()
+    }
+
+    private fun observeChannelRestore() {
+        WorkManager.getInstance(applicationContext)
+            .getWorkInfosByTagLiveData(RestoreChannelsWorker.TAG)
+            .observe(this) { workInfos ->
+                val active = workInfos.any { !it.state.isFinished }
+                val latest = workInfos.filter { !it.state.isFinished }.maxByOrNull { it.runAttemptCount }
+                val prefs = getSharedPreferences(RestoreChannelsWorker.PREFS, MODE_PRIVATE)
+                val total = prefs.getInt("total_added", 0)
+                restoreButton.isEnabled = !active
+                restoreButton.text = when {
+                    active && total > 0 -> "تم تنزيل $total قناة • التالية بعد 30د"
+                    active -> "استعادة القنوات..."
+                    total > 0 -> "استعادة المزيد"
+                    else -> "استعادة القنوات"
                 }
-                val temp = File(filesDir, "channels.json.tmp")
-                temp.writeText(root.toString(2), Charsets.UTF_8)
-                if (!temp.renameTo(target)) { temp.copyTo(target, overwrite = true); temp.delete() }
-                // Parsing a large restored catalogue is also kept off the UI thread.
-                val loadedSections = ChannelRepository.load(applicationContext)
-                runOnUiThread {
-                    if (isFinishing || isDestroyed) { progress.dismiss(); return@runOnUiThread }
-                    progress.dismiss()
-                    sections = loadedSections; selected = ""
-                    rebuildChips(chips); refresh()
-                    restoreButton.isEnabled = true; restoreButton.text = "استعادة القنوات القديمة"
-                    Toast.makeText(this, "أضيفت " + added + " قناة. افحص الروابط من لوحة الإدارة لأن توفر البث يتغير.", Toast.LENGTH_LONG).show()
-                }
-            } catch (_: Exception) {
-                runOnUiThread {
-                    if (isFinishing || isDestroyed) { progress.dismiss(); return@runOnUiThread }
-                    progress.dismiss()
-                    restoreButton.isEnabled = true; restoreButton.text = "إعادة محاولة استعادة القنوات"
-                    Toast.makeText(this, "تعذّر تحميل القوائم؛ تحقق من اتصال الإنترنت", Toast.LENGTH_LONG).show()
+                if (latest?.state?.isFinished == true) return@observe
+                if (!active && prefs.getBoolean("running", false)) {
+                    restoreButton.isEnabled = false
+                    restoreButton.text = "بانتظار اتصال الإنترنت..."
                 }
             }
-        }.start()
     }
+
 }
