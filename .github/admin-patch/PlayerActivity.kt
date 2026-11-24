@@ -86,7 +86,8 @@ class PlayerActivity : AppCompatActivity() {
     private var isFullscreen = true
     private var resumePlaybackOnResume = false
     private var recoveryAttempts = 0
-    private var zoomed = false
+    private var displayMode = 0
+    private val playerPrefs by lazy { getSharedPreferences("rahmani_player_preferences", MODE_PRIVATE) }
     private var recoveryTask: Runnable? = null
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private var networkWasLost = false
@@ -109,9 +110,9 @@ class PlayerActivity : AppCompatActivity() {
         setContentView(R.layout.activity_player)
         applyFullscreenSystemUi()
         playerView = findViewById(R.id.playerView)
-        // Preserve the complete broadcast frame by default. Cropping is optional.
-        zoomed = false
-        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+        // Restore the viewer's saved display mode; FIT is the safe default.
+        displayMode = playerPrefs.getInt("display_mode", 0).coerceIn(0, 3)
+        applyDisplayMode()
         title = findViewById(R.id.channelTitle)
         status = findViewById(R.id.statusText)
         loadingIndicator = findViewById(R.id.loadingIndicator)
@@ -169,11 +170,7 @@ class PlayerActivity : AppCompatActivity() {
             player?.let { p -> if (p.isPlaying) p.pause() else p.play() }
         }
         fullscreen.setOnClickListener { toggleFullscreen() }
-        zoom.setOnClickListener {
-            zoomed = !zoomed
-            playerView.resizeMode = if (zoomed) AspectRatioFrameLayout.RESIZE_MODE_ZOOM else AspectRatioFrameLayout.RESIZE_MODE_FIT
-            zoom.text = if (zoomed) "ملاءمة" else "تكبير"
-        }
+        zoom.setOnClickListener { showDisplayModePicker() }
         retry.setOnClickListener { hardRefreshCurrentStream(resetRecoveryAttempts = true) }
         server.setOnClickListener { nextCandidateOrRetry() }
         quality.setOnClickListener {
@@ -637,6 +634,42 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
+    private fun applyDisplayMode() {
+        val modes = intArrayOf(
+            AspectRatioFrameLayout.RESIZE_MODE_FIT,
+            AspectRatioFrameLayout.RESIZE_MODE_ZOOM,
+            AspectRatioFrameLayout.RESIZE_MODE_FILL,
+            AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH
+        )
+        playerView.resizeMode = modes[displayMode.coerceIn(0, modes.lastIndex)]
+        zoom.text = when (displayMode) {
+            1 -> "تكبير"
+            2 -> "تمديد"
+            3 -> "تثبيت العرض"
+            else -> "ملاءمة"
+        }
+        playerView.requestLayout()
+    }
+
+    private fun showDisplayModePicker() {
+        val options = arrayOf(
+            "ملاءمة كاملة — إظهار الصورة والشعار بالكامل، وقد تظهر حواف سوداء",
+            "ملء الشاشة — تكبير الصورة مع اقتطاع الأطراف عند اختلاف الأبعاد",
+            "تمديد كامل — ملء الإطار وقد تتغير أبعاد الصورة",
+            "تثبيت العرض — الحفاظ على النسبة مع احتمال اقتطاع أعلى/أسفل"
+        )
+        AlertDialog.Builder(this)
+            .setTitle("اختر طريقة عرض الفيديو")
+            .setSingleChoiceItems(options, displayMode) { dialog, which ->
+                displayMode = which
+                playerPrefs.edit().putInt("display_mode", displayMode).apply()
+                applyDisplayMode()
+                dialog.dismiss()
+            }
+            .setNegativeButton("إغلاق", null)
+            .show()
+    }
+
     private fun toggleFullscreen() {
         isFullscreen = !isFullscreen
         requestedOrientation = if (isFullscreen) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
@@ -644,9 +677,7 @@ class PlayerActivity : AppCompatActivity() {
         applyFullscreenSystemUi()
         // Fullscreen changes the available display area, not the video crop.
         // Keep the selected Fit/Zoom mode so channel logos and the full frame remain visible.
-        playerView.resizeMode = if (zoomed) AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-            else AspectRatioFrameLayout.RESIZE_MODE_FIT
-        zoom.text = if (zoomed) "ملاءمة" else "تكبير"
+        applyDisplayMode()
         fullscreen.text = if (isFullscreen) "⤡" else "⛶"
         playerView.post {
             playerView.requestLayout()
@@ -661,9 +692,7 @@ class PlayerActivity : AppCompatActivity() {
             // Return to the normal phone portrait screen after leaving fullscreen.
             requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             applyFullscreenSystemUi()
-            zoomed = false
-            playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-            zoom.text = "زووم"
+            applyDisplayMode()
             fullscreen.text = "⛶"
             handler.removeCallbacks(hideOverlayTask)
         } else {
