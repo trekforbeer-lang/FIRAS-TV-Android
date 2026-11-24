@@ -505,6 +505,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         pendingFilter?.cancel(true)
         filterExecutor.shutdownNow()
+        if (::adapter.isInitialized) adapter.shutdown()
         super.onDestroy()
     }
 }
