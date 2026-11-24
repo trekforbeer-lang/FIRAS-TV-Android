@@ -317,7 +317,7 @@ class MainActivity : AppCompatActivity() {
         val menuContent = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
         }
-        menuScroll.addView(menuContent, android.widget.ScrollView.LayoutParams(
+        menuScroll.addView(menuContent, FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
         ))
         panel.addView(menuScroll, LinearLayout.LayoutParams(
