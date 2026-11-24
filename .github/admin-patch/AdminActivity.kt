@@ -194,11 +194,6 @@ class AdminActivity : Activity() {
         authenticated = true
         handler.postDelayed(autoLogout, 10 * 60 * 1000L)
         root = readRoot()
-        CloudChannelSync.publishAll(this, root) { success, error ->
-            if (!success && authenticated) {
-                Toast.makeText(this, "تعذرت مزامنة النسخة المحلية عند فتح لوحة الإدارة: ${error ?: "تحقق من الاتصال"}", Toast.LENGTH_LONG).show()
-            }
-        }
         val scroll = ScrollView(this)
         panel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -208,7 +203,25 @@ class AdminActivity : Activity() {
         scroll.addView(panel)
         setContentView(scroll)
         render()
-        CloudMovieSync.refreshPublic(this) { if (authenticated) render() }
+
+        // Pull the current public cloud catalog before any publish operation.
+        // Opening the admin panel must never overwrite newer Firestore data with
+        // a stale local JSON snapshot.
+        CloudChannelSync.refreshPublic(applicationContext) { changed ->
+            runOnUiThread {
+                if (!authenticated || isFinishing || isDestroyed) return@runOnUiThread
+                root = readRoot()
+                render()
+                Toast.makeText(
+                    this,
+                    if (changed > 0) "تم تحديث القنوات من السحابة" else "القنوات المحلية محدثة",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+        CloudMovieSync.refreshPublic(this) {
+            runOnUiThread { if (authenticated && !isFinishing && !isDestroyed) render() }
+        }
     }
 
     private fun readRoot(): JSONObject {
