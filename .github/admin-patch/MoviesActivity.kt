@@ -20,7 +20,7 @@ import java.net.URL
 import java.net.URLEncoder
 import java.util.concurrent.Executors
 
-private data class FilmItem(val id: String, val title: String)
+private data class FilmItem(val id: String, val title: String, val stream: String = "", val poster: String = "", val country: String = "")
 
 class MoviesActivity : AppCompatActivity() {
     private val io = Executors.newFixedThreadPool(4)
@@ -156,7 +156,25 @@ class MoviesActivity : AppCompatActivity() {
             if (reset) reloadAfterBusy = true
             return
         }
-        if (reset) { page = 1; hasMore = true; films.clear(); adapter.notifyDataSetChanged() }
+        if (reset) {
+            page = 1; hasMore = true; films.clear()
+            try {
+                val catalog = java.io.File(filesDir, "movies.json")
+                if (catalog.isFile) {
+                    val rows = JSONObject(catalog.readText(Charsets.UTF_8)).optJSONArray("movies")
+                    if (rows != null) for (i in 0 until rows.length()) {
+                        val row = rows.optJSONObject(i) ?: continue
+                        val id = row.optString("id").ifBlank { "local-" + i }
+                        val title = row.optString("title").trim()
+                        val stream = row.optString("url").trim()
+                        if (title.isNotBlank() && (stream.startsWith("https://", true) || stream.startsWith("http://", true))) {
+                            films.add(FilmItem("local:" + id, title, stream, row.optString("poster"), row.optString("country")))
+                        }
+                    }
+                }
+            } catch (_: Exception) { }
+            adapter.notifyDataSetChanged()
+        }
         if (!hasMore) return
         busy = true; status.text = "جارٍ تحميل الأفلام..."
         io.execute {
@@ -170,7 +188,7 @@ class MoviesActivity : AppCompatActivity() {
                 if (docs != null) for (i in 0 until docs.length()) {
                     val d = docs.optJSONObject(i) ?: continue
                     val id = d.optString("identifier")
-                    if (id.isNotBlank()) found.add(FilmItem(id, d.optString("title", "فيلم")))
+                    if (id.isNotBlank()) found.add(FilmItem("archive:" + id, d.optString("title", "فيلم")))
                 }
                 runOnUiThread {
                     if (reset) films.clear()
@@ -202,13 +220,13 @@ class MoviesActivity : AppCompatActivity() {
         status.text = "جارٍ تجهيز " + film.title
         io.execute {
             try {
-                val files = JSONObject(request("https://archive.org/metadata/" + URLEncoder.encode(film.id, "UTF-8"))).optJSONArray("files") ?: throw IllegalStateException()
+                val files = JSONObject(request("https://archive.org/metadata/" + URLEncoder.encode(film.id.removePrefix("archive:"), "UTF-8"))).optJSONArray("files") ?: throw IllegalStateException()
                 val candidates = (0 until files.length()).mapNotNull { files.optJSONObject(it) }
                     .filter { it.optString("name").endsWith(".mp4", true) }
                     .sortedByDescending { it.optString("format").equals("h.264", true) }
                 val name = candidates.firstOrNull()?.optString("name") ?: throw IllegalStateException()
                 val path = name.split("/").joinToString("/") { URLEncoder.encode(it, "UTF-8").replace("+", "%20") }
-                val stream = "https://archive.org/download/" + URLEncoder.encode(film.id, "UTF-8") + "/" + path
+                val stream = "https://archive.org/download/" + URLEncoder.encode(film.id.removePrefix("archive:"), "UTF-8") + "/" + path
                 runOnUiThread { startActivity(Intent(this, MoviePlayerActivity::class.java).putExtra("movie_title", film.title).putExtra("movie_url", stream)) }
             } catch (_: Exception) {
                 runOnUiThread { Toast.makeText(this, "لا يوجد ملف MP4 متاح لهذا الفيلم", Toast.LENGTH_LONG).show() }
@@ -245,7 +263,8 @@ class MoviesActivity : AppCompatActivity() {
                 io.execute {
                     var bitmap: android.graphics.Bitmap? = null
                     try {
-                        val address = "https://archive.org/services/img/" + URLEncoder.encode(film.id, "UTF-8")
+                        val address = if (film.poster.startsWith("http://", true) || film.poster.startsWith("https://", true))
+                            film.poster else "https://archive.org/services/img/" + URLEncoder.encode(film.id.removePrefix("archive:"), "UTF-8")
                         val connection = URL(address).openConnection() as HttpURLConnection
                         connection.connectTimeout = 8000
                         connection.readTimeout = 10000
