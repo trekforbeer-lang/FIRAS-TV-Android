@@ -738,9 +738,14 @@ class PlayerActivity : AppCompatActivity() {
         val overlays = listOf(
             findViewById<View>(R.id.topBar),
             findViewById<View>(R.id.bottomPanel),
-            centerControls,
-            channelPanel
+            centerControls
         )
+        if (!visible && channelPanel.visibility == View.VISIBLE) {
+            channelPanel.animate().cancel()
+            channelPanel.animate().alpha(0f).setDuration(200L).withEndAction {
+                if (channelPanel.alpha == 0f) channelPanel.visibility = View.GONE
+            }.start()
+        }
         overlays.forEach { view ->
             view.animate().cancel()
             if (visible) {
