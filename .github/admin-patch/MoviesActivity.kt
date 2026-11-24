@@ -167,7 +167,7 @@ class MoviesActivity : AppCompatActivity() {
                         val id = row.optString("id").ifBlank { "local-" + i }
                         val title = row.optString("title").trim()
                         val stream = row.optString("url").trim()
-                        if (title.isNotBlank() && (stream.startsWith("https://", true) || stream.startsWith("http://", true))) {
+                        if (title.isNotBlank() && (query.isBlank() || title.contains(query, true)) && (stream.startsWith("https://", true) || stream.startsWith("http://", true))) {
                             films.add(FilmItem("local:" + id, title, stream, row.optString("poster"), row.optString("country")))
                         }
                     }
