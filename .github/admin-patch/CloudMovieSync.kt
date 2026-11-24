@@ -97,7 +97,7 @@ object CloudMovieSync {
                     val temp = File(context.filesDir, "movies.json.tmp")
                     temp.writeText(JSONObject().put("movies", rows).toString(2), Charsets.UTF_8)
                     if (!temp.renameTo(target)) { temp.copyTo(target, overwrite = true); temp.delete() }
-                    done?.let { android.os.Handler(context.mainLooper).post(it) }
+                    done?.let { callback -> android.os.Handler(context.mainLooper).post { callback.invoke() } }
                 }.start()
             }
             .addOnFailureListener { done?.let { android.os.Handler(context.mainLooper).post(it) } }
