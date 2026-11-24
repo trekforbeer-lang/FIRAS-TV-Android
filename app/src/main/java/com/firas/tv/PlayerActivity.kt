@@ -643,6 +643,19 @@ class PlayerActivity : AppCompatActivity() {
 
     @Suppress("DEPRECATION")
     private fun applyFullscreenSystemUi() {
+        // Use the complete physical display area on phones with different
+        // aspect ratios, status/navigation bars and camera cutouts.
+        window.statusBarColor = Color.BLACK
+        window.navigationBarColor = Color.BLACK
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val attributes = window.attributes
+            attributes.layoutInDisplayCutoutMode = if (isFullscreen) {
+                android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            } else {
+                android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
+            }
+            window.attributes = attributes
+        }
         window.decorView.systemUiVisibility = if (isFullscreen) {
             (View.SYSTEM_UI_FLAG_FULLSCREEN
                 or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
@@ -652,6 +665,10 @@ class PlayerActivity : AppCompatActivity() {
                 or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION)
         } else {
             View.SYSTEM_UI_FLAG_VISIBLE
+        }
+        window.decorView.post {
+            window.decorView.requestLayout()
+            findViewById<View>(R.id.playerView)?.requestLayout()
         }
     }
 
