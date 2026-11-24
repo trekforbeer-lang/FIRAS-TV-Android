@@ -409,8 +409,10 @@ class MainActivity : AppCompatActivity() {
                 val temp = File(filesDir, "channels.json.tmp")
                 temp.writeText(root.toString(2), Charsets.UTF_8)
                 if (!temp.renameTo(target)) { temp.copyTo(target, overwrite = true); temp.delete() }
+                // Parse the potentially large restored JSON away from the UI thread.
+                val restoredSections = ChannelRepository.load(this)
                 runOnUiThread {
-                    sections = ChannelRepository.load(this); selected = ""
+                    sections = restoredSections; selected = ""
                     rebuildChips(chips); refresh()
                     restoreButton.isEnabled = true; restoreButton.text = "استعادة القنوات القديمة"
                     Toast.makeText(this, "أضيفت " + added + " قناة. افحص الروابط من لوحة الإدارة لأن توفر البث يتغير.", Toast.LENGTH_LONG).show()
