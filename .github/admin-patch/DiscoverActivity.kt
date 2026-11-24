@@ -84,7 +84,7 @@ class DiscoverActivity : AppCompatActivity() {
             setHintTextColor(Color.rgb(133, 145, 164))
             setTextColor(Color.WHITE)
             textSize = 14f
-            singleLine = true
+            setSingleLine(true)
             setPadding(dp(15), 0, dp(15), 0)
             background = GradientDrawable().apply {
                 setColor(Color.rgb(27, 29, 39))
