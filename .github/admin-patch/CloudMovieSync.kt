@@ -25,7 +25,8 @@ object CloudMovieSync {
             val url = row.optString("url").trim()
             if (title.isBlank() || title.length > 180 ||
                 !(url.startsWith("https://", true) || url.startsWith("http://", true)) || url.length > 2048) continue
-            val id = documentId(row.optString("id").ifBlank { title + "|" + url })
+            val identity = row.optString("id").ifBlank { title + "|" + url }
+            val id = if (identity.matches(Regex("[0-9a-f]{64}"))) identity else documentId(identity)
             val data = hashMapOf<String, Any>(
                 "title" to title, "url" to url, "active" to true,
                 "updatedAt" to FieldValue.serverTimestamp()
@@ -38,8 +39,7 @@ object CloudMovieSync {
         db.collection("movies").get()
             .addOnSuccessListener { snapshot ->
                 val stale = snapshot.documents.map { it.id }.filter { it !in local.keys }
-                val ops = mutableListOf<() -> com.google.firebase.firestore.WriteBatch>()
-                val refs = local.entries.toList()
+                        val refs = local.entries.toList()
                 val tasks = (stale.map { id -> Triple(id, null as Map<String, Any>?, true) } +
                     refs.map { Triple(it.key, it.value, false) })
                 fun commitAt(start: Int) {
