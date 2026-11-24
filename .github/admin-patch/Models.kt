@@ -34,9 +34,14 @@ object ChannelRepository {
                     item.optString("referer"), item.optString("id"), item.optBoolean("priv", false), item.optString("countryCode", item.optString("cc", section.optString("countryCode"))))
             }
             if (channels.isEmpty() && section.optString("region").isBlank() && section.optString("countryCode").isBlank()) null else {
-                val code = section.optString("countryCode").ifBlank { channels.firstOrNull()?.countryCode.orEmpty() }.uppercase()
-                val region = section.optString("region").ifBlank {
-                    if (code in setOf("DZ","SA","EG","MA","TN","LY","SD","IQ","SY","JO","LB","PS","YE","OM","AE","QA","BH","KW","MR","SO","DJ","KM")) "arab" else ""
+                val code = section.optString("countryCode").ifBlank { channels.firstOrNull()?.countryCode.orEmpty() }.trim().uppercase()
+                val declaredRegion = section.optString("region").trim().lowercase()
+                val arabCountries = setOf("DZ","SA","EG","MA","TN","LY","SD","IQ","SY","JO","LB","PS","YE","OM","AE","QA","BH","KW","MR","SO","DJ","KM")
+                val region = when {
+                    declaredRegion == "arab" || declaredRegion == "foreign" -> declaredRegion
+                    code in arabCountries -> "arab"
+                    code.length == 2 -> "foreign"
+                    else -> declaredRegion
                 }
                 Section(section.optString("title"), channels, region, code)
             }
