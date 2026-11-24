@@ -340,6 +340,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun rebuildChips(group: ChipGroup) {
+        group.setOnCheckedStateChangeListener(null)
         group.removeAllViews()
         fun addChip(label: String, tag: String, checked: Boolean) {
             val chip = layoutInflater.inflate(R.layout.item_chip, group, false) as Chip
@@ -357,6 +358,7 @@ class MainActivity : AppCompatActivity() {
             when (tag) {
                 "__region_arab__" -> { selectedRegion = "arab"; selected = "" }
                 "__region_foreign__" -> { selectedRegion = "foreign"; selected = "" }
+                "" -> { selectedRegion = ""; selected = "" }
                 else -> selected = tag
             }
             rebuildChips(group)
