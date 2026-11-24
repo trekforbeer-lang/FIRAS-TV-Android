@@ -868,15 +868,26 @@ class AdminActivity : Activity() {
                         val destinationSection = section ?: JSONObject().put("title", sectionName).put("items", JSONArray()).also { groups.put(it) }
                         val destination = destinationSection.optJSONArray("items")
                             ?: JSONArray().also { destinationSection.put("items", it) }
-                        var added = 0
-                        parsed.forEach { channel ->
+                        val unique = parsed.filter { channel ->
                             val url = channel.optString("url")
-                            if (url.isNotBlank() && existing.add(url)) { destination.put(channel); added++ }
+                            url.isNotBlank() && existing.add(url)
                         }
-                        val target = File(filesDir, "channels.json")
-                        val temp = File(filesDir, "channels.json.import.tmp")
-                        temp.writeText(workingRoot.toString(2), Charsets.UTF_8)
-                        if (!temp.renameTo(target)) { temp.copyTo(target, overwrite = true); temp.delete() }
+                        var added = 0
+                        val batches = unique.chunked(100)
+                        batches.forEach { batch ->
+                            batch.forEach { channel -> destination.put(channel); added++ }
+                            val target = File(filesDir, "channels.json")
+                            val temp = File(filesDir, "channels.json.import.tmp")
+                            temp.writeText(workingRoot.toString(), Charsets.UTF_8)
+                            if (!temp.renameTo(target)) { temp.copyTo(target, overwrite = true); temp.delete() }
+                            val done = added
+                            val total = unique.size
+                            runOnUiThread {
+                                if (!isFinishing && !isDestroyed && progress.isShowing) {
+                                    progress.setMessage("تم تجهيز $done من $total قناة، على دفعات من 100...")
+                                }
+                            }
+                        }
                         outcome = workingRoot to added
                     } catch (_: Exception) { }
                     val completed = outcome
