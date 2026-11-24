@@ -280,17 +280,37 @@ class PlayerActivity : AppCompatActivity() {
         releaseCurrentPlayer()
 
         if (channel.advanced == null) {
-            currentAdvanced = null
-            currentUrls = listOf(channel.legacyUrl).filter { it.isNotBlank() }
-            currentUrlIndex = 0
-            resolving = false
-            ensurePlayer(channel)
-            val url = currentUrls.firstOrNull()
-            if (url == null) {
-                showLoading(false)
-                status.text = "رابط القناة غير متوفر"
-            } else {
-                playUrl(url, resumePosition)
+            // Reload the local channel record as well, so edited URL/headers are picked up.
+            worker.execute {
+                val latestLegacy = UniversalStreamEngine.loadLegacy(this@PlayerActivity)
+                    .firstOrNull { it.id == channel.id }
+                    ?: UniversalStreamEngine.loadLegacy(this@PlayerActivity)
+                        .firstOrNull { it.name.equals(channel.name, ignoreCase = true) }
+                runOnUiThread {
+                    resolving = false
+                    if (current?.id != channel.id || isFinishing || isDestroyed) return@runOnUiThread
+
+                    val refreshedChannel = if (latestLegacy != null) {
+                        channel.copy(
+                            legacyUrl = latestLegacy.stream,
+                            legacyHeaders = latestLegacy.headers
+                        )
+                    } else channel
+
+                    current = refreshedChannel
+                    currentAdvanced = null
+                    currentUrls = listOf(refreshedChannel.legacyUrl).filter { it.isNotBlank() }
+                    currentUrlIndex = 0
+                    ensurePlayer(refreshedChannel)
+
+                    val url = currentUrls.firstOrNull()
+                    if (url == null) {
+                        showLoading(false)
+                        status.text = "رابط القناة غير متوفر"
+                    } else {
+                        playUrl(url, resumePosition)
+                    }
+                }
             }
             return
         }
