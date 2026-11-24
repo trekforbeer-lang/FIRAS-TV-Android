@@ -61,8 +61,18 @@ jobs:
           # RAHMANI architecture dependencies and modern Android configuration.
           sed -i 's/minSdk = 21/minSdk = 24/' app/build.gradle.kts
           sed -i -E 's/targetSdk = [0-9]+/targetSdk = 34/' app/build.gradle.kts
-          sed -i '/id("org.jetbrains.kotlin.android") version "2.0.21" apply false/a\    id("org.jetbrains.kotlin.kapt") version "2.0.21" apply false' build.gradle.kts
-          sed -i '/id("org.jetbrains.kotlin.android")/a\    id("org.jetbrains.kotlin.kapt")' app/build.gradle.kts
+          # Firebase Android SDK 24.x uses Kotlin 2.1 metadata; align the app compiler and KAPT.
+          sed -i -E 's/(id\("org\.jetbrains\.kotlin\.android"\) version ")[0-9.]+/\12.1.0/' build.gradle.kts
+          if grep -q 'id("org.jetbrains.kotlin.kapt") version' build.gradle.kts; then
+            sed -i -E 's/(id\("org\.jetbrains\.kotlin\.kapt"\) version ")[0-9.]+/\12.1.0/' build.gradle.kts
+          else
+            sed -i '/id("org.jetbrains.kotlin.android") version "2.1.0" apply false/a\    id("org.jetbrains.kotlin.kapt") version "2.1.0" apply false' build.gradle.kts
+          fi
+          if ! grep -q 'id("org.jetbrains.kotlin.kapt")' app/build.gradle.kts; then
+            sed -i '/id("org.jetbrains.kotlin.android")/a\    id("org.jetbrains.kotlin.kapt")' app/build.gradle.kts
+          fi
+          grep -q 'org.jetbrains.kotlin.android.*2.1.0' build.gradle.kts
+          grep -q 'org.jetbrains.kotlin.kapt' app/build.gradle.kts
           sed -i '/^android[[:space:]]*{/a\    buildFeatures { viewBinding = true }' app/build.gradle.kts
           sed -i '/implementation("androidx.appcompat:appcompat:1.7.0")/a\    implementation("androidx.activity:activity-ktx:1.10.0")\n    implementation("androidx.fragment:fragment-ktx:1.8.5")\n    implementation("androidx.constraintlayout:constraintlayout:2.2.0")\n    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")\n    implementation("androidx.viewpager2:viewpager2:1.1.0")\n    implementation("androidx.navigation:navigation-fragment-ktx:2.8.5")\n    implementation("androidx.navigation:navigation-ui-ktx:2.8.5")\n    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")\n    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")\n    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")\n    implementation("androidx.room:room-runtime:2.6.1")\n    implementation("androidx.room:room-ktx:2.6.1")\n    kapt("androidx.room:room-compiler:2.6.1")\n    implementation("androidx.paging:paging-runtime-ktx:3.3.5")\n    implementation("androidx.datastore:datastore-preferences:1.1.1")\n    implementation("io.coil-kt:coil:2.7.0")' app/build.gradle.kts
           grep -q 'minSdk = 24' app/build.gradle.kts
