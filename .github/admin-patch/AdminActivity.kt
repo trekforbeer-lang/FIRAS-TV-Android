@@ -488,7 +488,7 @@ class AdminActivity : Activity() {
             }
             panel.addView(sectionBox, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 10 })
         }
-        panel.addView(action("تغيير كلمة مرور الإدارة") { changePassword() })
+        panel.addView(action("إرسال رابط إعادة تعيين كلمة المرور") { changePassword() })
         panel.addView(action("تسجيل الخروج") { authenticated = false; handler.removeCallbacks(autoLogout); FirebaseAuth.getInstance().signOut(); finish() })
     }
 
