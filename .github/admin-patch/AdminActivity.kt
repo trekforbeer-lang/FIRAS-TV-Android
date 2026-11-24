@@ -26,7 +26,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.functions.FirebaseFunctions
+import com.google.firebase.firestore.FirebaseFirestore
 
 /**
  * Native port of the original FIRAS TV admin workflow.
@@ -115,14 +115,14 @@ class AdminActivity : Activity() {
     }
 
     /**
-     * الإدارة لا تعتمد على كلمة مرور محلية. لا يُسمح بالدخول إلا بعد أن
-     * يؤكد Firebase ID token أن الخادم منح الحساب claim باسم admin=true.
+     * لا توجد كلمة مرور محلية أو صلاحية قابلة لإعادة الإنشاء بعد مسح البيانات.
+     * يتم التحقق من وثيقة admins/{uid} في Firestore، والعميل لا يملك صلاحية
+     * إنشاء هذه الوثيقة أو تعديلها؛ يضيفها مالك Firebase من لوحة التحكم فقط.
      */
     private fun authenticate() {
         val auth = FirebaseAuth.getInstance()
-        val current = auth.currentUser
-        if (current != null) {
-            verifyAdminClaim()
+        if (auth.currentUser != null) {
+            verifyAdminRole()
             return
         }
 
@@ -140,20 +140,14 @@ class AdminActivity : Activity() {
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
             singleLine = true
         }
-        val bootstrap = EditText(this).apply {
-            hint = "رمز تهيئة المدير الأول (من مسؤول Firebase)"
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-            singleLine = true
-        }
         box.addView(email)
         box.addView(password)
-        box.addView(bootstrap)
         val dialog = AlertDialog.Builder(this)
             .setTitle("دخول الإدارة الآمن")
-            .setMessage("الدخول يتطلب حساب Firebase وصلاحية مدير معتمدة من الخادم.")
+            .setMessage("أنشئ حساب Firebase أولاً، ثم يضيف مالك المشروع UID الخاص بك إلى قائمة المديرين.")
             .setView(box)
             .setPositiveButton("دخول", null)
-            .setNeutralButton("تهيئة المدير الأول", null)
+            .setNeutralButton("إنشاء حساب", null)
             .setNegativeButton("إلغاء") { _, _ -> finish() }
             .create()
         dialog.setOnShowListener {
@@ -165,7 +159,7 @@ class AdminActivity : Activity() {
                     return@setOnClickListener
                 }
                 auth.signInWithEmailAndPassword(mail, pass)
-                    .addOnSuccessListener { dialog.dismiss(); verifyAdminClaim() }
+                    .addOnSuccessListener { dialog.dismiss(); verifyAdminRole() }
                     .addOnFailureListener {
                         Toast.makeText(this, "تعذّر تسجيل الدخول. تحقق من الحساب أو إعداد Firebase.", Toast.LENGTH_LONG).show()
                     }
@@ -173,61 +167,75 @@ class AdminActivity : Activity() {
             dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
                 val mail = email.text.toString().trim()
                 val pass = password.text.toString()
-                val token = bootstrap.text.toString().trim()
-                if (mail.isBlank() || pass.length < 10 || token.length < 24) {
-                    Toast.makeText(this, "أدخل بريداً صالحاً وكلمة مرور قوية ورمز التهيئة", Toast.LENGTH_LONG).show()
+                if (mail.isBlank() || pass.length < 10) {
+                    Toast.makeText(this, "أدخل بريداً صالحاً وكلمة مرور لا تقل عن 10 أحرف", Toast.LENGTH_LONG).show()
                     return@setOnClickListener
                 }
-                val finishBootstrap: () -> Unit = {
-                    FirebaseFunctions.getInstance()
-                        .getHttpsCallable("bootstrapFirstAdmin")
-                        .call(mapOf("bootstrapToken" to token))
-                        .addOnSuccessListener {
-                            dialog.dismiss()
-                            verifyAdminClaim()
-                        }
-                        .addOnFailureListener {
-                            auth.signOut()
-                            Toast.makeText(this, "رفض الخادم تهيئة المدير. تحقق من الرمز أو أن المدير الأول لم يُسجّل بعد.", Toast.LENGTH_LONG).show()
-                        }
-                }
                 auth.createUserWithEmailAndPassword(mail, pass)
-                    .addOnSuccessListener { finishBootstrap() }
+                    .addOnSuccessListener { result ->
+                        val uid = result.user?.uid
+                        auth.signOut()
+                        dialog.dismiss()
+                        if (uid.isNullOrBlank()) {
+                            Toast.makeText(this, "أُنشئ الحساب لكن تعذّر قراءة UID", Toast.LENGTH_LONG).show()
+                        } else {
+                            showAdminUid(uid)
+                        }
+                    }
                     .addOnFailureListener {
-                        // يسمح بإكمال التهيئة إذا كان الحساب قد أُنشئ سابقاً، لكن لا يمنح
-                        // الصلاحية إلا إذا كان رمز التهيئة صالحاً ولم يُعيّن مدير آخر.
-                        auth.signInWithEmailAndPassword(mail, pass)
-                            .addOnSuccessListener { finishBootstrap() }
-                            .addOnFailureListener {
-                                Toast.makeText(this, "تعذّر إنشاء الحساب أو تسجيل الدخول", Toast.LENGTH_LONG).show()
-                            }
+                        Toast.makeText(this, "تعذّر إنشاء الحساب. قد يكون البريد مستخدماً بالفعل.", Toast.LENGTH_LONG).show()
                     }
             }
         }
         dialog.show()
     }
 
-    private fun verifyAdminClaim() {
+    private fun verifyAdminRole() {
         val user = FirebaseAuth.getInstance().currentUser
         if (user == null) {
             authenticate()
             return
         }
-        user.getIdToken(true)
-            .addOnSuccessListener { token ->
-                if (token.claims["admin"] == true) {
+        FirebaseFirestore.getInstance()
+            .collection("admins")
+            .document(user.uid)
+            .get()
+            .addOnSuccessListener { document ->
+                if (document.getString("role") == "admin" && document.getBoolean("active") == true) {
                     enterPanel()
                 } else {
+                    val uid = user.uid
                     FirebaseAuth.getInstance().signOut()
-                    Toast.makeText(this, "هذا الحساب لا يملك صلاحية الإدارة", Toast.LENGTH_LONG).show()
-                    finish()
+                    showAdminUid(uid)
                 }
             }
             .addOnFailureListener {
                 FirebaseAuth.getInstance().signOut()
-                Toast.makeText(this, "تعذّر التحقق من صلاحية الإدارة", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "تعذّر التحقق من صلاحيات الإدارة. تحقق من اتصال Firebase وقواعد Firestore.", Toast.LENGTH_LONG).show()
                 finish()
             }
+    }
+
+    private fun showAdminUid(uid: String) {
+        val value = TextView(this).apply {
+            text = uid
+            textIsSelectable = true
+            textSize = 13f
+            setTextColor(0xFF111827.toInt())
+            setPadding(12, 12, 12, 12)
+        }
+        AlertDialog.Builder(this)
+            .setTitle("الحساب لا يملك صلاحية الإدارة بعد")
+            .setMessage("انسخ UID وأضف في Firebase Console وثيقة داخل collection باسم admins، واجعل معرّف الوثيقة هو UID، ثم أضف الحقول role = admin و active = true. لا يمكن للتطبيق إنشاء هذه الصلاحية.")
+            .setView(value)
+            .setPositiveButton("نسخ UID") { _, _ ->
+                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                clipboard.setPrimaryClip(ClipData.newPlainText("Admin UID", uid))
+                Toast.makeText(this, "تم نسخ UID", Toast.LENGTH_SHORT).show()
+                finish()
+            }
+            .setNegativeButton("إغلاق") { _, _ -> finish() }
+            .show()
     }
 
     private fun enterPanel() {
