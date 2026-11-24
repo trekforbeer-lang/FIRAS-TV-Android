@@ -724,28 +724,87 @@ class AdminActivity : Activity() {
             gravity = Gravity.TOP
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
         }
-        AlertDialog.Builder(this).setTitle("استيراد القنوات").setView(ScrollView(this).apply { addView(input) })
-            .setPositiveButton("استيراد") { _, _ ->
-                val parsed = parseM3u(input.text.toString())
-                var added = 0
-                val groups = sections()
-                val sectionName = "قنوات مستوردة"
-                var idx = (0 until groups.length()).firstOrNull { groups.optJSONObject(it)?.optString("title") == sectionName }
-                if (idx == null) { groups.put(JSONObject().put("title", sectionName).put("items", JSONArray())); idx = groups.length() - 1 }
-                val dest = items(idx)
-                val existing = mutableSetOf<String>()
-                for (i in 0 until groups.length()) {
-                    val arr = groups.optJSONObject(i)?.optJSONArray("items") ?: continue
-                    for (j in 0 until arr.length()) arr.optJSONObject(j)?.optString("url")?.let(existing::add)
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("استيراد القنوات")
+            .setView(ScrollView(this).apply { addView(input) })
+            .setPositiveButton("استيراد", null)
+            .setNegativeButton("إلغاء", null)
+            .create()
+
+        dialog.setOnShowListener {
+            val importButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            importButton.setOnClickListener {
+                val raw = input.text?.toString().orEmpty()
+                if (raw.isBlank()) {
+                    Toast.makeText(this, "ألصق قائمة القنوات أولاً", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
                 }
-                parsed.forEach { c ->
-                    val stream = c.optString("url")
-                    if (stream !in existing) { dest.put(c); existing.add(stream); added++ }
+                // Reject oversized input before allocating parser structures.
+                if (raw.length > 10 * 1024 * 1024) {
+                    Toast.makeText(this, "القائمة كبيرة جداً. الحد الأقصى 10 MB.", Toast.LENGTH_LONG).show()
+                    return@setOnClickListener
                 }
-                if (added > 0) save()
-                Toast.makeText(this, "تمت إضافة $added قناة جديدة", Toast.LENGTH_LONG).show()
-                render()
-            }.setNegativeButton("إلغاء", null).show()
+
+                importButton.isEnabled = false
+                importButton.text = "جارٍ التحليل..."
+                Toast.makeText(this, "جارٍ تحليل القائمة في الخلفية، يمكنك الانتظار دون تجمّد الواجهة", Toast.LENGTH_LONG).show()
+
+                val snapshot = root.toString()
+                Thread {
+                    val result = try {
+                        val parsed = parseM3u(raw).take(15000)
+                        val existingRoot = JSONObject(snapshot)
+                        val groups = existingRoot.optJSONArray("sections") ?: JSONArray()
+                        val existing = HashSet<String>()
+                        for (i in 0 until groups.length()) {
+                            val array = groups.optJSONObject(i)?.optJSONArray("items") ?: continue
+                            for (j in 0 until array.length()) {
+                                val url = array.optJSONObject(j)?.optString("url").orEmpty()
+                                if (url.isNotBlank()) existing.add(url)
+                            }
+                        }
+                        parsed.filter { channel ->
+                            val url = channel.optString("url")
+                            url.isNotBlank() && existing.add(url)
+                        }
+                    } catch (_: Exception) {
+                        null
+                    }
+
+                    runOnUiThread {
+                        if (isFinishing || isDestroyed) return@runOnUiThread
+                        if (result == null) {
+                            importButton.isEnabled = true
+                            importButton.text = "إعادة المحاولة"
+                            Toast.makeText(this, "تعذّر تحليل القائمة. تحقق من تنسيق M3U.", Toast.LENGTH_LONG).show()
+                            return@runOnUiThread
+                        }
+
+                        val groups = sections()
+                        val sectionName = "قنوات مستوردة"
+                        var idx = (0 until groups.length()).firstOrNull {
+                            groups.optJSONObject(it)?.optString("title") == sectionName
+                        }
+                        if (idx == null) {
+                            groups.put(JSONObject().put("title", sectionName).put("items", JSONArray()))
+                            idx = groups.length() - 1
+                        }
+                        val dest = items(idx)
+                        result.forEach { dest.put(it) }
+                        if (result.isNotEmpty()) save()
+                        Toast.makeText(
+                            this,
+                            "تمت إضافة ${result.size} قناة جديدة" +
+                                if (result.size == 15000) " (تم إيقاف الاستيراد عند الحد الآمن 15000)" else "",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        dialog.dismiss()
+                        render()
+                    }
+                }.start()
+            }
+        }
+        dialog.show()
     }
 
     private fun parseM3u(raw: String): List<JSONObject> {
