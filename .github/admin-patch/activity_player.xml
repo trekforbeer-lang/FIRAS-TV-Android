@@ -32,6 +32,9 @@
    <Button android:id="@+id/retryButton" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1" android:minHeight="0dp" android:text="تحديث" android:textAllCaps="false" android:textSize="10sp" android:backgroundTint="#33222222" android:textColor="#FFFFFF"/>
    <Button android:id="@+id/serverButton" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1" android:minHeight="0dp" android:text="المصدر" android:textAllCaps="false" android:textSize="10sp" android:backgroundTint="#33222222" android:textColor="#FFFFFF"/>
   </LinearLayout>
-  <androidx.recyclerview.widget.RecyclerView android:id="@+id/channelList" android:layout_width="match_parent" android:layout_height="48dp" android:visibility="gone" android:paddingStart="4dp" android:paddingEnd="4dp" android:clipToPadding="false"/>
+ </LinearLayout>
+ <LinearLayout android:id="@+id/channelPanel" android:layout_width="220dp" android:layout_height="match_parent" android:layout_gravity="start|center_vertical" android:layout_marginStart="12dp" android:layout_marginTop="84dp" android:layout_marginBottom="84dp" android:orientation="vertical" android:padding="10dp" android:background="@drawable/rahmani_panel_bg" android:elevation="16dp" android:visibility="gone">
+  <TextView android:layout_width="match_parent" android:layout_height="42dp" android:gravity="center_vertical|end" android:text="قائمة القنوات" android:textColor="#D8B978" android:textStyle="bold" android:textSize="15sp" android:paddingEnd="8dp"/>
+  <androidx.recyclerview.widget.RecyclerView android:id="@+id/channelList" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:clipToPadding="false" android:paddingTop="4dp" android:paddingBottom="4dp"/>
  </LinearLayout>
 </FrameLayout>
