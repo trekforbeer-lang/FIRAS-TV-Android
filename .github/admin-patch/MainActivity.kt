@@ -603,7 +603,13 @@ class MainActivity : AppCompatActivity() {
                 val runningNow = workInfos.any { it.state == androidx.work.WorkInfo.State.RUNNING }
                 val prefs = getSharedPreferences(RestoreChannelsWorker.PREFS, MODE_PRIVATE)
                 val total = prefs.getInt("total_added", 0)
-                val lastError = prefs.getString("last_error", "").orEmpty()
+                var lastError = prefs.getString("last_error", "").orEmpty()
+                // A stale running flag with no active WorkManager request means the
+                // restore was interrupted or cancelled; release the UI and allow retry.
+                if (!active && prefs.getBoolean("running", false)) {
+                    lastError = lastError.ifBlank { "توقفت الاستعادة قبل إكمالها" }
+                    prefs.edit().putBoolean("running", false).putString("last_error", lastError).apply()
+                }
                 // Reload the on-device catalog after each completed batch so newly
                 // imported channels appear without forcing the user to restart the app.
                 val refreshedTotal = prefs.getInt("ui_refreshed_total", -1)
@@ -638,13 +644,6 @@ class MainActivity : AppCompatActivity() {
                     !active && lastError.isNotBlank() -> "سبب الفشل: $lastError. تحقق من الإنترنت ثم اضغط إعادة المحاولة."
                     total > 0 -> "انتهت الدفعات الحالية. إجمالي القنوات التي أُضيفت: $total."
                     else -> "يمكنك استعادة القنوات يدوياً من هنا."
-                }
-                if (!active && prefs.getBoolean("running", false)) {
-                    restoreButton.isEnabled = false
-                    restoreButton.text = "بانتظار اتصال الإنترنت..."
-                    restoreStatusPanel.visibility = View.VISIBLE
-                    restoreStatusTitle.text = "الاستعادة بانتظار الاتصال"
-                    restoreStatusDetail.text = "سيُستأنف التنزيل تلقائياً عند توفر اتصال بالإنترنت."
                 }
             }
     }
