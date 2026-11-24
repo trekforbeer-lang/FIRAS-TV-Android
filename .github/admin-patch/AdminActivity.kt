@@ -388,7 +388,7 @@ class AdminActivity : Activity() {
             text = "●"; textSize = 10f; setTextColor(0xFF34D399.toInt())
         })
         status.addView(TextView(this).apply {
-            text = "  يعمل محلياً على هذا الجهاز  ·  البيانات محفوظة محلياً"
+            text = "  حماية المدير مفعّلة  ·  القنوات والأفلام تحفظ محلياً وتزامن عند توفر Firebase"
             textSize = 10f; setTextColor(0xFFA1A1AA.toInt())
         })
         panel.addView(status, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 16 })
@@ -422,7 +422,6 @@ class AdminActivity : Activity() {
             panel.addView(action("🎬  " + film.optString("title") + "  ·  تعديل / حذف") { editMovie(m) })
         }
         panel.addView(action("＋  إضافة دولة (عربية / أجنبية)") { addCountry() })
-        panel.addView(action("＋  إضافة فيلم إلى المكتبة") { editMovie(null) })
         panel.addView(action("استيراد قائمة M3U / روابط") { importChannels() })
         panel.addView(action("فحص روابط القنوات") { checkChannels() })
         panel.addView(action("نسخ نسخة احتياطية آمنة") { backup() })
@@ -456,7 +455,7 @@ class AdminActivity : Activity() {
                 orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             }
             heading.addView(TextView(this@AdminActivity).apply {
-                text = section.optString("title") + "  ·  " + if (section.optString("region") == "foreign") "أجنبية" else if (section.optString("region") == "arab") "عربية" else "غير محدد"; textSize = 14f
+                text = section.optString("flag", "") + "  " + section.optString("title") + "  ·  " + if (section.optString("region") == "foreign") "أجنبية" else if (section.optString("region") == "arab") "عربية" else "غير محدد"; textSize = 14f
                 typeface = android.graphics.Typeface.DEFAULT_BOLD
                 setTextColor(0xFFE4E4E7.toInt())
             }, LinearLayout.LayoutParams(0, -2, 1f))
