@@ -105,8 +105,9 @@ class PlayerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_player)
         playerView = findViewById(R.id.playerView)
-        // Preserve the complete picture by default on phones; zoom remains user-selectable.
-        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+        // Start with edge-to-edge video in landscape; viewers can switch back to FIT.
+        zoomed = true
+        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
         title = findViewById(R.id.channelTitle)
         watermark = findViewById(R.id.channelWatermark)
         status = findViewById(R.id.statusText)
@@ -114,7 +115,7 @@ class PlayerActivity : AppCompatActivity() {
         playPause = findViewById(R.id.playPauseButton)
         fullscreen = findViewById(R.id.fullscreenButton)
         zoom = findViewById(R.id.zoomButton)
-        zoom.text = "زووم"
+        zoom.text = "ملاءمة"
         retry = findViewById(R.id.retryButton)
         server = findViewById(R.id.serverButton)
         quality = findViewById(R.id.qualityButton)
