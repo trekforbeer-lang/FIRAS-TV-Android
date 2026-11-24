@@ -21,56 +21,67 @@ object CloudChannelSync {
     private const val PENDING_DELETES = "pending_deletes"
     private const val CLOUD_IDS = "cloud_catalog_ids"
 
+    private val publishExecutor = java.util.concurrent.Executors.newSingleThreadExecutor()
+
     fun publishAll(context: Context, root: JSONObject, onComplete: ((Boolean, String?) -> Unit)? = null) {
         if (FirebaseAuth.getInstance().currentUser == null) {
             onComplete?.invoke(false, "لا توجد جلسة إدارة")
             return
         }
-        val writes = mutableListOf<Pair<String, Map<String, Any>>>()
-        val sections = root.optJSONArray("sections") ?: JSONArray()
-        for (i in 0 until sections.length()) {
-            val section = sections.optJSONObject(i) ?: continue
-            val sectionTitle = section.optString("title").ifBlank { "قنوات" }
-            val items = section.optJSONArray("items") ?: continue
-            for (j in 0 until items.length()) {
-                val item = items.optJSONObject(j) ?: continue
-                val name = item.optString("name").trim()
-                val url = item.optString("url").trim()
-                if (name.isBlank() || name.length > 120 ||
-                    !(url.startsWith("https://", true) || url.startsWith("http://", true)) ||
-                    url.length > 2048) continue
-                val data = hashMapOf<String, Any>(
-                    "name" to name,
-                    "url" to url,
-                    "active" to item.optBoolean("active", true),
-                    "priv" to item.optBoolean("priv", false),
-                    "group" to sectionTitle,
-                    "region" to section.optString("region"),
-                    "sortOrder" to item.optInt("sortOrder", j),
-                    "updatedAt" to FieldValue.serverTimestamp()
-                )
-                putString(data, "logo", item.optString("logo"))
-                putString(data, "referer", item.optString("referer"))
-                putString(data, "userAgent", item.optString("userAgent"))
-                putString(data, "countryCode", item.optString("countryCode", item.optString("cc")))
-                putString(data, "countryName", item.optString("countryName"))
-                putString(data, "category", item.optString("category", sectionTitle))
-                val alts = item.optJSONArray("alts")
-                if (alts != null) {
-                    val values = mutableListOf<String>()
-                    for (k in 0 until alts.length()) alts.optString(k).takeIf { it.isNotBlank() }?.let(values::add)
-                    data["alts"] = values
+        // Building thousands of Firestore documents must never run on the UI thread.
+        publishExecutor.execute {
+            try {
+                val writes = mutableListOf<Pair<String, Map<String, Any>>>()
+                val sections = root.optJSONArray("sections") ?: JSONArray()
+                for (i in 0 until sections.length()) {
+                    val section = sections.optJSONObject(i) ?: continue
+                    val sectionTitle = section.optString("title").ifBlank { "قنوات" }
+                    val items = section.optJSONArray("items") ?: continue
+                    for (j in 0 until items.length()) {
+                        val item = items.optJSONObject(j) ?: continue
+                        val name = item.optString("name").trim()
+                        val url = item.optString("url").trim()
+                        if (name.isBlank() || name.length > 120 ||
+                            !(url.startsWith("https://", true) || url.startsWith("http://", true)) ||
+                            url.length > 2048) continue
+                        val data = hashMapOf<String, Any>(
+                            "name" to name,
+                            "url" to url,
+                            "active" to item.optBoolean("active", true),
+                            "priv" to item.optBoolean("priv", false),
+                            "group" to sectionTitle,
+                            "region" to section.optString("region"),
+                            "sortOrder" to item.optInt("sortOrder", j),
+                            "updatedAt" to FieldValue.serverTimestamp()
+                        )
+                        putString(data, "logo", item.optString("logo"))
+                        putString(data, "referer", item.optString("referer"))
+                        putString(data, "userAgent", item.optString("userAgent"))
+                        putString(data, "countryCode", item.optString("countryCode", item.optString("cc")))
+                        putString(data, "countryName", item.optString("countryName"))
+                        putString(data, "category", item.optString("category", sectionTitle))
+                        val alts = item.optJSONArray("alts")
+                        if (alts != null) {
+                            val values = mutableListOf<String>()
+                            for (k in 0 until alts.length()) alts.optString(k).takeIf { it.isNotBlank() }?.let(values::add)
+                            data["alts"] = values
+                        }
+                        writes += docId(item) to data
+                    }
                 }
-                writes += docId(item) to data
+                val chunks = writes.distinctBy { it.first }.chunked(400)
+                flushPendingDeletes(context) { deleted, deleteError ->
+                    if (!deleted) {
+                        onComplete?.invoke(false, deleteError ?: "تعذّر تطبيق عمليات الحذف المؤجلة")
+                        return@flushPendingDeletes
+                    }
+                    commitChunks(chunks, 0, onComplete)
+                }
+            } catch (error: Exception) {
+                android.os.Handler(context.mainLooper).post {
+                    onComplete?.invoke(false, error.localizedMessage ?: "تعذّرت تجهيز القنوات للمزامنة")
+                }
             }
-        }
-        val chunks = writes.distinctBy { it.first }.chunked(400)
-        flushPendingDeletes(context) { deleted, deleteError ->
-            if (!deleted) {
-                onComplete?.invoke(false, deleteError ?: "تعذّر تطبيق عمليات الحذف المؤجلة")
-                return@flushPendingDeletes
-            }
-            commitChunks(chunks, 0, onComplete)
         }
     }
 
