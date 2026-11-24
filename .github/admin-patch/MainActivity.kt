@@ -103,16 +103,45 @@ class MainActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.channelsTab).setOnClickListener { rv.smoothScrollToPosition(0) }
         findViewById<TextView>(R.id.sportsTab).setOnClickListener { startActivity(Intent(this, SportsActivity::class.java)) }
         findViewById<Button>(R.id.sportsMatchesButton).setOnClickListener { startActivity(Intent(this, SportsActivity::class.java)) }
-        findViewById<TextView>(R.id.navHome).setOnClickListener { selected = ""; rebuildChips(chips); refresh(); rv.smoothScrollToPosition(0) }
-        findViewById<TextView>(R.id.navChannels).setOnClickListener { rv.smoothScrollToPosition(0) }
-        findViewById<TextView>(R.id.navMovies).setOnClickListener { startActivity(Intent(this, MoviesActivity::class.java)) }
-        findViewById<TextView>(R.id.navSports).setOnClickListener { startActivity(Intent(this, SportsActivity::class.java)) }
-        findViewById<TextView>(R.id.navAdmin).setOnClickListener { returningFromAdmin = true; startActivity(Intent(this, AdminActivity::class.java)) }
+        updateBottomNavigation(R.id.navHome)
+        findViewById<TextView>(R.id.navHome).setOnClickListener {
+            updateBottomNavigation(R.id.navHome)
+            selected = ""; rebuildChips(chips); refresh(); rv.smoothScrollToPosition(0)
+        }
+        findViewById<TextView>(R.id.navChannels).setOnClickListener {
+            updateBottomNavigation(R.id.navChannels)
+            rv.smoothScrollToPosition(0)
+        }
+        findViewById<TextView>(R.id.navMovies).setOnClickListener {
+            updateBottomNavigation(R.id.navMovies)
+            startActivity(Intent(this, MoviesActivity::class.java))
+        }
+        findViewById<TextView>(R.id.navSports).setOnClickListener {
+            updateBottomNavigation(R.id.navSports)
+            startActivity(Intent(this, SportsActivity::class.java))
+        }
+        findViewById<TextView>(R.id.navAdmin).setOnClickListener {
+            updateBottomNavigation(R.id.navAdmin)
+            returningFromAdmin = true
+            startActivity(Intent(this, AdminActivity::class.java))
+        }
         restoreButton.setOnClickListener { restoreOriginalLists() }
         refresh()
         FanMatchWorker.schedule(this)
         findViewById<View>(R.id.fanPreferencesButton).setOnClickListener { startActivity(Intent(this, TeamPreferencesActivity::class.java)) }
         showWelcomeScreen()
+    }
+
+    private fun updateBottomNavigation(activeId: Int) {
+        val ids = intArrayOf(R.id.navHome, R.id.navChannels, R.id.navSports, R.id.navMovies, R.id.navAdmin)
+        ids.forEach { id ->
+            findViewById<TextView>(id)?.let { item ->
+                val active = id == activeId
+                item.isSelected = active
+                item.setTextColor(if (active) Color.WHITE else Color.rgb(151, 151, 157))
+                item.alpha = if (active) 1f else 0.88f
+            }
+        }
     }
 
     private fun showWelcomeScreen() {

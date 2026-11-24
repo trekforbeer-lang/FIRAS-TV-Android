@@ -198,25 +198,26 @@
       </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <LinearLayout android:layout_width="match_parent" android:layout_height="62dp"
-        android:layout_marginStart="12dp" android:layout_marginEnd="12dp" android:layout_marginBottom="8dp"
+    <LinearLayout android:id="@+id/bottomNavigationBar" android:layout_width="match_parent" android:layout_height="74dp"
+        android:layout_marginStart="14dp" android:layout_marginEnd="14dp" android:layout_marginBottom="10dp"
         android:orientation="horizontal" android:gravity="center" android:background="@drawable/rahmani_nav_capsule"
-        android:paddingStart="7dp" android:paddingEnd="7dp">
+        android:paddingStart="7dp" android:paddingEnd="7dp" android:paddingTop="5dp" android:paddingBottom="5dp"
+        android:elevation="12dp">
         <TextView android:id="@+id/navHome" android:layout_width="0dp" android:layout_weight="1"
-            android:layout_height="match_parent" android:gravity="center" android:text="⌂\nالرئيسية"
-            android:textColor="#FFFFFF" android:textSize="10sp" android:textStyle="bold"
+            android:layout_height="match_parent" android:gravity="center" android:background="@drawable/rahmani_nav_item_bg" android:paddingTop="5dp" android:paddingBottom="5dp" android:text="⌂\nالرئيسية"
+            android:textColor="#FFFFFF" android:textSize="11sp" android:textStyle="bold"
             android:clickable="true" android:focusable="true"/>
         <TextView android:id="@+id/navChannels" android:layout_width="0dp" android:layout_weight="1"
-            android:layout_height="match_parent" android:gravity="center" android:text="▣\nالقنوات"
+            android:layout_height="match_parent" android:gravity="center" android:background="@drawable/rahmani_nav_item_bg" android:paddingTop="5dp" android:paddingBottom="5dp" android:text="▣\nالقنوات"
             android:textColor="#A9B5CA" android:textSize="10sp" android:clickable="true" android:focusable="true"/>
         <TextView android:id="@+id/navSports" android:layout_width="0dp" android:layout_weight="1"
-            android:layout_height="match_parent" android:gravity="center" android:text="⚽\nالرياضة"
+            android:layout_height="match_parent" android:gravity="center" android:background="@drawable/rahmani_nav_item_bg" android:paddingTop="5dp" android:paddingBottom="5dp" android:text="⚽\nالرياضة"
             android:textColor="#A9B5CA" android:textSize="10sp" android:clickable="true" android:focusable="true"/>
         <TextView android:id="@+id/navMovies" android:layout_width="0dp" android:layout_weight="1"
-            android:layout_height="match_parent" android:gravity="center" android:text="▶\nالأفلام"
+            android:layout_height="match_parent" android:gravity="center" android:background="@drawable/rahmani_nav_item_bg" android:paddingTop="5dp" android:paddingBottom="5dp" android:text="▶\nالأفلام"
             android:textColor="#A9B5CA" android:textSize="10sp" android:clickable="true" android:focusable="true"/>
         <TextView android:id="@+id/navAdmin" android:layout_width="0dp" android:layout_weight="1"
-            android:layout_height="match_parent" android:gravity="center" android:text="☰\nالمزيد"
+            android:layout_height="match_parent" android:gravity="center" android:background="@drawable/rahmani_nav_item_bg" android:paddingTop="5dp" android:paddingBottom="5dp" android:text="☰\nالمزيد"
             android:textColor="#A9B5CA" android:textSize="10sp" android:clickable="true" android:focusable="true"/>
     </LinearLayout>
 </LinearLayout>

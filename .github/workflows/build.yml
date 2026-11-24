@@ -39,6 +39,7 @@ jobs:
           cp .github/admin-patch/strings.xml app/src/main/res/values/strings.xml
           cp .github/admin-patch/home_hero_bg.xml app/src/main/res/drawable/home_hero_bg.xml
           cp .github/admin-patch/rahmani_nav_capsule.xml app/src/main/res/drawable/rahmani_nav_capsule.xml
+          cp .github/admin-patch/rahmani_nav_item_bg.xml app/src/main/res/drawable/rahmani_nav_item_bg.xml
           cp .github/admin-patch/rahmani_card_stroke.xml app/src/main/res/drawable/rahmani_card_stroke.xml
           cp .github/admin-patch/AndroidManifest.xml app/src/main/AndroidManifest.xml
           cp .github/admin-patch/MoviesActivity.kt app/src/main/java/com/firas/tv/MoviesActivity.kt
