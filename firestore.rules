@@ -2,17 +2,20 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isAdmin() {
-      return request.auth != null && request.auth.token.admin == true;
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == "admin"
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.active == true;
     }
 
-    // The bootstrap ownership record is server-only. Callable Cloud Functions
-    // use the Admin SDK and are not restricted by these client rules.
-    match /system/{document=**} {
-      allow read, write: if false;
+    // A user can read only their own role document. No client can create,
+    // modify, enumerate, or delete admin grants. Project owners manage these
+    // documents through Firebase Console / Admin SDK.
+    match /admins/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+      allow list, create, update, delete: if false;
     }
 
-    // Public clients may read published channel records only.
-    // Only accounts with a server-issued custom claim can change the catalog.
     match /channels/{channelId} {
       allow read: if resource.data.active == true || isAdmin();
       allow create: if isAdmin()
