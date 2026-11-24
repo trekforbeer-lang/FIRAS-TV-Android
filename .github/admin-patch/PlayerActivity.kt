@@ -67,7 +67,6 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var status: TextView
     private lateinit var loadingIndicator: ProgressBar
     private lateinit var list: RecyclerView
-    private lateinit var channelPanel: View
     private lateinit var playPause: Button
     private lateinit var fullscreen: Button
     private lateinit var zoom: Button
@@ -95,7 +94,7 @@ class PlayerActivity : AppCompatActivity() {
     private val worker = Executors.newSingleThreadExecutor()
     private val handler = Handler(Looper.getMainLooper())
     private val hideOverlayTask = Runnable {
-        if (player?.isPlaying == true && !controlsLocked && channelPanel.visibility != View.VISIBLE) {
+        if (player?.isPlaying == true && !controlsLocked && findViewById<View>(R.id.channelPanel).visibility != View.VISIBLE) {
             setOverlayVisible(false)
         }
     }
@@ -125,7 +124,6 @@ class PlayerActivity : AppCompatActivity() {
         status = findViewById(R.id.statusText)
         loadingIndicator = findViewById(R.id.loadingIndicator)
         list = findViewById(R.id.channelList)
-        channelPanel = findViewById(R.id.channelPanel)
         playPause = findViewById(R.id.playPauseButton)
         fullscreen = findViewById(R.id.fullscreenButton)
         zoom = findViewById(R.id.zoomButton)
@@ -140,10 +138,10 @@ class PlayerActivity : AppCompatActivity() {
         lockButton.setOnClickListener { controlsLocked = !controlsLocked; setOverlayVisible(!controlsLocked); lockButton.text = if (controlsLocked) "🔒" else "♙" }
         findViewById<Button>(R.id.pictureInPictureButton).setOnClickListener { enterPictureInPictureIfSupported() }
         findViewById<Button>(R.id.channelListButton).setOnClickListener {
-            val opening = channelPanel.visibility != View.VISIBLE
-            channelPanel.visibility = if (opening) View.VISIBLE else View.GONE
+            val opening = findViewById<View>(R.id.channelPanel).visibility != View.VISIBLE
+            findViewById<View>(R.id.channelPanel).visibility = if (opening) View.VISIBLE else View.GONE
             if (opening) {
-                channelPanel.alpha = 1f
+                findViewById<View>(R.id.channelPanel).alpha = 1f
                 setOverlayVisible(true)
             } else {
                 scheduleOverlayHide()
@@ -179,7 +177,7 @@ class PlayerActivity : AppCompatActivity() {
         list.layoutManager = LinearLayoutManager(this, RecyclerView.VERTICAL, false)
         list.adapter = PlayerChannelAdapter(channels) {
             play(it)
-            channelPanel.visibility = View.GONE
+            findViewById<View>(R.id.channelPanel).visibility = View.GONE
             setOverlayVisible(true)
         }
 
@@ -748,10 +746,10 @@ class PlayerActivity : AppCompatActivity() {
             findViewById<View>(R.id.bottomPanel),
             centerControls
         )
-        if (!visible && channelPanel.visibility == View.VISIBLE) {
-            channelPanel.animate().cancel()
-            channelPanel.animate().alpha(0f).setDuration(200L).withEndAction {
-                if (channelPanel.alpha == 0f) channelPanel.visibility = View.GONE
+        if (!visible && findViewById<View>(R.id.channelPanel).visibility == View.VISIBLE) {
+            findViewById<View>(R.id.channelPanel).animate().cancel()
+            findViewById<View>(R.id.channelPanel).animate().alpha(0f).setDuration(200L).withEndAction {
+                if (findViewById<View>(R.id.channelPanel).alpha == 0f) findViewById<View>(R.id.channelPanel).visibility = View.GONE
             }.start()
         }
         overlays.forEach { view ->
