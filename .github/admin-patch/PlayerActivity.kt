@@ -110,8 +110,13 @@ class PlayerActivity : AppCompatActivity() {
         setContentView(R.layout.activity_player)
         applyFullscreenSystemUi()
         playerView = findViewById(R.id.playerView)
-        // Restore the viewer's saved display mode; FIT is the safe default.
-        displayMode = playerPrefs.getInt("display_mode", 0).coerceIn(0, 3)
+        // Default to ZOOM so the video fills the landscape phone display.
+        // Respect a mode explicitly selected and saved by the viewer.
+        displayMode = if (playerPrefs.contains("display_mode")) {
+            playerPrefs.getInt("display_mode", 1).coerceIn(0, 3)
+        } else {
+            1
+        }
         applyDisplayMode()
         title = findViewById(R.id.channelTitle)
         status = findViewById(R.id.statusText)
