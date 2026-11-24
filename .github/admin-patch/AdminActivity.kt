@@ -407,10 +407,11 @@ class AdminActivity : Activity() {
         for (i in 0 until groups.length()) {
             val section = groups.optJSONObject(i) ?: continue
             val list = items(i)
-            val visibleItems = (0 until list.length()).filter { index ->
+            val matchingItems = (0 until list.length()).filter { index ->
                 val item = list.optJSONObject(index) ?: return@filter false
                 !showOnlyMissingUrls || item.optString("url").isBlank()
             }
+            val visibleItems = matchingItems.take(adminChannelLimit)
             if (visibleItems.isEmpty() && section.optString("region").isBlank()) continue
             val sectionBox = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL; setPadding(12, 9, 12, 10)
@@ -486,6 +487,12 @@ class AdminActivity : Activity() {
                 buttons.addView(action("حذف") { deleteChannel(i, j, channel.optString("name")) }, LinearLayout.LayoutParams(0, -2, 1f))
                 row.addView(buttons)
                 sectionBox.addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 7 })
+            }
+            if (matchingItems.size > visibleItems.size) {
+                sectionBox.addView(action("عرض المزيد من القنوات (" + (matchingItems.size - visibleItems.size) + " متبقية)") {
+                    adminChannelLimit += 60
+                    render()
+                }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 8 })
             }
             panel.addView(sectionBox, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 10 })
         }
@@ -797,6 +804,8 @@ class AdminActivity : Activity() {
                 }
             }.setNegativeButton("إلغاء", null).show()
     }
+
+    private var adminChannelLimit = 60
 
     private fun importChannels() {
         val input = EditText(this).apply {
