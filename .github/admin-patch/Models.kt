@@ -33,7 +33,7 @@ object ChannelRepository {
                 Channel(item.optString("name", "قناة"), item.optString("logo"), url,
                     item.optString("referer"), item.optString("id"), item.optBoolean("priv", false), item.optString("countryCode", item.optString("cc", section.optString("countryCode"))))
             }
-            if (channels.isEmpty()) null else {
+            if (channels.isEmpty() && section.optString("region").isBlank() && section.optString("countryCode").isBlank()) null else {
                 val code = section.optString("countryCode").ifBlank { channels.firstOrNull()?.countryCode.orEmpty() }.uppercase()
                 val region = section.optString("region").ifBlank {
                     if (code in setOf("DZ","SA","EG","MA","TN","LY","SD","IQ","SY","JO","LB","PS","YE","OM","AE","QA","BH","KW","MR","SO","DJ","KM")) "arab" else ""
