@@ -104,6 +104,7 @@ class PlayerActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_player)
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         playerView = findViewById(R.id.playerView)
         // Start with edge-to-edge video in landscape; viewers can switch back to FIT.
         zoomed = true
@@ -115,7 +116,7 @@ class PlayerActivity : AppCompatActivity() {
         playPause = findViewById(R.id.playPauseButton)
         fullscreen = findViewById(R.id.fullscreenButton)
         zoom = findViewById(R.id.zoomButton)
-        zoom.text = "ملاءمة"
+        zoom.text = "احتواء"
         retry = findViewById(R.id.retryButton)
         server = findViewById(R.id.serverButton)
         quality = findViewById(R.id.qualityButton)
