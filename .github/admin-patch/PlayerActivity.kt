@@ -955,11 +955,15 @@ class PlayerActivity : AppCompatActivity() {
             val card = LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(10, 4, 12, 4)
-                setBackgroundColor(Color.rgb(31, 32, 40))
-                layoutParams = RecyclerView.LayoutParams(-2, dp(context, 46)).apply {
-                    marginStart = dp(context, 4)
-                    marginEnd = dp(context, 4)
+                setPadding(dp(context, 9), dp(context, 6), dp(context, 10), dp(context, 6))
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(Color.rgb(25, 24, 21))
+                    cornerRadius = dp(context, 10).toFloat()
+                    setStroke(dp(context, 1), Color.rgb(105, 87, 55))
+                }
+                layoutParams = RecyclerView.LayoutParams(-1, dp(context, 58)).apply {
+                    topMargin = dp(context, 3)
+                    bottomMargin = dp(context, 3)
                 }
             }
             val logo = ImageView(context).apply {
@@ -968,13 +972,14 @@ class PlayerActivity : AppCompatActivity() {
             }
             card.addView(logo, LinearLayout.LayoutParams(dp(context, 36), dp(context, 36)))
             val label = TextView(context).apply {
-                setTextColor(Color.WHITE)
+                setTextColor(Color.rgb(235, 219, 181))
                 textSize = 12f
                 typeface = Typeface.DEFAULT_BOLD
-                maxLines = 1
-                setPadding(dp(context, 7), 0, 0, 0)
+                maxLines = 2
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                setPadding(dp(context, 8), 0, 0, 0)
             }
-            card.addView(label, LinearLayout.LayoutParams(-2, -2))
+            card.addView(label, LinearLayout.LayoutParams(0, -2, 1f))
             return ChannelHolder(card, logo, label)
         }
 
