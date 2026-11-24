@@ -174,7 +174,7 @@ class MainActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
             setPadding(dp(26), dp(28), dp(26), dp(28))
-            setBackgroundColor(Color.rgb(7, 10, 20))
+            setBackgroundColor(Color.rgb(5, 6, 9))
             isClickable = true
             isFocusable = true
         }
@@ -185,10 +185,10 @@ class MainActivity : AppCompatActivity() {
             setPadding(dp(24), dp(34), dp(24), dp(28))
             background = GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
-                intArrayOf(Color.rgb(76, 31, 59), Color.rgb(37, 39, 67), Color.rgb(18, 35, 56))
+                intArrayOf(Color.rgb(48, 39, 20), Color.rgb(22, 22, 20), Color.rgb(8, 9, 11))
             ).apply {
                 cornerRadius = dp(26).toFloat()
-                setStroke(dp(1), Color.rgb(103, 78, 111))
+                setStroke(dp(1), Color.rgb(151, 119, 54))
             }
             elevation = dp(8).toFloat()
         }
@@ -200,8 +200,8 @@ class MainActivity : AppCompatActivity() {
             setTextColor(Color.WHITE)
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
-                setColor(Color.rgb(232, 73, 111))
-                setStroke(dp(3), Color.rgb(255, 181, 199))
+                setColor(Color.rgb(205, 164, 80))
+                setStroke(dp(3), Color.rgb(255, 226, 160))
             }
         }
         panel.addView(mark, LinearLayout.LayoutParams(dp(82), dp(82)))
@@ -219,7 +219,7 @@ class MainActivity : AppCompatActivity() {
             ).apply { topMargin = dp(top) })
         }
         addWelcomeText("RAHMANI", 29f, Color.WHITE, true, 17)
-        addWelcomeText("مرحباً بك في عالم الترفيه", 19f, Color.rgb(255, 191, 207), true, 9)
+        addWelcomeText("مرحباً بك في عالم الترفيه", 19f, Color.rgb(238, 207, 139), true, 9)
         addWelcomeText("قنوات مباشرة • أفلام • مسلسلات • رياضة", 13f, Color.rgb(218, 224, 238), false, 12)
         addWelcomeText("كل ما تحب مشاهدته، في مكان واحد", 12f, Color.rgb(169, 182, 204), false, 8)
 
@@ -247,7 +247,7 @@ class MainActivity : AppCompatActivity() {
             isAllCaps = false
             textSize = 15f
             setTextColor(Color.WHITE)
-            backgroundTintList = android.content.res.ColorStateList.valueOf(Color.rgb(232, 73, 111))
+            backgroundTintList = android.content.res.ColorStateList.valueOf(Color.rgb(205, 164, 80))
             setOnClickListener {
                 finishWelcome()
                 channelRecycler.smoothScrollToPosition(0)
@@ -261,7 +261,7 @@ class MainActivity : AppCompatActivity() {
             text = "استكشف التطبيق"
             textSize = 13f
             gravity = Gravity.CENTER
-            setTextColor(Color.rgb(255, 205, 216))
+            setTextColor(Color.rgb(238, 207, 139))
             setPadding(dp(12), dp(14), dp(12), dp(8))
             setOnClickListener { finishWelcome() }
         }
@@ -588,6 +588,15 @@ class MainActivity : AppCompatActivity() {
                 val latest = workInfos.filter { !it.state.isFinished }.maxByOrNull { it.runAttemptCount }
                 val prefs = getSharedPreferences(RestoreChannelsWorker.PREFS, MODE_PRIVATE)
                 val total = prefs.getInt("total_added", 0)
+                // Reload the on-device catalog after each completed batch so newly
+                // imported channels appear without forcing the user to restart the app.
+                val refreshedTotal = prefs.getInt("ui_refreshed_total", -1)
+                if (total > refreshedTotal) {
+                    sections = ChannelRepository.load(this)
+                    rebuildChips(chips)
+                    refresh()
+                    prefs.edit().putInt("ui_refreshed_total", total).apply()
+                }
                 restoreButton.isEnabled = !active
                 restoreButton.text = when {
                     active && total > 0 -> "تم تنزيل $total قناة • التالية بعد 30د"
