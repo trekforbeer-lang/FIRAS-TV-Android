@@ -8,6 +8,8 @@
     <color name="text_secondary">#9A9A9A</color>
     <color name="text_tertiary">#8E8E93</color>
     <color name="brand_red">#FF1E2D</color>
+    <color name="red">#FF1E2D</color>
+    <color name="surface_high">#2C2C2E</color>
     <color name="live_red">#E50914</color>
     <color name="divider">#1FFFFFFF</color>
     <color name="stroke_card">#33FFFFFF</color>
