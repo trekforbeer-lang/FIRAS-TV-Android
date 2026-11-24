@@ -663,7 +663,7 @@ class PlayerActivity : AppCompatActivity() {
             "تمديد كامل — ملء الإطار وقد تتغير أبعاد الصورة",
             "تثبيت العرض — الحفاظ على النسبة مع احتمال اقتطاع أعلى/أسفل"
         )
-        AlertDialog.Builder(this)
+        androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("اختر طريقة عرض الفيديو")
             .setSingleChoiceItems(options, displayMode) { dialog, which ->
                 displayMode = which
