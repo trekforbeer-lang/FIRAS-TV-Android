@@ -173,6 +173,8 @@ object CloudChannelSync {
                             section = JSONObject().put("title", groupName).put("region", data["region"] as? String ?: "").put("countryCode", data["countryCode"] as? String ?: "").put("items", JSONArray())
                             groups.put(section)
                         }
+                        section?.put("region", data["region"] as? String ?: section.optString("region"))
+                        section?.put("countryCode", data["countryCode"] as? String ?: section.optString("countryCode"))
                         val items = section?.optJSONArray("items")
                             ?: JSONArray().also { section?.put("items", it) }
                         var existing: JSONObject? = null
