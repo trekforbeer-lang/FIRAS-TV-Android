@@ -133,7 +133,7 @@ class AdminActivity : Activity() {
         val email = EditText(this).apply {
             hint = "البريد الإلكتروني"
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
-            singleLine = true
+            setSingleLine(true)
         }
         val password = EditText(this).apply {
             hint = "كلمة المرور"
@@ -219,7 +219,7 @@ class AdminActivity : Activity() {
     private fun showAdminUid(uid: String) {
         val value = TextView(this).apply {
             text = uid
-            textIsSelectable = true
+            setTextIsSelectable(true)
             textSize = 13f
             setTextColor(0xFF111827.toInt())
             setPadding(12, 12, 12, 12)
