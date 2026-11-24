@@ -90,12 +90,12 @@ jobs:
           # Firebase Auth is the authority for admin access; local app data is never an admin credential.
           sed -i '/id("com.android.application") version "8.6.1" apply false/a\    id("com.google.gms.google-services") version "4.4.2" apply false' build.gradle.kts
           sed -i '/id("com.android.application")/a\    id("com.google.gms.google-services")' app/build.gradle.kts
-          sed -i '/^dependencies[[:space:]]*{/a\    implementation(platform("com.google.firebase:firebase-bom:34.0.0"))\n    implementation("com.google.firebase:firebase-auth")\n    implementation("com.google.firebase:firebase-functions")' app/build.gradle.kts
+          sed -i '/^dependencies[[:space:]]*{/a\    implementation(platform("com.google.firebase:firebase-bom:34.0.0"))\n    implementation("com.google.firebase:firebase-auth")\n    implementation("com.google.firebase:firebase-firestore")' app/build.gradle.kts
           test -f app/google-services.json
           grep -q 'com.google.gms.google-services' build.gradle.kts
           grep -q 'com.google.gms.google-services' app/build.gradle.kts
           grep -q 'firebase-auth' app/build.gradle.kts
-          grep -q 'firebase-functions' app/build.gradle.kts
+          grep -q 'firebase-firestore' app/build.gradle.kts
           sed -i -E 's/compileSdk = [0-9]+/compileSdk = 35/' app/build.gradle.kts
           grep -q 'version "8.6.1"' build.gradle.kts
           grep -q 'compileSdk = 35' app/build.gradle.kts
