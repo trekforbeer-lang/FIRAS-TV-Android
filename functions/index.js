@@ -47,10 +47,10 @@ exports.bootstrapFirstAdmin = onCall(
       }
 
       if (!ownerUid) {
-        tx.create(ownerRef, {
+        tx.set(ownerRef, {
           uid,
           createdAt: FieldValue.serverTimestamp()
-        });
+        }, { merge: true });
       }
     });
 
