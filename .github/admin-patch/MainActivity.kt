@@ -301,7 +301,7 @@ class MainActivity : AppCompatActivity() {
                 GradientDrawable.Orientation.TL_BR,
                 intArrayOf(Color.rgb(24, 28, 40), Color.rgb(9, 13, 22), Color.rgb(8, 10, 16))
             ).apply {
-                cornerRadii = floatArrayOf(dp(24).toFloat(), dp(24).toFloat(), 0f, 0f, 0f, 0f, dp(24).toFloat(), dp(24).toFloat())
+                setCornerRadii(floatArrayOf(dp(24).toFloat(), dp(24).toFloat(), 0f, 0f, 0f, 0f, dp(24).toFloat(), dp(24).toFloat()))
                 setStroke(dp(1), Color.rgb(91, 77, 57))
             }
             elevation = dp(18).toFloat()
