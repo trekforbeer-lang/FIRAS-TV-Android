@@ -841,10 +841,11 @@ class AdminActivity : Activity() {
 
                 val snapshot = root.toString()
                 Thread {
-                    val result = try {
+                    var outcome: Pair<JSONObject, Int>? = null
+                    try {
                         val parsed = parseM3u(raw).take(15000)
-                        val existingRoot = JSONObject(snapshot)
-                        val groups = existingRoot.optJSONArray("sections") ?: JSONArray()
+                        val workingRoot = JSONObject(snapshot)
+                        val groups = workingRoot.optJSONArray("sections") ?: JSONArray().also { workingRoot.put("sections", it) }
                         val existing = HashSet<String>()
                         for (i in 0 until groups.length()) {
                             val array = groups.optJSONObject(i)?.optJSONArray("items") ?: continue
@@ -853,41 +854,41 @@ class AdminActivity : Activity() {
                                 if (url.isNotBlank()) existing.add(url)
                             }
                         }
-                        parsed.filter { channel ->
-                            val url = channel.optString("url")
-                            url.isNotBlank() && existing.add(url)
+                        val sectionName = "قنوات مستوردة"
+                        var section: JSONObject? = null
+                        for (i in 0 until groups.length()) {
+                            val candidate = groups.optJSONObject(i)
+                            if (candidate?.optString("title") == sectionName) { section = candidate; break }
                         }
-                    } catch (_: Exception) {
-                        null
-                    }
-
+                        if (section == null) { section = JSONObject().put("title", sectionName).put("items", JSONArray()); groups.put(section) }
+                        val destination = section.optJSONArray("items") ?: JSONArray().also { section.put("items", it) }
+                        var added = 0
+                        parsed.forEach { channel ->
+                            val url = channel.optString("url")
+                            if (url.isNotBlank() && existing.add(url)) { destination.put(channel); added++ }
+                        }
+                        val target = File(filesDir, "channels.json")
+                        val temp = File(filesDir, "channels.json.import.tmp")
+                        temp.writeText(workingRoot.toString(2), Charsets.UTF_8)
+                        if (!temp.renameTo(target)) { temp.copyTo(target, overwrite = true); temp.delete() }
+                        outcome = workingRoot to added
+                    } catch (_: Exception) { }
+                    val completed = outcome
                     runOnUiThread {
                         if (isFinishing || isDestroyed) return@runOnUiThread
-                        if (result == null) {
+                        if (completed == null) {
                             importButton.isEnabled = true
                             importButton.text = "إعادة المحاولة"
-                            Toast.makeText(this, "تعذّر تحليل القائمة. تحقق من تنسيق M3U.", Toast.LENGTH_LONG).show()
+                            Toast.makeText(this, "تعذّر تحليل أو حفظ القائمة. لم يتم اعتماد الاستيراد.", Toast.LENGTH_LONG).show()
                             return@runOnUiThread
                         }
-
-                        val groups = sections()
-                        val sectionName = "قنوات مستوردة"
-                        var idx = (0 until groups.length()).firstOrNull {
-                            groups.optJSONObject(it)?.optString("title") == sectionName
+                        root = completed.first
+                        adminChannelLimit = 60
+                        CloudChannelSync.publishAll(this, root) { success, error ->
+                            if (!success && authenticated) Toast.makeText(this, "حُفظت محلياً، وتعذرت المزامنة: " + (error ?: "تحقق من الاتصال"), Toast.LENGTH_LONG).show()
+                            else if (success && authenticated) Toast.makeText(this, "تمت مزامنة القنوات مع السحابة", Toast.LENGTH_SHORT).show()
                         }
-                        if (idx == null) {
-                            groups.put(JSONObject().put("title", sectionName).put("items", JSONArray()))
-                            idx = groups.length() - 1
-                        }
-                        val dest = items(idx)
-                        result.forEach { dest.put(it) }
-                        if (result.isNotEmpty()) save()
-                        Toast.makeText(
-                            this,
-                            "تمت إضافة ${result.size} قناة جديدة" +
-                                if (result.size == 15000) " (تم إيقاف الاستيراد عند الحد الآمن 15000)" else "",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        Toast.makeText(this, "تمت إضافة " + completed.second + " قناة جديدة", Toast.LENGTH_LONG).show()
                         dialog.dismiss()
                         render()
                     }
@@ -902,13 +903,15 @@ class AdminActivity : Activity() {
         var name = ""
         var logo = ""
         var group = ""
-        for (line0 in raw.lines()) {
+        val logoPattern = Regex("tvg-logo=\"([^\"]*)\"")
+        val groupPattern = Regex("group-title=\"([^\"]*)\"")
+        for (line0 in raw.lineSequence()) {
             val line = line0.trim()
             if (line.isBlank()) continue
             if (line.startsWith("#EXTINF", true)) {
                 name = line.substringAfterLast(',').trim().ifBlank { "قناة مستوردة" }
-                logo = Regex("tvg-logo=\"([^\"]*)\"").find(line)?.groupValues?.getOrNull(1).orEmpty()
-                group = Regex("group-title=\"([^\"]*)\"").find(line)?.groupValues?.getOrNull(1).orEmpty()
+                logo = logoPattern.find(line)?.groupValues?.getOrNull(1).orEmpty()
+                group = groupPattern.find(line)?.groupValues?.getOrNull(1).orEmpty()
             } else if (!line.startsWith("#") && safe(line)) {
                 val parts = if (line.contains('|')) line.split('|', limit = 2) else emptyList()
                 val channelName = if (parts.isNotEmpty()) parts[0].trim() else name.ifBlank { "قناة مستوردة" }
