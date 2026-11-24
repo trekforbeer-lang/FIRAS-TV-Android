@@ -242,6 +242,11 @@ class AdminActivity : Activity() {
         authenticated = true
         handler.postDelayed(autoLogout, 10 * 60 * 1000L)
         root = readRoot()
+        CloudChannelSync.publishAll(this, root) { success, error ->
+            if (!success && authenticated) {
+                Toast.makeText(this, "تعذرت مزامنة النسخة المحلية عند فتح لوحة الإدارة: ${error ?: "تحقق من الاتصال"}", Toast.LENGTH_LONG).show()
+            }
+        }
         val scroll = ScrollView(this)
         panel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -278,7 +283,7 @@ class AdminActivity : Activity() {
             temp.delete()
         }
         Toast.makeText(this, "تم الحفظ على هذا الجهاز", Toast.LENGTH_SHORT).show()
-        CloudChannelSync.publishAll(root) { success, error ->
+        CloudChannelSync.publishAll(this, root) { success, error ->
             if (!success && authenticated) {
                 Toast.makeText(this, "حُفظت محلياً، وتعذرت المزامنة السحابية: ${error ?: "تحقق من الاتصال"}", Toast.LENGTH_LONG).show()
             } else if (success && authenticated) {
@@ -719,7 +724,7 @@ class AdminActivity : Activity() {
                 val channel = items(sectionIndex).optJSONObject(itemIndex)
                 if (channel != null) {
                     removeStreamConfig(channel)
-                    CloudChannelSync.delete(channel) { success, error ->
+                    CloudChannelSync.delete(this, channel) { success, error ->
                         if (!success && authenticated) {
                             Toast.makeText(this, "حُذفت محلياً، لكن تعذّر حذفها من السحابة: ${error ?: "تحقق من الاتصال"}", Toast.LENGTH_LONG).show()
                         }
