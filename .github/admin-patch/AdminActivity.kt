@@ -29,8 +29,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 /**
- * Native port of the original FIRAS TV admin workflow.
- * Bundled channels are protected from edit/delete; user-added channels remain manageable.
+ * Native admin console. Entry is gated by a server-managed Firestore role.
+ * Channel catalog edits in this build are stored locally on this device.
  */
 class AdminActivity : Activity() {
     private val handler = Handler(Looper.getMainLooper())
