@@ -95,7 +95,9 @@ class PlayerActivity : AppCompatActivity() {
     private val worker = Executors.newSingleThreadExecutor()
     private val handler = Handler(Looper.getMainLooper())
     private val hideOverlayTask = Runnable {
-        if (player?.isPlaying == true && !controlsLocked) setOverlayVisible(false)
+        if (player?.isPlaying == true && !controlsLocked && channelPanel.visibility != View.VISIBLE) {
+            setOverlayVisible(false)
+        }
     }
     private val refreshTask = object : Runnable {
         override fun run() {
@@ -138,8 +140,14 @@ class PlayerActivity : AppCompatActivity() {
         lockButton.setOnClickListener { controlsLocked = !controlsLocked; setOverlayVisible(!controlsLocked); lockButton.text = if (controlsLocked) "🔒" else "♙" }
         findViewById<Button>(R.id.pictureInPictureButton).setOnClickListener { enterPictureInPictureIfSupported() }
         findViewById<Button>(R.id.channelListButton).setOnClickListener {
-            channelPanel.visibility = if (channelPanel.visibility == View.VISIBLE) View.GONE else View.VISIBLE
-            if (channelPanel.visibility == View.VISIBLE) setOverlayVisible(true)
+            val opening = channelPanel.visibility != View.VISIBLE
+            channelPanel.visibility = if (opening) View.VISIBLE else View.GONE
+            if (opening) {
+                channelPanel.alpha = 1f
+                setOverlayVisible(true)
+            } else {
+                scheduleOverlayHide()
+            }
         }
         findViewById<Button>(R.id.subtitleButton).setOnClickListener {
             val active = player
