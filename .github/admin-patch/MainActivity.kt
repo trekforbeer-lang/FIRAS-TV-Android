@@ -410,12 +410,12 @@ class MainActivity : AppCompatActivity() {
     private fun restoreOriginalLists() {
         if (restoreInProgress) return
         restoreInProgress = true
-        // Invalidate an older startup read so it cannot overwrite restored data.
         catalogVersion++
         restoreButton.isEnabled = false
-        restoreButton.text = "جارٍ استعادة القنوات..."
+        restoreButton.text = "تهيئة الاستعادة..."
         Thread {
             var added = 0
+            var failed = 0
             val sources = listOf(
                 Pair("قنوات عربية", "https://iptv-org.github.io/iptv/languages/ara.m3u"),
                 Pair("رياضة", "https://iptv-org.github.io/iptv/categories/sports.m3u"),
@@ -428,64 +428,91 @@ class MainActivity : AppCompatActivity() {
                     else assets.open("channels.json").bufferedReader(Charsets.UTF_8).use { it.readText() }
                 val root = JSONObject(raw)
                 val groups = root.optJSONArray("sections") ?: JSONArray().also { root.put("sections", it) }
-                for ((title, endpoint) in sources) {
-                    val connection = URL(endpoint).openConnection() as HttpURLConnection
-                    connection.connectTimeout = 15000; connection.readTimeout = 25000
-                    connection.setRequestProperty("User-Agent", "RAHMANI/1.0")
-                    val body = try {
-                        val code = connection.responseCode
-                        if (code !in 200..299) throw java.io.IOException("Playlist HTTP $code")
-                        connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-                    } finally { connection.disconnect() }
-                    var section: JSONObject? = null
-                    for (i in 0 until groups.length()) {
-                        val item = groups.optJSONObject(i)
-                        if (item?.optString("title") == title) { section = item; break }
-                    }
-                    if (section == null) {
-                        val created = JSONObject().put("title", title).put("items", JSONArray())
-                        groups.put(created)
-                        section = created
-                    }
-                    val actualSection = section ?: continue
-                    val items = actualSection.optJSONArray("items") ?: JSONArray().also { actualSection.put("items", it) }
-                    val known = HashSet<String>()
-                    for (i in 0 until items.length()) known.add(items.optJSONObject(i)?.optString("url").orEmpty())
-                    var name = ""; var logo = ""
-                    for (line in body.lineSequence()) {
-                        val value = line.trim()
-                        if (value.startsWith("#EXTINF", true)) {
-                            name = value.substringAfterLast(',').trim()
-                            logo = Regex("""tvg-logo="([^"]*)"""").find(value)?.groupValues?.getOrNull(1).orEmpty()
-                        } else if (value.startsWith("http", true) && name.isNotBlank() && value !in known) {
-                            items.put(JSONObject().put("id", "iptv-" + value.hashCode()).put("name", name)
-                                .put("logo", logo).put("url", value).put("referer", ""))
-                            known.add(value); added++; name = ""; logo = ""
+
+                for ((sourceIndex, source) in sources.withIndex()) {
+                    runOnUiThread {
+                        if (!isFinishing && !isDestroyed) {
+                            restoreButton.text = "تحميل " + source.first + " (" + (sourceIndex + 1) + "/4)"
                         }
                     }
+                    var connection: HttpURLConnection? = null
+                    try {
+                        connection = URL(source.second).openConnection() as HttpURLConnection
+                        connection.connectTimeout = 8000
+                        connection.readTimeout = 12000
+                        connection.instanceFollowRedirects = true
+                        connection.setRequestProperty("User-Agent", "RAHMANI/4.1")
+                        val parsed = ArrayList<JSONObject>()
+                        var name = ""
+                        var logo = ""
+                        var totalChars = 0L
+                        connection.inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
+                            while (true) {
+                                val line = reader.readLine() ?: break
+                                totalChars += line.length.toLong()
+                                if (totalChars > 1_500_000L) throw java.io.IOException("Playlist exceeds size limit")
+                                val value = line.trim()
+                                if (value.startsWith("#EXTINF", true)) {
+                                    name = value.substringAfterLast(',').trim()
+                                    logo = Regex("""tvg-logo="([^"]*)"""").find(value)?.groupValues?.getOrNull(1).orEmpty()
+                                } else if ((value.startsWith("http://", true) || value.startsWith("https://", true)) &&
+                                    name.isNotBlank() && parsed.size < 650) {
+                                    parsed.add(JSONObject().put("id", "iptv-" + value.hashCode())
+                                        .put("name", name).put("logo", logo).put("url", value).put("referer", ""))
+                                    name = ""
+                                    logo = ""
+                                }
+                            }
+                        }
+                        var section: JSONObject? = null
+                        for (i in 0 until groups.length()) {
+                            val item = groups.optJSONObject(i)
+                            if (item?.optString("title") == source.first) { section = item; break }
+                        }
+                        if (section == null) {
+                            section = JSONObject().put("title", source.first).put("items", JSONArray())
+                            groups.put(section)
+                        }
+                        val items = section.optJSONArray("items") ?: JSONArray().also { section.put("items", it) }
+                        val known = HashSet<String>()
+                        for (i in 0 until items.length()) known.add(items.optJSONObject(i)?.optString("url").orEmpty())
+                        for (item in parsed) {
+                            val url = item.optString("url")
+                            if (url !in known) { items.put(item); known.add(url); added++ }
+                        }
+                    } catch (_: Exception) {
+                        failed++
+                    } finally {
+                        connection?.disconnect()
+                    }
+                }
+                if (added == 0 && failed == sources.size) throw java.io.IOException("All playlist sources failed")
+                runOnUiThread {
+                    if (!isFinishing && !isDestroyed) restoreButton.text = "حفظ القنوات المستعادة..."
                 }
                 val temp = File(filesDir, "channels.json.tmp")
-                temp.writeText(root.toString(2), Charsets.UTF_8)
-                if (!temp.renameTo(target)) { temp.copyTo(target, overwrite = true); temp.delete() }
-                // Parse the potentially large restored JSON away from the UI thread.
-                val restoredSections = ChannelRepository.load(this)
+                temp.writeText(root.toString(), Charsets.UTF_8)
+                if (!temp.renameTo(target)) {
+                    temp.copyTo(target, overwrite = true)
+                    temp.delete()
+                }
+                val restoredSections = ChannelRepository.load(applicationContext)
                 runOnUiThread {
                     if (!isFinishing && !isDestroyed) {
-                        sections = restoredSections; selected = ""
-                        rebuildChips(chips); refresh()
+                        sections = restoredSections
+                        selected = ""
+                        rebuildChips(chips)
+                        refresh()
                         restoreInProgress = false
-                        restoreButton.isEnabled = true; restoreButton.text = "استعادة القنوات القديمة"
-                        Toast.makeText(this, "أضيفت " + added + " قناة. افحص الروابط من لوحة الإدارة لأن توفر البث يتغير.", Toast.LENGTH_LONG).show()
+                        restoreButton.isEnabled = true
+                        restoreButton.text = "استعادة القنوات القديمة"
+                        val message = "اكتملت الاستعادة: " + added + " قناة جديدة"
+                        val suffix = if (failed > 0) "، وتعذر تحميل " + failed + " قوائم" else ""
+                        Toast.makeText(this, message + suffix, Toast.LENGTH_LONG).show()
                     }
                 }
             } catch (_: Exception) {
-                // Keep the last usable catalog visible if remote restoration fails.
-                // Best-effort local reload; keep the in-memory catalog if the file is unreadable.
-                val fallbackSections = try {
-                    ChannelRepository.load(applicationContext)
-                } catch (_: Exception) {
-                    null
-                }
+                val fallbackSections = try { ChannelRepository.load(applicationContext) } catch (_: Exception) { null }
                 runOnUiThread {
                     if (!isFinishing && !isDestroyed) {
                         if (fallbackSections != null) {
@@ -496,7 +523,7 @@ class MainActivity : AppCompatActivity() {
                         restoreInProgress = false
                         restoreButton.isEnabled = true
                         restoreButton.text = "إعادة محاولة استعادة القنوات"
-                        Toast.makeText(this, "تعذّر تحميل القوائم؛ احتفظنا بالقنوات الموجودة. تحقق من اتصال الإنترنت", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this, "تعذرت الاستعادة. احتفظنا بالقنوات الحالية؛ تحقق من الاتصال ثم حاول مجدداً.", Toast.LENGTH_LONG).show()
                     }
                 }
             }
