@@ -36,8 +36,13 @@ object CloudMovieSync {
             listOf("poster", "country").forEach { key ->
                 row.optString(key).takeIf { it.isNotBlank() }?.let { data[key] = it.take(2048) }
             }
+            row.put("id", id)
             local[id] = data
         }
+        val localFile = File(context.filesDir, "movies.json")
+        val localTemp = File(context.filesDir, "movies.json.tmp")
+        localTemp.writeText(JSONObject().put("movies", rows).toString(2), Charsets.UTF_8)
+        if (!localTemp.renameTo(localFile)) { localTemp.copyTo(localFile, overwrite = true); localTemp.delete() }
         db.collection("movies").get()
             .addOnSuccessListener { snapshot ->
                 val stale = snapshot.documents.map { it.id }.filter { it !in local.keys }
