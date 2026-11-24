@@ -29,11 +29,12 @@ class RestoreChannelsWorker(context: Context, params: WorkerParameters) : Worker
         private const val KEY_RUNNING = "running"
         private const val KEY_TOTAL = "total_added"
         private const val KEY_BATCH = "batch"
+        private const val KEY_LAST_ERROR = "last_error"
 
         fun start(context: Context): Boolean {
             val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             if (prefs.getBoolean(KEY_RUNNING, false)) return false
-            prefs.edit().putBoolean(KEY_RUNNING, true).putInt(KEY_TOTAL, 0).putInt(KEY_BATCH, 0).apply()
+            prefs.edit().putBoolean(KEY_RUNNING, true).putInt(KEY_TOTAL, 0).putInt(KEY_BATCH, 0).remove(KEY_LAST_ERROR).apply()
             enqueueBatch(context, 0, 0)
             return true
         }
@@ -157,9 +158,17 @@ class RestoreChannelsWorker(context: Context, params: WorkerParameters) : Worker
                 prefs.edit().putBoolean(KEY_RUNNING, false).apply()
             }
             Result.success()
-        } catch (_: Exception) {
-            // Keep the manual restore marked as active; WorkManager retries this same batch.
-            Result.retry()
+        } catch (error: Exception) {
+            // Retry transient failures, but never leave the restore UI permanently locked.
+            if (runAttemptCount < 4) {
+                Result.retry()
+            } else {
+                prefs.edit()
+                    .putBoolean(KEY_RUNNING, false)
+                    .putString(KEY_LAST_ERROR, error.message?.take(240) ?: "تعذر تحميل قوائم القنوات")
+                    .apply()
+                Result.failure(workDataOf("error" to (error.message ?: "restore_failed")))
+            }
         }
     }
 }
