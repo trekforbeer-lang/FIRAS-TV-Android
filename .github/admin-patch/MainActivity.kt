@@ -8,6 +8,7 @@ import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.os.Bundle
 import android.os.SystemClock
 import android.text.Editable
@@ -44,6 +45,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var empty: TextView
     private lateinit var chips: ChipGroup
     private lateinit var restoreButton: Button
+    private lateinit var restoreStatusPanel: View
+    private lateinit var restoreStatusTitle: TextView
+    private lateinit var restoreStatusDetail: TextView
+    private lateinit var restoreStatusProgress: ProgressBar
     private lateinit var channelRecycler: RecyclerView
     private var drawerOverlay: View? = null
     private val homePrefs by lazy { getSharedPreferences("rahmani_home_preferences", MODE_PRIVATE) }
@@ -94,6 +99,10 @@ class MainActivity : AppCompatActivity() {
         empty = findViewById(R.id.empty)
         chips = findViewById(R.id.chips)
         restoreButton = findViewById(R.id.restoreChannelsButton)
+        restoreStatusPanel = findViewById(R.id.restoreStatusPanel)
+        restoreStatusTitle = findViewById(R.id.restoreStatusTitle)
+        restoreStatusDetail = findViewById(R.id.restoreStatusDetail)
+        restoreStatusProgress = findViewById(R.id.restoreStatusProgress)
         applyHomePreferences()
         findViewById<TextView>(R.id.customizeButton).setOnClickListener { showHomePreferences() }
         findViewById<TextView>(R.id.homeModeButton).setOnClickListener { showHomeModePicker() }
@@ -572,12 +581,18 @@ class MainActivity : AppCompatActivity() {
     private fun startManualChannelRestore() {
         val started = RestoreChannelsWorker.start(applicationContext)
         if (!started) {
-            Toast.makeText(this, "استعادة القنوات جارية بالفعل؛ الدفعة التالية بعد 30 دقيقة.", Toast.LENGTH_LONG).show()
+            restoreStatusPanel.visibility = View.VISIBLE
+            restoreStatusTitle.text = "الاستعادة مستمرة"
+            restoreStatusDetail.text = "هناك دفعة قيد المعالجة أو مجدولة. لن نبدأ نسخة مكررة من الاستيراد."
+            restoreStatusProgress.isIndeterminate = true
             return
         }
         restoreButton.isEnabled = false
-        restoreButton.text = "جارٍ تنزيل أول 100 قناة..."
-        Toast.makeText(this, "بدأت الاستعادة اليدوية. سيتم تنزيل 100 قناة كحد أقصى في كل دفعة، ثم الانتظار 30 دقيقة.", Toast.LENGTH_LONG).show()
+        restoreButton.text = "جارٍ استيراد القنوات..."
+        restoreStatusPanel.visibility = View.VISIBLE
+        restoreStatusTitle.text = "بدأت استعادة القنوات"
+        restoreStatusDetail.text = "يجري فحص قوائم البث وإضافة ما يصل إلى 100 قناة في هذه الدفعة."
+        restoreStatusProgress.isIndeterminate = true
     }
 
     private fun observeChannelRestore() {
@@ -585,6 +600,7 @@ class MainActivity : AppCompatActivity() {
             .getWorkInfosByTagLiveData(RestoreChannelsWorker.TAG)
             .observe(this) { workInfos ->
                 val active = workInfos.any { !it.state.isFinished }
+                val runningNow = workInfos.any { it.state == androidx.work.WorkInfo.State.RUNNING }
                 val latest = workInfos.filter { !it.state.isFinished }.maxByOrNull { it.runAttemptCount }
                 val prefs = getSharedPreferences(RestoreChannelsWorker.PREFS, MODE_PRIVATE)
                 val total = prefs.getInt("total_added", 0)
@@ -599,15 +615,34 @@ class MainActivity : AppCompatActivity() {
                 }
                 restoreButton.isEnabled = !active
                 restoreButton.text = when {
-                    active && total > 0 -> "تم تنزيل $total قناة • التالية بعد 30د"
+                    active && !runningNow && total > 0 -> "تم تنزيل $total قناة • التالية بعد 30د"
                     active -> "استعادة القنوات..."
                     total > 0 -> "استعادة المزيد"
                     else -> "استعادة القنوات"
+                }
+                restoreStatusPanel.visibility = if (active || total > 0) View.VISIBLE else View.GONE
+                restoreStatusProgress.isIndeterminate = runningNow
+                restoreStatusTitle.text = when {
+                    runningNow -> "جارٍ استيراد القنوات"
+                    active && total > 0 -> "اكتملت الدفعة الحالية"
+                    active -> "الاستعادة بانتظار الاتصال"
+                    total > 0 -> "اكتملت الاستعادة"
+                    else -> "استعادة القنوات"
+                }
+                restoreStatusDetail.text = when {
+                    runningNow -> "نفحص قوائم البث ونضيف حتى 100 قناة في هذه الدفعة. تمت إضافة $total قناة حتى الآن."
+                    active && total > 0 -> "تمت إضافة $total قناة. الدفعة التالية مجدولة بعد 30 دقيقة."
+                    active -> "سيبدأ التنزيل تلقائياً عند توفر اتصال بالإنترنت."
+                    total > 0 -> "انتهت الدفعات الحالية. إجمالي القنوات التي أُضيفت: $total."
+                    else -> "يمكنك استعادة القنوات يدوياً من هنا."
                 }
                 if (latest?.state?.isFinished == true) return@observe
                 if (!active && prefs.getBoolean("running", false)) {
                     restoreButton.isEnabled = false
                     restoreButton.text = "بانتظار اتصال الإنترنت..."
+                    restoreStatusPanel.visibility = View.VISIBLE
+                    restoreStatusTitle.text = "الاستعادة بانتظار الاتصال"
+                    restoreStatusDetail.text = "سيُستأنف التنزيل تلقائياً عند توفر اتصال بالإنترنت."
                 }
             }
     }
