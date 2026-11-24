@@ -25,6 +25,7 @@ jobs:
           rm -f .github/workflows/v4-source-*.b64
           cp .github/admin-patch/AdminActivity.kt app/src/main/java/com/firas/tv/AdminActivity.kt
           cp .github/admin-patch/MainActivity.kt app/src/main/java/com/firas/tv/MainActivity.kt
+          cp .github/admin-patch/CountriesActivity.kt app/src/main/java/com/firas/tv/CountriesActivity.kt
           cp .github/admin-patch/FavoriteChannels.kt app/src/main/java/com/firas/tv/FavoriteChannels.kt # saved-channel screen and favorites
           cp .github/admin-patch/DiscoverActivity.kt app/src/main/java/com/firas/tv/DiscoverActivity.kt # channel discovery and category search
           cp .github/admin-patch/MoreActivity.kt app/src/main/java/com/firas/tv/MoreActivity.kt # dedicated More hub
