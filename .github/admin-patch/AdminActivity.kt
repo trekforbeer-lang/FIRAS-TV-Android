@@ -907,6 +907,7 @@ class AdminActivity : Activity() {
         val logoPattern = Regex("tvg-logo=\"([^\"]*)\"")
         val groupPattern = Regex("group-title=\"([^\"]*)\"")
         for (line0 in raw.lineSequence()) {
+            if (out.size >= 15000) break
             val line = line0.trim()
             if (line.isBlank()) continue
             if (line.startsWith("#EXTINF", true)) {
