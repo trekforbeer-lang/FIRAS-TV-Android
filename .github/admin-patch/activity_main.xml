@@ -210,8 +210,8 @@
         <TextView android:id="@+id/navChannels" android:layout_width="0dp" android:layout_weight="1"
             android:layout_height="match_parent" android:gravity="center" android:background="@drawable/rahmani_nav_item_bg" android:paddingTop="5dp" android:paddingBottom="5dp" android:text="▣\nالقنوات"
             android:textColor="#A9B5CA" android:textSize="10sp" android:clickable="true" android:focusable="true"/>
-        <TextView android:id="@+id/navSports" android:layout_width="0dp" android:layout_weight="1"
-            android:layout_height="match_parent" android:gravity="center" android:background="@drawable/rahmani_nav_item_bg" android:paddingTop="5dp" android:paddingBottom="5dp" android:text="⚽\nالرياضة"
+        <TextView android:id="@+id/navDiscover" android:layout_width="0dp" android:layout_weight="1"
+            android:layout_height="match_parent" android:gravity="center" android:background="@drawable/rahmani_nav_item_bg" android:paddingTop="5dp" android:paddingBottom="5dp" android:text="⌕\nاكتشف"
             android:textColor="#A9B5CA" android:textSize="10sp" android:clickable="true" android:focusable="true"/>
         <TextView android:id="@+id/navMovies" android:layout_width="0dp" android:layout_weight="1"
             android:layout_height="match_parent" android:gravity="center" android:background="@drawable/rahmani_nav_item_bg" android:paddingTop="5dp" android:paddingBottom="5dp" android:text="★\nقائمتي"
