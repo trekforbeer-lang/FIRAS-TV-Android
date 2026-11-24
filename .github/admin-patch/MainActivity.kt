@@ -29,6 +29,8 @@ import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
 
 class MainActivity : AppCompatActivity() {
     private var sections: List<Section> = emptyList()
@@ -36,6 +38,10 @@ class MainActivity : AppCompatActivity() {
     private var query = ""
     private var lastLaunchAt = 0L
     private var returningFromAdmin = false
+    @Volatile private var catalogVersion = 0
+    private val filterExecutor = Executors.newSingleThreadExecutor()
+    private var pendingFilter: Future<*>? = null
+    private var refreshGeneration = 0
     private lateinit var adapter: ChannelAdapter
     private lateinit var empty: TextView
     private lateinit var chips: ChipGroup
@@ -128,10 +134,11 @@ class MainActivity : AppCompatActivity() {
         // Loading an already-restored, potentially large channel catalog must not block startup.
         restoreButton.isEnabled = false
         restoreButton.text = "جارٍ تحميل القنوات..."
+        val initialLoadVersion = catalogVersion
         Thread {
             val initialSections = ChannelRepository.load(applicationContext)
             runOnUiThread {
-                if (!isFinishing && !isDestroyed) {
+                if (!isFinishing && !isDestroyed && catalogVersion == initialLoadVersion) {
                     sections = initialSections
                     rebuildChips(chips)
                     refresh()
@@ -362,11 +369,32 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refresh() {
-        val list = sections.filter { selected.isEmpty() || it.title == selected }.flatMap { it.items }
-            .filter { query.isEmpty() || it.name.contains(query, ignoreCase = true) }
-        adapter.submitList(list)
-        findViewById<TextView>(R.id.channelCount)?.text = "${list.size} قناة"
-        empty.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
+        // Flattening and searching thousands of channels can be expensive; keep it off the UI thread.
+        val request = ++refreshGeneration
+        val sourceSections = sections
+        val selectedCategory = selected
+        val searchQuery = query
+        pendingFilter?.cancel(true)
+        pendingFilter = filterExecutor.submit {
+            val result = ArrayList<Channel>()
+            for (section in sourceSections) {
+                if (Thread.currentThread().isInterrupted) return@submit
+                if (selectedCategory.isNotEmpty() && section.title != selectedCategory) continue
+                for (channel in section.items) {
+                    if (Thread.currentThread().isInterrupted) return@submit
+                    if (searchQuery.isEmpty() || channel.name.contains(searchQuery, ignoreCase = true)) {
+                        result.add(channel)
+                    }
+                }
+            }
+            runOnUiThread {
+                if (!isFinishing && !isDestroyed && request == refreshGeneration) {
+                    adapter.submitList(result)
+                    findViewById<TextView>(R.id.channelCount)?.text = "${result.size} قناة"
+                    empty.visibility = if (result.isEmpty()) View.VISIBLE else View.GONE
+                }
+            }
+        }
     }
 
     private var restoreInProgress = false
@@ -374,6 +402,8 @@ class MainActivity : AppCompatActivity() {
     private fun restoreOriginalLists() {
         if (restoreInProgress) return
         restoreInProgress = true
+        // Invalidate an older startup read so it cannot overwrite restored data.
+        catalogVersion++
         restoreButton.isEnabled = false
         restoreButton.text = "جارٍ استعادة القنوات..."
         Thread {
@@ -439,12 +469,26 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this, "أضيفت " + added + " قناة. افحص الروابط من لوحة الإدارة لأن توفر البث يتغير.", Toast.LENGTH_LONG).show()
                 }
             } catch (_: Exception) {
+                // Keep the last usable catalog visible if remote restoration fails.
+                val fallbackSections = ChannelRepository.load(applicationContext)
                 runOnUiThread {
-                    restoreInProgress = false
-                    restoreButton.isEnabled = true; restoreButton.text = "إعادة محاولة استعادة القنوات"
-                    Toast.makeText(this, "تعذّر تحميل القوائم؛ تحقق من اتصال الإنترنت", Toast.LENGTH_LONG).show()
+                    if (!isFinishing && !isDestroyed) {
+                        sections = fallbackSections
+                        rebuildChips(chips)
+                        refresh()
+                        restoreInProgress = false
+                        restoreButton.isEnabled = true
+                        restoreButton.text = "إعادة محاولة استعادة القنوات"
+                        Toast.makeText(this, "تعذّر تحميل القوائم؛ احتفظنا بالقنوات الموجودة. تحقق من اتصال الإنترنت", Toast.LENGTH_LONG).show()
+                    }
                 }
             }
         }.start()
+    }
+
+    override fun onDestroy() {
+        pendingFilter?.cancel(true)
+        filterExecutor.shutdownNow()
+        super.onDestroy()
     }
 }
