@@ -308,6 +308,21 @@ class MainActivity : AppCompatActivity() {
         }
         val panelParams = FrameLayout.LayoutParams(panelWidth, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT)
         overlay.addView(panel, panelParams)
+        panel.isClickable = true
+        val menuScroll = android.widget.ScrollView(this).apply {
+            isFillViewport = true
+            clipToPadding = false
+            isVerticalScrollBarEnabled = false
+        }
+        val menuContent = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        menuScroll.addView(menuContent, android.widget.ScrollView.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ))
+        panel.addView(menuScroll, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f
+        ))
 
         val brand = TextView(this).apply {
             text = "RAHMANI TV"
@@ -317,7 +332,7 @@ class MainActivity : AppCompatActivity() {
             gravity = Gravity.CENTER_VERTICAL
             letterSpacing = 0.05f
         }
-        panel.addView(brand, LinearLayout.LayoutParams(
+        menuContent.addView(brand, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, dp(42)
         ))
         val subtitle = TextView(this).apply {
@@ -326,9 +341,9 @@ class MainActivity : AppCompatActivity() {
             setTextColor(Color.rgb(158, 169, 188))
             setPadding(0, 0, 0, dp(15))
         }
-        panel.addView(subtitle)
+        menuContent.addView(subtitle)
         val line = View(this).apply { setBackgroundColor(Color.argb(90, 198, 166, 106)) }
-        panel.addView(line, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)))
+        menuContent.addView(line, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)))
 
         fun entry(label: String, description: String, action: () -> Unit) {
             val item = LinearLayout(this).apply {
@@ -358,7 +373,7 @@ class MainActivity : AppCompatActivity() {
             }
             item.addView(title)
             item.addView(detail)
-            panel.addView(item, LinearLayout.LayoutParams(
+            menuContent.addView(item, LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(58)
             ).apply { topMargin = dp(8) })
         }
@@ -403,8 +418,8 @@ class MainActivity : AppCompatActivity() {
             gravity = Gravity.CENTER
             setTextColor(Color.rgb(121, 132, 151))
         }
-        panel.addView(footer, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f
+        menuContent.addView(footer, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, dp(36)
         ))
         drawerOverlay = overlay
         root.addView(overlay, FrameLayout.LayoutParams(
@@ -423,6 +438,15 @@ class MainActivity : AppCompatActivity() {
             root.removeView(overlay)
             drawerOverlay = null
         }.start()
+    }
+
+    @Deprecated("Use the OnBackPressedDispatcher for new back handling")
+    override fun onBackPressed() {
+        if (drawerOverlay != null) {
+            closeSideDrawer()
+            return
+        }
+        super.onBackPressed()
     }
 
     private fun dp(value: Int): Int =
