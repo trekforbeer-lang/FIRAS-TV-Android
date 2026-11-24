@@ -25,7 +25,7 @@ class CountriesActivity:AppCompatActivity(){
  private var channelsOpen=false
  private var generation=0
  private val arabic=mapOf(
-  DZ to "الجزائر",BH to "البحرين",KM to "جزر القمر",DJ to "جيبوتي",EG to "مصر",IQ to "العراق",JO to "الأردن",KW to "الكويت",LB to "لبنان",LY to "ليبيا",MR to "موريتانيا",MA to "المغرب",OM to "عُمان",PS to "فلسطين",QA to "قطر",SA to "السعودية",SO to "الصومال",SD to "السودان",SY to "سوريا",TN to "تونس",AE to "الإمارات",YE to "اليمن")
+  "DZ" to "الجزائر","BH" to "البحرين","KM" to "جزر القمر","DJ" to "جيبوتي","EG" to "مصر","IQ" to "العراق","JO" to "الأردن","KW" to "الكويت","LB" to "لبنان","LY" to "ليبيا","MR" to "موريتانيا","MA" to "المغرب","OM" to "عُمان","PS" to "فلسطين","QA" to "قطر","SA" to "السعودية","SO" to "الصومال","SD" to "السودان","SY" to "سوريا","TN" to "تونس","AE" to "الإمارات","YE" to "اليمن")
  override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);window.statusBarColor=Color.rgb(9,13,22);window.navigationBarColor=Color.rgb(9,13,22)
   val root=LinearLayout(this).apply{orientation=1;setBackgroundColor(Color.rgb(9,13,22));layoutDirection=View.LAYOUT_DIRECTION_RTL}
   val bar=LinearLayout(this).apply{gravity=Gravity.CENTER_VERTICAL;setPadding(dp(12),dp(8),dp(12),dp(8))}
