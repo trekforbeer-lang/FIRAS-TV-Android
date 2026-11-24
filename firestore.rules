@@ -12,7 +12,7 @@ service cloud.firestore {
       return data.keys().hasAll(["name", "url", "active"])
         && data.keys().hasOnly([
           "name", "url", "logo", "referer", "userAgent", "countryCode",
-          "countryName", "category", "active", "sortOrder", "updatedAt",
+          "countryName", "category", "region", "active", "sortOrder", "updatedAt",
           "alts", "priv", "group"
         ])
         && data.name is string
@@ -27,6 +27,7 @@ service cloud.firestore {
         && (!("countryCode" in data) || (data.countryCode is string && data.countryCode.size() <= 8))
         && (!("countryName" in data) || (data.countryName is string && data.countryName.size() <= 80))
         && (!("category" in data) || (data.category is string && data.category.size() <= 80))
+        && (!("region" in data) || data.region in ["arab", "foreign", ""])
         && (!("sortOrder" in data) || (data.sortOrder is int && data.sortOrder >= 0 && data.sortOrder <= 100000))
         && (!("updatedAt" in data) || data.updatedAt is timestamp)
         && (!("alts" in data) || (data.alts is list && data.alts.size() <= 10))
