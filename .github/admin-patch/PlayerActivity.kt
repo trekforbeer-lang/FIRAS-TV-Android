@@ -1,44 +1,26 @@
 package com.firas.tv
 
 import android.content.pm.ActivityInfo
-import android.app.PictureInPictureParams
-import android.os.Build
-import android.util.Rational
-import android.net.Uri
-import android.net.ConnectivityManager
-import android.net.Network
-import android.net.NetworkRequest
+import android.content.res.Configuration
 import android.os.Bundle
-import android.graphics.BitmapFactory
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Typeface
 import android.os.Handler
 import android.os.Looper
 import android.view.View
-import android.view.Gravity
 import android.widget.Button
-import android.widget.ImageView
-import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.C
-import androidx.media3.common.AudioAttributes
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
-import androidx.media3.session.MediaSession
-import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.datasource.DefaultHttpDataSource
-import androidx.media3.datasource.HttpDataSource
-import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
@@ -46,24 +28,19 @@ import androidx.media3.ui.TrackSelectionDialogBuilder
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import java.util.concurrent.Executors
-import java.net.HttpURLConnection
-import java.net.URL
 
 private data class DisplayChannel(
     val id: String,
     val name: String,
     val legacyUrl: String,
     val legacyHeaders: Map<String, String>,
-    val logo: String,
     val advanced: StreamConfig?
 )
 
 class PlayerActivity : AppCompatActivity() {
     private var player: ExoPlayer? = null
-    private var mediaSession: MediaSession? = null
     private lateinit var playerView: PlayerView
     private lateinit var title: TextView
-    private lateinit var watermark: ImageView
     private lateinit var status: TextView
     private lateinit var list: RecyclerView
     private lateinit var playPause: Button
@@ -72,870 +49,431 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var retry: Button
     private lateinit var server: Button
     private lateinit var quality: Button
-    private lateinit var centerControls: View
-    private lateinit var lockButton: Button
-    private var controlsLocked = false
+    private lateinit var loadingIndicator: ProgressBar
+
     private var channels: List<DisplayChannel> = emptyList()
     private var current: DisplayChannel? = null
     private var currentAdvanced: StreamConfig? = null
     private var resolving = false
+    private var automaticRetryUsed = false
     private var currentUrls: List<String> = emptyList()
     private var currentUrlIndex = 0
-    // Start video playback in immersive landscape, like a dedicated streaming app.
-    private var isFullscreen = true
-    private var resumePlaybackOnResume = false
-    private var recoveryAttempts = 0
+    private var isFullscreen = false
     private var zoomed = false
-    private var recoveryTask: Runnable? = null
-    private var networkCallback: ConnectivityManager.NetworkCallback? = null
-    private var networkWasLost = false
+
     private val worker = Executors.newSingleThreadExecutor()
     private val handler = Handler(Looper.getMainLooper())
-    private val hideOverlayTask = Runnable {
-        if (player?.isPlaying == true && !controlsLocked) setOverlayVisible(false)
-    }
+
     private val refreshTask = object : Runnable {
         override fun run() {
             val channel = current
-            if (channel != null && channel.advanced != null) refreshAdvancedAndPlay(channel)
+            if (channel?.advanced != null && !resolving) refreshCurrentStream(automatic = false, keepPosition = true)
             handler.postDelayed(this, 5 * 60 * 1000L)
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         setContentView(R.layout.activity_player)
-        applyFullscreenSystemUi()
+
         playerView = findViewById(R.id.playerView)
-        // Use the full landscape viewport; the viewer can switch to Fit when desired.
-        zoomed = true
-        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
         title = findViewById(R.id.channelTitle)
-        watermark = findViewById(R.id.channelWatermark)
         status = findViewById(R.id.statusText)
         list = findViewById(R.id.channelList)
         playPause = findViewById(R.id.playPauseButton)
         fullscreen = findViewById(R.id.fullscreenButton)
         zoom = findViewById(R.id.zoomButton)
-        zoom.text = "ملاءمة"
-        fullscreen.text = "⤢"
         retry = findViewById(R.id.retryButton)
         server = findViewById(R.id.serverButton)
         quality = findViewById(R.id.qualityButton)
-        centerControls = findViewById(R.id.centerControls)
-        lockButton = findViewById(R.id.lockButton)
-        findViewById<Button>(R.id.playerBackButton).setOnClickListener { handleBackAction() }
-        lockButton.setOnClickListener { controlsLocked = !controlsLocked; setOverlayVisible(!controlsLocked); lockButton.text = if (controlsLocked) "🔒" else "♙" }
-        findViewById<Button>(R.id.pictureInPictureButton).setOnClickListener { enterPictureInPictureIfSupported() }
-        findViewById<Button>(R.id.castButton).setOnClickListener { Toast.makeText(this, "ميزة Google Cast تحتاج ربط جهاز البث، ولم يتم تفعيلها بعد.", Toast.LENGTH_LONG).show() }
-        findViewById<Button>(R.id.channelListButton).setOnClickListener { list.visibility = if (list.visibility == View.VISIBLE) View.GONE else View.VISIBLE }
-        findViewById<Button>(R.id.subtitleButton).setOnClickListener {
-            val active = player
-            if (active == null) {
-                Toast.makeText(this, "شغّل قناة أولاً", Toast.LENGTH_SHORT).show()
-            } else {
-                androidx.appcompat.app.AlertDialog.Builder(this)
-                    .setTitle("الصوت والترجمة")
-                    .setItems(arrayOf("اختيار الترجمة", "اختيار مسار الصوت")) { _, which ->
-                        val trackType = if (which == 0) C.TRACK_TYPE_TEXT else C.TRACK_TYPE_AUDIO
-                        val dialogTitle = if (which == 0) "الترجمة" else "مسار الصوت"
-                        TrackSelectionDialogBuilder(this, dialogTitle, active, trackType).build().show()
-                    }
-                    .setNegativeButton("إغلاق", null)
-                    .show()
-            }
-        }
-        findViewById<Button>(R.id.previousChannelButton).setOnClickListener { changeChannel(-1) }
-        findViewById<Button>(R.id.nextChannelButton).setOnClickListener { changeChannel(1) }
-        playerView.setOnClickListener { if (controlsLocked) { controlsLocked = false; lockButton.text = "♙"; setOverlayVisible(true) } else { setOverlayVisible(findViewById<View>(R.id.topBar).visibility != View.VISIBLE) } }
+        loadingIndicator = findViewById(R.id.loadingIndicator)
+
+        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+        zoom.text = "تكبير"
 
         val advanced = UniversalStreamEngine.load(this)
         channels = UniversalStreamEngine.loadLegacy(this).map { legacy ->
             DisplayChannel(
-                legacy.id, legacy.name, legacy.stream, legacy.headers, legacy.logo,
+                legacy.id,
+                legacy.name,
+                legacy.stream,
+                legacy.headers,
                 UniversalStreamEngine.match(advanced, legacy.id, legacy.name)
             )
         }
+
         list.layoutManager = LinearLayoutManager(this, RecyclerView.HORIZONTAL, false)
-        list.adapter = PlayerChannelAdapter(channels) {
-            play(it)
-            list.visibility = View.GONE
-            setOverlayVisible(true)
-        }
+        list.adapter = ChannelAdapter(channels) { play(it) }
 
         playPause.setOnClickListener {
-            player?.let { p -> if (p.isPlaying) p.pause() else p.play() }
+            player?.let { active ->
+                if (active.isPlaying) active.pause() else active.play()
+            }
         }
+
         fullscreen.setOnClickListener { toggleFullscreen() }
+
         zoom.setOnClickListener {
             zoomed = !zoomed
-            playerView.resizeMode = if (zoomed) AspectRatioFrameLayout.RESIZE_MODE_ZOOM else AspectRatioFrameLayout.RESIZE_MODE_FIT
-            zoom.text = if (zoomed) "ملاءمة" else "زووم"
+            playerView.resizeMode = if (zoomed) {
+                AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+            } else {
+                AspectRatioFrameLayout.RESIZE_MODE_FIT
+            }
+            zoom.text = if (zoomed) "ملاءمة" else "تكبير"
+            playerView.requestLayout()
         }
-        retry.setOnClickListener {
-            recoveryAttempts = 0
-            current?.let { play(it) }
-        }
-        server.setOnClickListener { nextCandidateOrRetry() }
+
+        retry.setOnClickListener { refreshCurrentStream(automatic = false) }
+        server.setOnClickListener { nextCandidateOrRefresh() }
+
         quality.setOnClickListener {
             val active = player
-            if (active == null) Toast.makeText(this, "شغّل قناة أولاً", Toast.LENGTH_SHORT).show()
-            else TrackSelectionDialogBuilder(this, "اختيار الجودة", active, C.TRACK_TYPE_VIDEO).build().show()
+            if (active == null) {
+                Toast.makeText(this, "شغّل قناة أولاً", Toast.LENGTH_SHORT).show()
+            } else {
+                TrackSelectionDialogBuilder(this, "اختيار الجودة", active, C.TRACK_TYPE_VIDEO).build().show()
+            }
         }
 
-        val requestedId = intent.getStringExtra(EXTRA_CHANNEL_ID).orEmpty()
-        val requestedUrl = intent.getStringExtra(EXTRA_URL).orEmpty().trim()
-        val requestedName = intent.getStringExtra(EXTRA_NAME).orEmpty()
-        val requestedLogo = intent.getStringExtra(EXTRA_LOGO).orEmpty()
-        val selected = resolveRequestedChannel(requestedId, requestedUrl, requestedName, requestedLogo)
-        if (selected != null) {
-            play(selected)
+        if (channels.isNotEmpty()) {
+            play(channels.first())
         } else {
-            status.text = "لا توجد قناة صالحة. أضف رابط بث من لوحة الإدارة."
+            status.text = "لا توجد قنوات في ملف channels.json"
+            showLoading(false)
         }
     }
 
-    private fun isHttpUrl(value: String): Boolean {
-        if (value.isBlank()) return false
-        return try {
-            val uri = Uri.parse(value)
-            (uri.scheme.equals("http", true) || uri.scheme.equals("https", true)) &&
-                !uri.host.isNullOrBlank()
-        } catch (_: Exception) {
-            false
-        }
+    private fun showLoading(show: Boolean) {
+        loadingIndicator.visibility = if (show) View.VISIBLE else View.GONE
+        if (show) status.text = "جارٍ تحميل البث..."
     }
 
-    private fun resolveRequestedChannel(
-        requestedId: String,
-        requestedUrl: String,
-        requestedName: String,
-        requestedLogo: String
-    ): DisplayChannel? {
-        val existing = channels.firstOrNull {
-            (requestedId.isNotBlank() && it.id == requestedId) ||
-                (requestedUrl.isNotBlank() && it.legacyUrl == requestedUrl) ||
-                (requestedName.isNotBlank() && it.name.equals(requestedName, true))
+    // Releasing the old ExoPlayer discards its in-memory buffer and active network session.
+    // A new player/load-control instance is created for every hard refresh.
+    private fun releaseCurrentPlayer() {
+        playerView.player = null
+        player?.run {
+            playWhenReady = false
+            stop()
+            clearMediaItems()
+            release()
         }
-
-        if (requestedUrl.isNotBlank()) {
-            if (!isHttpUrl(requestedUrl)) return null
-            val extraHeaders = linkedMapOf<String, String>()
-            intent.getStringExtra(EXTRA_USER_AGENT)?.takeIf { it.isNotBlank() }?.let {
-                extraHeaders["User-Agent"] = it
-            }
-            intent.getStringExtra(EXTRA_REFERER)?.takeIf { it.isNotBlank() }?.let {
-                extraHeaders["Referer"] = it
-            }
-            intent.getStringExtra(EXTRA_COOKIE)?.takeIf { it.isNotBlank() }?.let {
-                extraHeaders["Cookie"] = it
-            }
-
-            if (existing != null) {
-                val merged = existing.legacyHeaders.toMutableMap()
-                extraHeaders.forEach { (key, value) ->
-                    merged.keys.firstOrNull { it.equals(key, true) }?.let(merged::remove)
-                    merged[key] = value
-                }
-                val changedUrl = requestedUrl != existing.legacyUrl
-                return existing.copy(
-                    legacyUrl = requestedUrl,
-                    legacyHeaders = merged,
-                    logo = requestedLogo.ifBlank { existing.logo },
-                    advanced = if (changedUrl) null else existing.advanced
-                )
-            }
-
-            return DisplayChannel(
-                id = requestedId.ifBlank { "external-channel" },
-                name = requestedName.ifBlank { "بث مباشر" },
-                legacyUrl = requestedUrl,
-                legacyHeaders = extraHeaders,
-                logo = requestedLogo,
-                advanced = null
-            )
-        }
-
-        return existing ?: channels.firstOrNull()
-    }
-
-    private fun requestHeaders(channel: DisplayChannel): Map<String, String> {
-        val result = linkedMapOf<String, String>()
-        fun putHeader(name: String, value: String) {
-            result.keys.firstOrNull { it.equals(name, ignoreCase = true) }?.let(result::remove)
-            result[name] = value
-        }
-        channel.legacyHeaders.forEach { (name, value) -> putHeader(name, value) }
-        currentAdvanced?.let { config ->
-            UniversalStreamEngine.mergedHeaders(config).forEach { (name, value) -> putHeader(name, value) }
-        }
-        return result
+        player = null
     }
 
     private fun ensurePlayer(channel: DisplayChannel) {
-        playerView.player = null
-        mediaSession?.release()
-        mediaSession = null
-        player?.release()
-        player = null
-
-        val headers = requestHeaders(channel).toMutableMap()
-        val userAgentKey = headers.keys.firstOrNull { it.equals("User-Agent", true) }
-        val userAgent = userAgentKey?.let { headers.remove(it) } ?: "RAHMANI/1.0"
+        releaseCurrentPlayer()
 
         val loadControl = DefaultLoadControl.Builder()
-            .setBufferDurationsMs(2500, 15000, 750, 1500)
+            .setBufferDurationsMs(1500, 12000, 500, 1000)
             .setPrioritizeTimeOverSizeThresholds(true)
             .build()
 
-        // Advanced channels use an isolated OkHttp cookie jar. The same DataSource
-        // factory is used for playlists, child playlists, keys and media segments.
         val sourceFactory = if (currentAdvanced != null) {
-            val advancedConfig = currentAdvanced!!.copy(
-                headers = requestHeaders(channel),
-                cookie = ""
-            )
             DefaultMediaSourceFactory(this)
-                .setDataSourceFactory(UniversalStreamEngine.okhttpFactory(advancedConfig))
+                .setDataSourceFactory(UniversalStreamEngine.okhttpFactory(currentAdvanced!!))
         } else {
-            val httpFactory = DefaultHttpDataSource.Factory()
-                .setUserAgent(userAgent)
-                .setDefaultRequestProperties(headers)
-                .setAllowCrossProtocolRedirects(true)
-                .setConnectTimeoutMs(15000)
-                .setReadTimeoutMs(25000)
-            DefaultMediaSourceFactory(this).setDataSourceFactory(httpFactory)
-        }
-
-        // Allow high-resolution streams up to 4K while keeping adaptive bitrate
-        // selection enabled so playback can step down when the connection slows.
-        val trackSelector = DefaultTrackSelector(this).apply {
-            setParameters(
-                buildUponParameters()
-                    .setMaxVideoSize(3840, 2160)
-                    .setMaxVideoBitrate(Int.MAX_VALUE)
-                    .setForceHighestSupportedBitrate(false)
-                    .build()
+            DefaultMediaSourceFactory(this).setDataSourceFactory(
+                DefaultHttpDataSource.Factory()
+                    .setUserAgent(channel.legacyHeaders["User-Agent"] ?: "FIRAS-TV/3.0.2")
+                    .setDefaultRequestProperties(channel.legacyHeaders)
+                    .setAllowCrossProtocolRedirects(true)
             )
         }
 
         player = ExoPlayer.Builder(this)
-            .setTrackSelector(trackSelector)
             .setLoadControl(loadControl)
             .setMediaSourceFactory(sourceFactory)
-            .build().also { exo ->
+            .build()
+            .also { exo ->
                 playerView.player = exo
-                exo.setAudioAttributes(
-                    AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(),
-                    true
-                )
-                mediaSession = MediaSession.Builder(this, exo).build()
                 exo.addListener(object : Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {
-                        var responseCode: Int? = null
-                        var cause: Throwable? = error
-                        while (cause != null) {
-                            if (cause is HttpDataSource.InvalidResponseCodeException) {
-                                responseCode = cause.responseCode
-                                break
-                            }
-                            cause = cause.cause
+                        if (!automaticRetryUsed) {
+                            status.text = "حدث خطأ في البث، جارٍ تحديث المصدر..."
+                            refreshCurrentStream(automatic = true)
+                        } else {
+                            showLoading(false)
+                            status.text = "تعذر تشغيل البث. اضغط تحديث للمحاولة مجدداً."
                         }
-                        status.text = when (responseCode) {
-                            401, 403 -> "رفض المصدر الوصول (HTTP $responseCode). تحقق من Cookie وبيانات القناة في لوحة الإدارة."
-                            else -> "تعذر تشغيل البث، جارٍ إعادة الاتصال..."
-                        }
-                        scheduleRecovery()
                     }
 
                     override fun onPlaybackStateChanged(state: Int) {
-                        status.text = when (state) {
-                            Player.STATE_BUFFERING -> "جارٍ تحميل البث..."
+                        when (state) {
+                            Player.STATE_BUFFERING -> showLoading(true)
                             Player.STATE_READY -> {
-                                recoveryAttempts = 0
-                                recoveryTask?.let(handler::removeCallbacks)
-                                recoveryTask = null
-                                "RAHMANI • البث جاهز"
+                                showLoading(false)
+                                automaticRetryUsed = false
+                                status.text = "FIRAS TV • البث جاهز"
                             }
-                            Player.STATE_ENDED -> "انتهى البث"
-                            else -> "RAHMANI • بث مباشر"
+                            Player.STATE_ENDED -> {
+                                showLoading(false)
+                                status.text = "انتهى البث"
+                            }
+                            Player.STATE_IDLE -> {
+                                if (current != null && !resolving) status.text = "FIRAS TV • بث مباشر"
+                            }
                         }
-                        playPause.text = if (exo.isPlaying) "Ⅱ" else "▶"
+                        playPause.text = if (exo.isPlaying) "إيقاف مؤقت" else "تشغيل"
                     }
 
                     override fun onIsPlayingChanged(isPlaying: Boolean) {
-                        playPause.text = if (isPlaying) "Ⅱ" else "▶"
-                        if (isPlaying) {
-                            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                            scheduleOverlayHide()
-                        } else {
-                            window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                            handler.removeCallbacks(hideOverlayTask)
-                        }
+                        playPause.text = if (isPlaying) "إيقاف مؤقت" else "تشغيل"
                     }
                 })
             }
     }
 
     private fun play(channel: DisplayChannel) {
-        recoveryTask?.let(handler::removeCallbacks)
-        recoveryTask = null
         current = channel
         currentAdvanced = channel.advanced
-        resolving = false
-        recoveryAttempts = 0
         currentUrlIndex = 0
-        currentUrls = emptyList()
+        automaticRetryUsed = false
         title.text = channel.name
-        loadWatermark(channel.logo)
-        ensurePlayer(channel)
+        showLoading(true)
 
         if (currentAdvanced == null) {
-            if (!isHttpUrl(channel.legacyUrl)) {
-                status.text = "رابط القناة غير صالح. تحقق من لوحة الإدارة."
+            currentUrls = listOf(channel.legacyUrl).filter { it.isNotBlank() }
+            ensurePlayer(channel)
+            val url = currentUrls.firstOrNull()
+            if (url == null) {
+                showLoading(false)
+                status.text = "رابط القناة غير متوفر"
+            } else {
+                playUrl(url)
+            }
+        } else {
+            refreshCurrentStream(automatic = false)
+        }
+    }
+
+    /**
+     * Hard refresh:
+     * 1) stop/release the previous player and its buffer;
+     * 2) reload the latest stream configuration;
+     * 3) resolve a fresh URL on the worker thread;
+     * 4) rebuild Media3 with the configured User-Agent/Referer/Cookie headers;
+     * 5) prepare and play inside this Activity.
+     */
+    private fun refreshCurrentStream(
+        automatic: Boolean,
+        keepPosition: Boolean = false
+    ) {
+        val channel = current ?: return
+        if (resolving) return
+
+        if (automatic) {
+            if (automaticRetryUsed) {
+                showLoading(false)
+                status.text = "تعذر تشغيل البث. اضغط تحديث للمحاولة مجدداً."
                 return
             }
-            currentUrls = listOf(channel.legacyUrl)
-            playUrl(channel.legacyUrl)
+            automaticRetryUsed = true
         } else {
-            status.text = "جارٍ تجهيز القناة..."
-            resolveAndPlay(channel, keepPosition = false)
+            automaticRetryUsed = false
         }
-    }
 
-    private fun refreshAdvancedAndPlay(channel: DisplayChannel) {
-        worker.execute {
-            val latest = UniversalStreamEngine.load(this@PlayerActivity)
-            val updated = UniversalStreamEngine.match(latest, channel.id, channel.name) ?: channel.advanced
-            runOnUiThread {
-                if (isFinishing || current?.id != channel.id) return@runOnUiThread
-                if (updated != null) {
-                    val changed = updated != currentAdvanced
-                    val position = player?.currentPosition ?: 0L
-                    currentAdvanced = updated
-                    if (changed) ensurePlayer(channel)
-                    resolveAndPlay(channel, keepPosition = !changed, resumePosition = if (changed) position else null)
+        val resumePosition = if (keepPosition) player?.currentPosition ?: 0L else 0L
+        resolving = true
+        showLoading(true)
+        releaseCurrentPlayer()
+
+        if (channel.advanced == null) {
+            // Reload the local channel record as well, so edited URL/headers are picked up.
+            worker.execute {
+                val latestLegacyChannels = UniversalStreamEngine.loadLegacy(this@PlayerActivity)
+                val latestLegacy = latestLegacyChannels.firstOrNull { it.id == channel.id }
+                    ?: latestLegacyChannels.firstOrNull { it.name.equals(channel.name, ignoreCase = true) }
+                runOnUiThread {
+                    resolving = false
+                    if (current?.id != channel.id || isFinishing || isDestroyed) return@runOnUiThread
+
+                    val refreshedChannel = if (latestLegacy != null) {
+                        channel.copy(
+                            legacyUrl = latestLegacy.stream,
+                            legacyHeaders = latestLegacy.headers
+                        )
+                    } else channel
+
+                    current = refreshedChannel
+                    currentAdvanced = null
+                    currentUrls = listOf(refreshedChannel.legacyUrl).filter { it.isNotBlank() }
+                    currentUrlIndex = 0
+                    ensurePlayer(refreshedChannel)
+
+                    val url = currentUrls.firstOrNull()
+                    if (url == null) {
+                        showLoading(false)
+                        status.text = "رابط القناة غير متوفر"
+                    } else {
+                        playUrl(url, resumePosition)
+                    }
                 }
             }
+            return
         }
-    }
 
-    private fun resolveAndPlay(channel: DisplayChannel, keepPosition: Boolean, resumePosition: Long? = null) {
-        val config = currentAdvanced ?: return
-        if (resolving) return
-        resolving = true
-        val oldPosition = resumePosition ?: if (keepPosition) player?.currentPosition ?: 0L else 0L
-        status.text = "جارٍ تحديث رابط البث..."
         worker.execute {
-            val urls = UniversalStreamEngine.resolve(config)
+            val latestConfigs = UniversalStreamEngine.load(this@PlayerActivity)
+            val latestConfig = UniversalStreamEngine.match(latestConfigs, channel.id, channel.name)
+                ?: channel.advanced
+            val freshUrls = latestConfig?.let { UniversalStreamEngine.resolve(it) }.orEmpty()
+
             runOnUiThread {
                 resolving = false
-                if (isFinishing || current?.id != channel.id) return@runOnUiThread
-                val validUrls = urls.filter(::isHttpUrl)
-                if (validUrls.isEmpty()) {
-                    status.text = "لم يتم العثور على رابط بث صالح"
-                    scheduleRecovery()
-                    return@runOnUiThread
-                }
-                val previousUrl = currentUrls.firstOrNull()
-                currentUrls = validUrls
+                if (current?.id != channel.id || isFinishing || isDestroyed) return@runOnUiThread
+
+                currentAdvanced = latestConfig
+                currentUrls = freshUrls
                 currentUrlIndex = 0
-                if (keepPosition && previousUrl == validUrls.first()) {
-                    status.text = "RAHMANI • البث مستمر"
+                ensurePlayer(channel)
+
+                val freshUrl = freshUrls.firstOrNull()
+                if (freshUrl.isNullOrBlank()) {
+                    showLoading(false)
+                    status.text = "لم يتم العثور على رابط بث صالح"
                     return@runOnUiThread
                 }
-                playUrl(validUrls.first(), oldPosition)
+                playUrl(freshUrl, resumePosition)
             }
         }
     }
 
     private fun playUrl(url: String, position: Long = 0L) {
-        if (!isHttpUrl(url)) {
-            status.text = "رابط البث غير صالح"
-            return
-        }
-        val itemBuilder = MediaItem.Builder()
+        val active = player ?: return
+        val item = MediaItem.Builder()
             .setUri(url)
             .setMediaId(current?.id ?: "firas")
-            .setMediaMetadata(
-                MediaMetadata.Builder()
-                    .setTitle(current?.name ?: "بث مباشر")
-                    .setArtist("RAHMANI")
-                    .build()
-            )
-        // Preserve HLS handling for extension-less and PHP resolver endpoints,
-        // which commonly return an HLS playlist. Use progressive inference only
-        // for file extensions that clearly identify a non-HLS media file.
-        val path = Uri.parse(url).path.orEmpty().lowercase()
-        val progressive = listOf(".mp4", ".m4v", ".webm", ".mkv", ".mp3", ".m4a", ".aac", ".wav")
-            .any { path.endsWith(it) }
-        if (!progressive) {
-            itemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
-        }
-        val item = itemBuilder.build()
-        player?.apply {
-            stop()
-            clearMediaItems()
-            setMediaItem(item)
-            prepare()
-            if (position > 0L) seekTo(position)
-            playWhenReady = true
-        }
-        status.text = "جارٍ الاتصال..."
+            .build()
+
+        showLoading(true)
+        active.playWhenReady = false
+        active.stop()
+        active.clearMediaItems()
+        active.setMediaItem(item)
+        active.prepare()
+        if (position > 0L) active.seekTo(position)
+        active.playWhenReady = true
+        status.text = "جارٍ الاتصال بمصدر البث..."
     }
 
-    private fun scheduleRecovery() {
-        if (recoveryTask != null || isFinishing || isDestroyed) return
-        if (recoveryAttempts >= 5) {
-            status.text = "تعذر الاتصال بعد 5 محاولات. تحقق من الرابط أو اضغط تحديث."
-            return
-        }
-        recoveryAttempts++
-        val delay = (1000L shl (recoveryAttempts - 1)).coerceAtMost(16000L)
-        status.text = "انقطع البث، إعادة المحاولة ${recoveryAttempts}/5..."
-        val task = Runnable {
-            recoveryTask = null
-            if (isFinishing || isDestroyed || current == null) return@Runnable
-            if (currentAdvanced != null) {
-                resolving = false
-                current?.let { resolveAndPlay(it, keepPosition = false) }
-            } else {
-                current?.let { playUrl(it.legacyUrl) }
-            }
-        }
-        recoveryTask = task
-        handler.postDelayed(task, delay)
-    }
-
-    private fun loadWatermark(url: String) {
-        val channelName = current?.name.orEmpty()
-        watermark.setImageBitmap(makeChannelLogo(channelName))
-        watermark.visibility = View.VISIBLE
-        if (!isHttpUrl(url)) return
-        val expected = url
-        worker.execute {
-            var bitmap: android.graphics.Bitmap? = null
-            try {
-                val connection = URL(url).openConnection() as HttpURLConnection
-                connection.connectTimeout = 6000
-                connection.readTimeout = 6000
-                connection.setRequestProperty("User-Agent", "RAHMANI/1.0")
-                bitmap = try {
-                    connection.inputStream.use { BitmapFactory.decodeStream(it) }
-                } finally {
-                    connection.disconnect()
-                }
-            } catch (_: Exception) {
-            }
-            val result = bitmap
-            runOnUiThread {
-                if (!isFinishing && current?.logo == expected) {
-                    watermark.setImageBitmap(result ?: makeChannelLogo(current?.name.orEmpty()))
-                    watermark.visibility = View.VISIBLE
-                } else {
-                    result?.recycle()
-                }
-            }
-        }
-    }
-
-    private fun nextCandidateOrRetry() {
+    private fun nextCandidateOrRefresh() {
         val channel = current ?: return
-        val config = currentAdvanced ?: run {
-            recoveryAttempts = 0
-            playUrl(channel.legacyUrl)
-            return
-        }
         if (currentUrlIndex + 1 < currentUrls.size) {
             currentUrlIndex++
+            showLoading(true)
             playUrl(currentUrls[currentUrlIndex])
         } else {
-            status.text = "جارٍ تحديث رابط القناة..."
-            worker.execute {
-                val refreshed = UniversalStreamEngine.resolve(config).filter(::isHttpUrl)
-                runOnUiThread {
-                    if (!isFinishing && current?.id == channel.id && refreshed.isNotEmpty()) {
-                        currentUrls = refreshed
-                        currentUrlIndex = 0
-                        recoveryAttempts = 0
-                        playUrl(refreshed.first())
-                    } else if (!isFinishing && current?.id == channel.id) {
-                        status.text = "تعذر الوصول إلى مصدر البث"
-                        scheduleRecovery()
-                    }
-                }
-            }
+            // The server button also forces a new resolver request instead of replaying a stale URL.
+            refreshCurrentStream(automatic = false)
         }
     }
 
-    @Suppress("DEPRECATION")
-    private fun applyFullscreenSystemUi() {
-        window.decorView.systemUiVisibility = if (isFullscreen) {
-            (View.SYSTEM_UI_FLAG_FULLSCREEN
-                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION)
+    private fun applyImmersiveMode(enabled: Boolean) {
+        WindowCompat.setDecorFitsSystemWindows(window, !enabled)
+        val controller = WindowInsetsControllerCompat(window, window.decorView)
+        if (enabled) {
+            controller.hide(WindowInsetsCompat.Type.systemBars())
+            controller.systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            window.decorView.keepScreenOn = true
         } else {
-            View.SYSTEM_UI_FLAG_VISIBLE
+            controller.show(WindowInsetsCompat.Type.systemBars())
+            window.decorView.keepScreenOn = false
         }
     }
 
     private fun toggleFullscreen() {
         isFullscreen = !isFullscreen
-        requestedOrientation = if (isFullscreen) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            else ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-        applyFullscreenSystemUi()
-        // Fill the entire landscape screen: no black bars.
-        // ZOOM preserves the source aspect ratio; a small part may be cropped
-        // when the source and phone screen have different aspect ratios.
-        zoomed = isFullscreen
-        playerView.resizeMode = if (isFullscreen) AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-            else AspectRatioFrameLayout.RESIZE_MODE_FIT
-        zoom.text = if (zoomed) "ملاءمة" else "زووم"
-        fullscreen.text = if (isFullscreen) "⤡" else "⛶"
-        if (isFullscreen) scheduleOverlayHide() else handler.removeCallbacks(hideOverlayTask)
-    }
 
-    private fun handleBackAction() {
         if (isFullscreen) {
-            isFullscreen = false
-            // Return to the normal phone portrait screen after leaving fullscreen.
-            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-            applyFullscreenSystemUi()
-            zoomed = false
-            playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-            zoom.text = "زووم"
-            fullscreen.text = "⛶"
-            handler.removeCallbacks(hideOverlayTask)
+            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         } else {
-            finish()
+            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
+
+        findViewById<View>(R.id.topBar).visibility = if (isFullscreen) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.bottomPanel).visibility = if (isFullscreen) View.GONE else View.VISIBLE
+        fullscreen.text = if (isFullscreen) "تصغير" else "ملء الشاشة"
+
+        applyImmersiveMode(isFullscreen)
+        playerView.post {
+            playerView.requestLayout()
+            playerView.invalidate()
         }
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus && isFullscreen) applyFullscreenSystemUi()
+        if (hasFocus && isFullscreen) applyImmersiveMode(true)
     }
 
-    @Suppress("DEPRECATION")
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        playerView.post {
+            playerView.requestLayout()
+            playerView.invalidate()
+        }
+    }
+
+    @Deprecated("Deprecated in Android API; retained for Android 5+ back handling")
     override fun onBackPressed() {
-        handleBackAction()
-    }
-
-    private fun scheduleOverlayHide() {
-        handler.removeCallbacks(hideOverlayTask)
-        if (!controlsLocked && player?.isPlaying == true) {
-            handler.postDelayed(hideOverlayTask, 3000L)
+        if (isFullscreen) {
+            isFullscreen = false
+            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            findViewById<View>(R.id.topBar).visibility = View.VISIBLE
+            findViewById<View>(R.id.bottomPanel).visibility = View.VISIBLE
+            fullscreen.text = "ملء الشاشة"
+            applyImmersiveMode(false)
+            playerView.requestLayout()
+        } else {
+            super.onBackPressed()
         }
-    }
-
-    private fun setOverlayVisible(visible: Boolean) {
-        val overlays = listOf(
-            findViewById<View>(R.id.topBar),
-            findViewById<View>(R.id.bottomPanel),
-            centerControls
-        )
-        overlays.forEach { view ->
-            view.animate().cancel()
-            if (visible) {
-                if (view.visibility != View.VISIBLE) {
-                    view.alpha = 0f
-                    view.visibility = View.VISIBLE
-                }
-                view.animate().alpha(1f).setDuration(200L).start()
-            } else if (view.visibility == View.VISIBLE) {
-                view.animate().alpha(0f).setDuration(200L).withEndAction {
-                    if (view.alpha == 0f) view.visibility = View.GONE
-                }.start()
-            }
-        }
-        handler.removeCallbacks(hideOverlayTask)
-        if (visible) scheduleOverlayHide()
-    }
-
-    private fun changeChannel(direction: Int) {
-        if (channels.isEmpty()) return
-        val currentIndex = channels.indexOfFirst { it.id == current?.id }
-        val start = if (currentIndex < 0) 0 else currentIndex
-        val nextIndex = (start + direction).coerceIn(0, channels.lastIndex)
-        if (nextIndex != currentIndex) play(channels[nextIndex])
-    }
-
-    override fun onStart() {
-        super.onStart()
-        registerPlaybackNetworkCallback()
-    }
-
-    private fun registerPlaybackNetworkCallback() {
-        if (networkCallback != null) return
-        val manager = getSystemService(CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return
-        val callback = object : ConnectivityManager.NetworkCallback() {
-            override fun onLost(network: Network) {
-                networkWasLost = true
-                handler.post {
-                    if (!isFinishing && current != null) {
-                        status.text = "انقطع اتصال الإنترنت، ننتظر عودته..."
-                    }
-                }
-            }
-
-            override fun onAvailable(network: Network) {
-                if (!networkWasLost) return
-                networkWasLost = false
-                handler.post {
-                    if (isFinishing || isDestroyed) return@post
-                    val channel = current ?: return@post
-                    recoveryTask?.let(handler::removeCallbacks)
-                    recoveryTask = null
-                    recoveryAttempts = 0
-                    resolving = false
-                    status.text = "عاد الاتصال، جارٍ استئناف البث..."
-                    if (currentAdvanced != null) {
-                        resolveAndPlay(channel, keepPosition = false)
-                    } else if (isHttpUrl(channel.legacyUrl)) {
-                        playUrl(channel.legacyUrl)
-                    }
-                }
-            }
-        }
-        try {
-            manager.registerNetworkCallback(
-                NetworkRequest.Builder().addCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET).build(),
-                callback
-            )
-            networkCallback = callback
-        } catch (_: Exception) {
-            networkCallback = null
-        }
-    }
-
-    override fun onStop() {
-        networkCallback?.let { callback ->
-            try {
-                (getSystemService(CONNECTIVITY_SERVICE) as? ConnectivityManager)?.unregisterNetworkCallback(callback)
-            } catch (_: Exception) {
-            }
-        }
-        networkCallback = null
-        super.onStop()
     }
 
     override fun onResume() {
         super.onResume()
-        if (isFullscreen) applyFullscreenSystemUi()
-        // Resume only if playback was active before the Activity was paused.
-        if (resumePlaybackOnResume) player?.playWhenReady = true
-        resumePlaybackOnResume = false
+        if (isFullscreen) applyImmersiveMode(true)
+        player?.playWhenReady = true
         handler.removeCallbacks(refreshTask)
         handler.postDelayed(refreshTask, 5 * 60 * 1000L)
     }
 
     override fun onPause() {
         handler.removeCallbacks(refreshTask)
-        // Remember the viewer's intent so a manually paused video stays paused on return.
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || !isInPictureInPictureMode) {
-            resumePlaybackOnResume = player?.playWhenReady == true
-            player?.pause()
-            window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        }
+        player?.pause()
         super.onPause()
     }
 
-    private fun enterPictureInPictureIfSupported() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            Toast.makeText(this, "ميزة الشاشة المصغّرة تحتاج Android 8 أو أحدث", Toast.LENGTH_SHORT).show()
-            return
-        }
-        val exo = player
-        if (exo == null || !exo.isPlaying) {
-            Toast.makeText(this, "ابدأ تشغيل الفيديو أولاً", Toast.LENGTH_SHORT).show()
-            return
-        }
-        if (!packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
-            Toast.makeText(this, "الشاشة المصغّرة غير مدعومة على هذا الجهاز", Toast.LENGTH_SHORT).show()
-            return
-        }
-        val params = PictureInPictureParams.Builder()
-            .setAspectRatio(Rational(16, 9))
-            .build()
-        enterPictureInPictureMode(params)
-    }
-
-    override fun onUserLeaveHint() {
-        super.onUserLeaveHint()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && player?.isPlaying == true &&
-            packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
-            enterPictureInPictureIfSupported()
-        }
-    }
-
-    override fun onPictureInPictureModeChanged(
-        isInPictureInPictureMode: Boolean,
-        newConfig: android.content.res.Configuration
-    ) {
-        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
-        if (isInPictureInPictureMode) {
-            setOverlayVisible(false)
-            list.visibility = View.GONE
-        } else {
-            setOverlayVisible(true)
-        }
-    }
-
     override fun onDestroy() {
-        handler.removeCallbacksAndMessages(null)
-        recoveryTask = null
-        playerView.player = null
-        mediaSession?.release()
-        mediaSession = null
-        player?.release()
-        player = null
+        handler.removeCallbacks(refreshTask)
+        releaseCurrentPlayer()
         worker.shutdownNow()
         super.onDestroy()
     }
 
-    // Draw a compact local brand mark so every channel has a visible logo,
-    // even when its remote image is SVG, unavailable, or blocked by the host.
-    private fun makeChannelLogo(name: String): Bitmap {
-        val size = 128
-        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        val lower = name.lowercase()
-        val isBein = lower.contains("bein")
-        val isMbc = lower.contains("mbc")
-        val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = if (isMbc) Color.WHITE else if (isBein) Color.rgb(24, 28, 58) else Color.rgb(45, 43, 66)
-        }
-        canvas.drawRoundRect(0f, 0f, size.toFloat(), size.toFloat(), 18f, 18f, bg)
-        val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            textAlign = Paint.Align.CENTER
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            color = if (isMbc) Color.DKGRAY else Color.WHITE
-        }
-        if (isBein) {
-            p.textSize = 39f
-            canvas.drawText("beIN", 64f, 61f, p)
-            p.textSize = 17f
-            canvas.drawText("SPORTS", 64f, 86f, p)
-            Regex("\\d+").find(name)?.value?.let {
-                p.textSize = 14f
-                canvas.drawText(it, 64f, 111f, p)
-            }
-        } else if (isMbc) {
-            val letters = listOf("M", "B", "C")
-            val colors = listOf(Color.rgb(0, 145, 205), Color.rgb(224, 62, 105), Color.rgb(238, 148, 38))
-            val xs = listOf(37f, 64f, 91f)
-            p.textSize = 43f
-            letters.forEachIndexed { i, letter ->
-                p.color = colors[i]
-                canvas.drawText(letter, xs[i], 65f, p)
-            }
-            p.color = Color.DKGRAY
-            p.textSize = 13f
-            canvas.drawText(name.substringAfter("MBC").trim().uppercase().take(13), 64f, 94f, p)
-        } else {
-            p.textSize = 24f
-            canvas.drawText(name.take(10).uppercase(), 64f, 72f, p)
-        }
-        return bitmap
-    }
-
-    private class PlayerChannelAdapter(
+    private class ChannelAdapter(
         private val items: List<DisplayChannel>,
         private val click: (DisplayChannel) -> Unit
     ) : RecyclerView.Adapter<ChannelHolder>() {
         override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): ChannelHolder {
-            val context = parent.context
-            val card = LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                setPadding(10, 4, 12, 4)
-                setBackgroundColor(Color.rgb(31, 32, 40))
-                layoutParams = RecyclerView.LayoutParams(-2, dp(context, 46)).apply {
-                    marginStart = dp(context, 4)
-                    marginEnd = dp(context, 4)
-                }
+            val button = Button(parent.context).apply {
+                isAllCaps = false
+                textSize = 14f
+                minHeight = 52
+                setPadding(20, 8, 20, 8)
             }
-            val logo = ImageView(context).apply {
-                scaleType = ImageView.ScaleType.FIT_CENTER
-                setImageBitmap(makeStaticLogo("TV"))
-            }
-            card.addView(logo, LinearLayout.LayoutParams(dp(context, 36), dp(context, 36)))
-            val label = TextView(context).apply {
-                setTextColor(Color.WHITE)
-                textSize = 12f
-                typeface = Typeface.DEFAULT_BOLD
-                maxLines = 1
-                setPadding(dp(context, 7), 0, 0, 0)
-            }
-            card.addView(label, LinearLayout.LayoutParams(-2, -2))
-            return ChannelHolder(card, logo, label)
+            return ChannelHolder(button)
         }
 
         override fun getItemCount() = items.size
 
         override fun onBindViewHolder(holder: ChannelHolder, position: Int) {
-            val channel = items[position]
-            holder.label.text = channel.name
-            holder.logo.setImageBitmap(makeStaticLogo(channel.name))
-            holder.itemView.setOnClickListener { click(channel) }
+            (holder.itemView as Button).text = items[position].name
+            holder.itemView.setOnClickListener { click(items[position]) }
         }
-
-        private fun makeStaticLogo(name: String): Bitmap {
-            val size = 128
-            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-            val canvas = Canvas(bitmap)
-            val lower = name.lowercase()
-            val isBein = lower.contains("bein")
-            val isMbc = lower.contains("mbc")
-            val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = if (isMbc) Color.WHITE else if (isBein) Color.rgb(24, 28, 58) else Color.rgb(45, 43, 66)
-            }
-            canvas.drawRoundRect(0f, 0f, 128f, 128f, 18f, 18f, bg)
-            val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                textAlign = Paint.Align.CENTER
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                color = if (isMbc) Color.DKGRAY else Color.WHITE
-            }
-            if (isBein) {
-                p.textSize = 38f
-                canvas.drawText("beIN", 64f, 61f, p)
-                p.textSize = 16f
-                canvas.drawText("SPORTS", 64f, 86f, p)
-                Regex("\\d+").find(name)?.value?.let { p.textSize = 13f; canvas.drawText(it, 64f, 110f, p) }
-            } else if (isMbc) {
-                val colors = listOf(Color.rgb(0,145,205), Color.rgb(224,62,105), Color.rgb(238,148,38))
-                listOf("M","B","C").forEachIndexed { i, ch -> p.color = colors[i]; p.textSize = 43f; canvas.drawText(ch, 37f + i*27f, 65f, p) }
-                p.color = Color.DKGRAY
-                p.textSize = 13f
-                canvas.drawText(name.substringAfter("MBC").trim().uppercase().take(13), 64f, 94f, p)
-            } else {
-                p.textSize = 24f
-                canvas.drawText(name.take(10).uppercase(), 64f, 72f, p)
-            }
-            return bitmap
-        }
-
-        private fun dp(context: android.content.Context, value: Int): Int =
-            (value * context.resources.displayMetrics.density).toInt()
     }
 
-    private class ChannelHolder(
-        view: View,
-        val logo: ImageView,
-        val label: TextView
-    ) : RecyclerView.ViewHolder(view)
-
-    companion object {
-        const val EXTRA_NAME = "channel_name"
-        const val EXTRA_URL = "channel_url"
-        const val EXTRA_REFERER = "channel_referer"
-        const val EXTRA_CHANNEL_ID = "channel_id"
-        const val EXTRA_LOGO = "channel_logo"
-        const val EXTRA_USER_AGENT = "channel_user_agent"
-        const val EXTRA_COOKIE = "channel_cookie"
-    }
+    private class ChannelHolder(view: View) : RecyclerView.ViewHolder(view)
 }
