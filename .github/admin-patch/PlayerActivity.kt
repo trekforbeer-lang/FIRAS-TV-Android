@@ -110,9 +110,9 @@ class PlayerActivity : AppCompatActivity() {
         setContentView(R.layout.activity_player)
         applyFullscreenSystemUi()
         playerView = findViewById(R.id.playerView)
-        // Use the full landscape viewport; the viewer can switch to Fit when desired.
-        zoomed = true
-        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+        // Preserve the complete broadcast frame by default. Cropping is optional.
+        zoomed = false
+        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
         title = findViewById(R.id.channelTitle)
         watermark = findViewById(R.id.channelWatermark)
         status = findViewById(R.id.statusText)
@@ -121,7 +121,7 @@ class PlayerActivity : AppCompatActivity() {
         playPause = findViewById(R.id.playPauseButton)
         fullscreen = findViewById(R.id.fullscreenButton)
         zoom = findViewById(R.id.zoomButton)
-        zoom.text = "ملاءمة"
+        zoom.text = "تكبير"
         fullscreen.text = "⤢"
         retry = findViewById(R.id.retryButton)
         server = findViewById(R.id.serverButton)
@@ -677,11 +677,9 @@ class PlayerActivity : AppCompatActivity() {
         requestedOrientation = if (isFullscreen) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
             else ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         applyFullscreenSystemUi()
-        // Fill the entire landscape screen: no black bars.
-        // ZOOM preserves the source aspect ratio; a small part may be cropped
-        // when the source and phone screen have different aspect ratios.
-        zoomed = isFullscreen
-        playerView.resizeMode = if (isFullscreen) AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+        // Fullscreen changes the available display area, not the video crop.
+        // Keep the selected Fit/Zoom mode so channel logos and the full frame remain visible.
+        playerView.resizeMode = if (zoomed) AspectRatioFrameLayout.RESIZE_MODE_ZOOM
             else AspectRatioFrameLayout.RESIZE_MODE_FIT
         zoom.text = if (zoomed) "ملاءمة" else "تكبير"
         fullscreen.text = if (isFullscreen) "⤡" else "⛶"
