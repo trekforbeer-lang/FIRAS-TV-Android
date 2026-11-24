@@ -122,8 +122,7 @@ class MainActivity : AppCompatActivity() {
         }
         findViewById<TextView>(R.id.navAdmin).setOnClickListener {
             updateBottomNavigation(R.id.navAdmin)
-            returningFromAdmin = true
-            startActivity(Intent(this, AdminActivity::class.java))
+            startActivity(Intent(this, MoreActivity::class.java))
         }
         restoreButton.setOnClickListener { restoreOriginalLists() }
         refresh()
