@@ -12,6 +12,8 @@ import java.security.MessageDigest
 /** Cloud catalog for owner-managed public movies. */
 object CloudMovieSync {
     private val db by lazy { FirebaseFirestore.getInstance() }
+    private const val PREFS = "rahmani_movie_sync"
+    private const val CLOUD_IDS = "cloud_movie_ids"
 
     fun publishAll(context: Context, rows: JSONArray, done: ((Boolean, String?) -> Unit)? = null) {
         if (FirebaseAuth.getInstance().currentUser == null) {
@@ -70,6 +72,10 @@ object CloudMovieSync {
                             row.optString("id").takeIf { it.isNotBlank() }?.let { merged[it] = row }
                         }
                     } catch (_: Exception) { }
+                    val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                    val previousIds = prefs.getStringSet(CLOUD_IDS, emptySet()).orEmpty().toSet()
+                    val currentIds = snapshot.documents.map { it.id }.toSet()
+                    (previousIds - currentIds).forEach { merged.remove(it) }
                     snapshot.documents.forEach { doc ->
                         val data = doc.data ?: return@forEach
                         val row = JSONObject().put("id", doc.id)
@@ -82,6 +88,7 @@ object CloudMovieSync {
                     }
                     val rows = JSONArray()
                     merged.values.forEach { rows.put(it) }
+                    prefs.edit().putStringSet(CLOUD_IDS, currentIds).apply()
                     val temp = File(context.filesDir, "movies.json.tmp")
                     temp.writeText(JSONObject().put("movies", rows).toString(2), Charsets.UTF_8)
                     if (!temp.renameTo(target)) { temp.copyTo(target, overwrite = true); temp.delete() }
