@@ -46,7 +46,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        sections = ChannelRepository.load(this)
         val appCtx = applicationContext
         Thread { StreamConfigStore.ensureLoaded(appCtx) }.start()
         adapter = ChannelAdapter(onClick = { c ->
@@ -126,6 +125,23 @@ class MainActivity : AppCompatActivity() {
         }
         restoreButton.setOnClickListener { restoreOriginalLists() }
         refresh()
+        // Loading an already-restored, potentially large channel catalog must not block startup.
+        restoreButton.isEnabled = false
+        restoreButton.text = "جارٍ تحميل القنوات..."
+        Thread {
+            val initialSections = ChannelRepository.load(applicationContext)
+            runOnUiThread {
+                if (!isFinishing && !isDestroyed) {
+                    sections = initialSections
+                    rebuildChips(chips)
+                    refresh()
+                    if (!restoreInProgress) {
+                        restoreButton.isEnabled = true
+                        restoreButton.text = "استعادة القنوات القديمة"
+                    }
+                }
+            }
+        }.start()
         FanMatchWorker.schedule(this)
         findViewById<View>(R.id.fanPreferencesButton).setOnClickListener { startActivity(Intent(this, TeamPreferencesActivity::class.java)) }
         showWelcomeScreen()
@@ -353,7 +369,11 @@ class MainActivity : AppCompatActivity() {
         empty.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
     }
 
+    private var restoreInProgress = false
+
     private fun restoreOriginalLists() {
+        if (restoreInProgress) return
+        restoreInProgress = true
         restoreButton.isEnabled = false
         restoreButton.text = "جارٍ استعادة القنوات..."
         Thread {
@@ -414,11 +434,13 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     sections = restoredSections; selected = ""
                     rebuildChips(chips); refresh()
+                    restoreInProgress = false
                     restoreButton.isEnabled = true; restoreButton.text = "استعادة القنوات القديمة"
                     Toast.makeText(this, "أضيفت " + added + " قناة. افحص الروابط من لوحة الإدارة لأن توفر البث يتغير.", Toast.LENGTH_LONG).show()
                 }
             } catch (_: Exception) {
                 runOnUiThread {
+                    restoreInProgress = false
                     restoreButton.isEnabled = true; restoreButton.text = "إعادة محاولة استعادة القنوات"
                     Toast.makeText(this, "تعذّر تحميل القوائم؛ تحقق من اتصال الإنترنت", Toast.LENGTH_LONG).show()
                 }
