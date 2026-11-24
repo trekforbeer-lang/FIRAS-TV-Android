@@ -3,14 +3,14 @@
     <color name="bg_primary">#080B12</color>
     <color name="surface">#171C29</color>
     <color name="surface_elevated">#222A3A</color>
-    <color name="surface_selected">#492637</color>
+    <color name="surface_selected">#3B3223</color>
     <color name="text_primary">#F7F8FC</color>
     <color name="text_secondary">#A8B1C2</color>
     <color name="text_tertiary">#7F8AA0</color>
-    <color name="brand_red">#F04468</color>
+    <color name="brand_red">#C6A66A</color>
     <color name="red">#F04468</color>
     <color name="surface_high">#273044</color>
-    <color name="live_red">#E83E62</color>
+    <color name="live_red">#D6B978</color>
     <color name="divider">#26334455</color>
     <color name="stroke_card">#334D5A75</color>
     <color name="overlay_scrim">#B3080B12</color>
@@ -18,6 +18,6 @@
     <color name="nav_unselected">#A8B1C2</color>
     <color name="nav_selected">#492637</color>
     <color name="success">#36D399</color>
-    <color name="warning">#F6BD60</color>
-    <color name="error">#FF647C</color>
+    <color name="warning">#E2C58C</color>
+    <color name="error">#D97979</color>
 </resources>
