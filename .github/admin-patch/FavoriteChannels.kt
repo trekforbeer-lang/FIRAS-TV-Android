@@ -1,6 +1,6 @@
 package com.firas.tv
 
-import android.app.Activity
+import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
@@ -18,26 +18,26 @@ object FavoriteChannels {
     private const val PREFS = "rahmani_saved_channels"
     private const val KEY = "items"
 
-    fun contains(activity: Activity, channel: Channel): Boolean =
-        read(activity).any { identity(it) == identity(channel) }
+    fun contains(context: Context, channel: Channel): Boolean =
+        read(context).any { identity(it) == identity(channel) }
 
     @Synchronized
-    fun toggle(activity: Activity, channel: Channel): Boolean {
-        val items = read(activity).toMutableList()
+    fun toggle(context: Context, channel: Channel): Boolean {
+        val items = read(context).toMutableList()
         val index = items.indexOfFirst { identity(it) == identity(channel) }
         val added = index < 0
         if (added) items.add(channel) else items.removeAt(index)
-        write(activity, items)
+        write(context, items)
         return added
     }
 
-    fun all(activity: Activity): List<Channel> = read(activity)
+    fun all(context: Context): List<Channel> = read(context)
 
     private fun identity(channel: Channel): String =
         channel.id.takeIf { it.isNotBlank() } ?: channel.url.ifBlank { channel.name }
 
-    private fun read(activity: Activity): List<Channel> {
-        val raw = activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE).getString(KEY, "[]") ?: "[]"
+    private fun read(context: Context): List<Channel> {
+        val raw = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, "[]") ?: "[]"
         return try {
             val array = JSONArray(raw)
             (0 until array.length()).mapNotNull { index ->
@@ -48,13 +48,13 @@ object FavoriteChannels {
         } catch (_: Exception) { emptyList() }
     }
 
-    private fun write(activity: Activity, channels: List<Channel>) {
+    private fun write(context: Context, channels: List<Channel>) {
         val array = JSONArray()
         channels.forEach { channel ->
             array.put(JSONObject().put("name", channel.name).put("logo", channel.logo)
                 .put("url", channel.url).put("referer", channel.referer).put("id", channel.id))
         }
-        activity.getSharedPreferences(PREFS, Activity.MODE_PRIVATE).edit()
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putString(KEY, array.toString()).apply()
     }
 }

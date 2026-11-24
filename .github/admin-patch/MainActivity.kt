@@ -49,7 +49,7 @@ class MainActivity : AppCompatActivity() {
         sections = ChannelRepository.load(this)
         val appCtx = applicationContext
         Thread { StreamConfigStore.ensureLoaded(appCtx) }.start()
-        adapter = ChannelAdapter { c ->
+        adapter = ChannelAdapter(onClick = { c ->
             if (c.url.isBlank()) {
                 Toast.makeText(this, "رابط البث غير مضاف لهذه القناة بعد. أضفه من لوحة الإدارة.", Toast.LENGTH_LONG).show()
                 return@ChannelAdapter
@@ -64,7 +64,7 @@ class MainActivity : AppCompatActivity() {
                     .putExtra(PlayerActivity.EXTRA_CHANNEL_ID, c.id)
                     .putExtra(PlayerActivity.EXTRA_LOGO, c.logo))
             }
-        }
+        }, onFavoriteChanged = { refresh() })
         val rv = findViewById<RecyclerView>(R.id.list)
         channelRecycler = rv
         rv.layoutManager = GridLayoutManager(this, if (resources.configuration.screenWidthDp >= 600) 4 else 2)
