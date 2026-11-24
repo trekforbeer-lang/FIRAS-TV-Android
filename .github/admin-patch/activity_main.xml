@@ -193,6 +193,20 @@
                         android:clickable="true"
                         android:focusable="true"/>
                     <TextView
+                        android:id="@+id/quickCountriesButton"
+                        android:layout_width="112dp"
+                        android:layout_height="76dp"
+                        android:layout_marginEnd="9dp"
+                        android:gravity="center"
+                        android:background="@drawable/rahmani_action_card"
+                        android:foreground="@drawable/rahmani_card_stroke"
+                        android:text="🌍  الدول&#10;العربية والأجنبية"
+                        android:textColor="#FFFFFF"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:clickable="true"
+                        android:focusable="true"/>
+                    <TextView
                         android:id="@+id/quickMoviesButton"
                         android:layout_width="112dp"
                         android:layout_height="76dp"
