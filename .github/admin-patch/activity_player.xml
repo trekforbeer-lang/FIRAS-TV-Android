@@ -10,7 +10,6 @@
    <TextView android:id="@+id/channelTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="اختر قناة" android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="16sp" android:maxLines="1"/>
   </LinearLayout>
   <Button android:id="@+id/lockButton" android:layout_width="42dp" android:layout_height="44dp" android:minWidth="0dp" android:minHeight="0dp" android:backgroundTint="#00000000" android:text="♙" android:textColor="#FFFFFF" android:textSize="20sp"/>
-  <Button android:id="@+id/castButton" android:layout_width="42dp" android:layout_height="44dp" android:minWidth="0dp" android:minHeight="0dp" android:backgroundTint="#00000000" android:text="▣" android:textColor="#FFFFFF" android:textSize="20sp"/>
   <Button android:id="@+id/fullscreenButton" android:layout_width="48dp" android:layout_height="44dp" android:minWidth="0dp" android:minHeight="0dp" android:backgroundTint="#00000000" android:text="⛶" android:textColor="#FFFFFF" android:textSize="22sp"/>
   <Button android:id="@+id/qualityButton" android:layout_width="48dp" android:layout_height="44dp" android:minWidth="0dp" android:minHeight="0dp" android:backgroundTint="#00000000" android:text="HD" android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="15sp"/>
  </LinearLayout>
