@@ -21,6 +21,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.C
+import androidx.media3.common.AudioAttributes
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
@@ -249,6 +250,10 @@ class MoviePlayerActivity : AppCompatActivity() {
             .setMediaSourceFactory(sourceFactory)
             .build().also { exo ->
                 playerView.player = exo
+                exo.setAudioAttributes(
+                    AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(),
+                    true
+                )
                 mediaSession = MediaSession.Builder(this, exo).build()
                 exo.addListener(object : Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {
