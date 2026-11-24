@@ -86,8 +86,7 @@ class MyListActivity : AppCompatActivity() {
         root.addView(header)
         val content = android.widget.FrameLayout(this)
         val recycler = RecyclerView(this).apply {
-            layoutManager = GridLayoutManager(this@MyListActivity,
-                if (resources.configuration.screenWidthDp >= 600) 4 else 2)
+            layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this@MyListActivity)
             setPadding(dp(10), dp(4), dp(10), dp(12))
             clipToPadding = false
         }
