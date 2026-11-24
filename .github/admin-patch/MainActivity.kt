@@ -473,7 +473,8 @@ class MainActivity : AppCompatActivity() {
                             section = JSONObject().put("title", source.first).put("items", JSONArray())
                             groups.put(section)
                         }
-                        val items = section.optJSONArray("items") ?: JSONArray().also { section.put("items", it) }
+                        val actualSection = section ?: continue
+                        val items = actualSection.optJSONArray("items") ?: JSONArray().also { actualSection.put("items", it) }
                         val known = HashSet<String>()
                         for (i in 0 until items.length()) known.add(items.optJSONObject(i)?.optString("url").orEmpty())
                         for (item in parsed) {
