@@ -14,7 +14,7 @@ service cloud.firestore {
     // Public clients may read published channel records only.
     // Only accounts with a server-issued custom claim can change the catalog.
     match /channels/{channelId} {
-      allow read: if resource.data.active == true;
+      allow read: if resource.data.active == true || isAdmin();
       allow create: if isAdmin()
         && request.resource.data.keys().hasOnly([
           "name", "url", "logo", "referer", "countryCode",
