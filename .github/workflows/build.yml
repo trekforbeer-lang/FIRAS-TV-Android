@@ -29,6 +29,7 @@ jobs:
           cp .github/admin-patch/DiscoverActivity.kt app/src/main/java/com/firas/tv/DiscoverActivity.kt # channel discovery and category search
           cp .github/admin-patch/MoreActivity.kt app/src/main/java/com/firas/tv/MoreActivity.kt # dedicated More hub
           cp .github/admin-patch/Models.kt app/src/main/java/com/firas/tv/Models.kt
+          cp .github/admin-patch/CloudChannelSync.kt app/src/main/java/com/firas/tv/CloudChannelSync.kt
           cp .github/admin-patch/UniversalStreamEngine.kt app/src/main/java/com/firas/tv/UniversalStreamEngine.kt
           cp .github/admin-patch/ChannelAdapter.kt app/src/main/java/com/firas/tv/ChannelAdapter.kt
           cp .github/admin-patch/activity_main.xml app/src/main/res/layout/activity_main.xml
