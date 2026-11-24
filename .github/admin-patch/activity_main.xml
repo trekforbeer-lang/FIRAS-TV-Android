@@ -13,8 +13,8 @@
         android:layout_height="64dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="18dp"
-        android:paddingEnd="16dp">
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp">
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -72,9 +72,9 @@
                 android:id="@+id/search"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
-                android:layout_marginStart="18dp"
-                android:layout_marginEnd="18dp"
-                android:layout_marginTop="5dp"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                android:layout_marginTop="7dp"
                 android:layout_marginBottom="15dp"
                 android:background="@drawable/search_bg"
                 android:hint="⌕   ابحث عن قناة أو فيلم أو تصنيف"
@@ -90,9 +90,9 @@
             <FrameLayout
                 android:id="@+id/homeHeroSection"
                 android:layout_width="match_parent"
-                android:layout_height="218dp"
-                android:layout_marginStart="18dp"
-                android:layout_marginEnd="18dp"
+                android:layout_height="232dp"
+                android:layout_marginStart="10dp"
+                android:layout_marginEnd="10dp"
                 android:background="@drawable/home_hero_bg"
                 android:foreground="@drawable/rahmani_card_stroke">
                 <LinearLayout
@@ -231,8 +231,8 @@
                 android:layout_height="76dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginStart="18dp"
-                android:layout_marginEnd="18dp"
+                android:layout_marginStart="10dp"
+                android:layout_marginEnd="10dp"
                 android:layout_marginTop="17dp"
                 android:paddingStart="15dp"
                 android:paddingEnd="12dp"
@@ -291,8 +291,8 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingStart="20dp"
-                android:paddingEnd="20dp"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
                 android:paddingTop="24dp"
                 android:paddingBottom="8dp">
                 <TextView
@@ -334,8 +334,8 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingStart="20dp"
-                android:paddingEnd="18dp"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
                 android:paddingTop="18dp"
                 android:paddingBottom="9dp">
                 <LinearLayout
@@ -393,8 +393,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:nestedScrollingEnabled="false"
-                    android:paddingStart="10dp"
-                    android:paddingEnd="10dp"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
                     android:paddingTop="4dp"
                     android:paddingBottom="12dp"
                     android:clipToPadding="false"/>
@@ -414,9 +414,9 @@
         android:id="@+id/bottomNavigationBar"
         android:layout_width="match_parent"
         android:layout_height="72dp"
-        android:layout_marginStart="14dp"
-        android:layout_marginEnd="14dp"
-        android:layout_marginBottom="9dp"
+        android:layout_marginStart="7dp"
+        android:layout_marginEnd="7dp"
+        android:layout_marginBottom="7dp"
         android:orientation="horizontal"
         android:gravity="center"
         android:background="@drawable/rahmani_nav_capsule"
