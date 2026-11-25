@@ -116,12 +116,12 @@ class PlayerActivity : AppCompatActivity() {
         playerView = findViewById(R.id.playerView)
         // Initialize every view used by applyDisplayMode before calling it.
         zoom = findViewById(R.id.zoomButton)
-        // Default to ZOOM so the video fills the landscape phone display.
-        // Respect a mode explicitly selected and saved by the viewer.
+        // Default to FIT so channel logos and the full frame remain visible.
+        // Viewers can switch to ZOOM or FILL at any time from the player controls.
         displayMode = if (playerPrefs.contains("display_mode")) {
             playerPrefs.getInt("display_mode", 1).coerceIn(0, 3)
         } else {
-            1
+            0
         }
         applyDisplayMode()
         title = findViewById(R.id.channelTitle)
@@ -370,13 +370,13 @@ class PlayerActivity : AppCompatActivity() {
                                 recoveryAttempts = 0
                                 recoveryTask?.let(handler::removeCallbacks)
                                 recoveryTask = null
-                                "RAHMANI • البث جاهز"
+                                "FIRAS • البث جاهز"
                             }
                             Player.STATE_ENDED -> {
                                 showLoading(false)
                                 "انتهى البث"
                             }
-                            else -> "RAHMANI • بث مباشر"
+                            else -> "FIRAS • بث مباشر"
                         }
                         playPause.text = if (exo.isPlaying) "Ⅱ" else "▶"
                     }
@@ -496,7 +496,7 @@ class PlayerActivity : AppCompatActivity() {
                 currentUrls = validUrls
                 currentUrlIndex = 0
                 if (keepPosition && previousUrl == validUrls.first()) {
-                    status.text = "RAHMANI • البث مستمر"
+                    status.text = "FIRAS • البث مستمر"
                     return@runOnUiThread
                 }
                 playUrl(validUrls.first(), oldPosition)
@@ -515,7 +515,7 @@ class PlayerActivity : AppCompatActivity() {
             .setMediaMetadata(
                 MediaMetadata.Builder()
                     .setTitle(current?.name ?: "بث مباشر")
-                    .setArtist("RAHMANI")
+                    .setArtist("FIRAS")
                     .build()
             )
         // Preserve HLS handling for extension-less and PHP resolver endpoints,
