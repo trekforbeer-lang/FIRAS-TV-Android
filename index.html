@@ -957,7 +957,12 @@ function play(c,keep,ai){
   if(!keep){hist=[c.id].concat(hist.filter(function(x){return x!==c.id})).slice(0,30);sv('fr_hist',hist)}
   destroy();wake();
   var u=ai?c.alts[ai-1]:c.url;
+  var failed=false;
   function fail(){
+    /* A media error may fire more than once; advance to an alternative only once. */
+    if(failed)return;
+    failed=true;
+    if(tok!==playTok||cur!==c)return;
     if(Array.isArray(c.alts)&&ai<c.alts.length){toast('جارٍ تجربة رابط بديل...');play(c,true,ai+1)}
     else{showMsg('تعذّر تشغيل هذه القناة.\nجرّب قناة أخرى.')}
   }
