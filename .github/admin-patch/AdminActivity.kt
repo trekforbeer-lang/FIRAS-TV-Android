@@ -985,6 +985,10 @@ class AdminActivity : Activity() {
         val text = (explicit + " " + channel.optString("group") + " " + channel.optString("name"))
             .lowercase(Locale.ROOT)
             .replace('_', ' ')
+            .replace(Regex("[\\u064B-\\u065F\\u0670]"), "")
+            .replace("ـ", "")
+            .replace('أ', 'ا').replace('إ', 'ا').replace('آ', 'ا')
+            .replace('ى', 'ي')
         val aliases = listOf(
             "DZ" to listOf("الجزائر", "جزائر", "algeria", "algerian", "entv", "canal algerie", "canal algérie", "echorouk", "الشروق", "النهار الجزائرية"),
             "EG" to listOf("مصر", "مصري", "egypt", "egyptian", "الحياة", "النيل"),
@@ -992,8 +996,8 @@ class AdminActivity : Activity() {
             "TN" to listOf("تونس", "تونسي", "tunisia", "tunisian", "الحوار التونسي"),
             "LY" to listOf("ليبيا", "ليبي", "libya", "libyan", "ليبيا الأحرار"),
             "SA" to listOf("السعودية", "سعودي", "saudi", "السعودية الأولى"),
-            "QA" to listOf("قطر", "قطري", "qatar", "qatari", "al jazeera", "الجزيرة", "bein", "بي ان"),
-            "AE" to listOf("الإمارات", "اماراتي", "uae", "emirati", "abu dhabi", "دبي", "الشارقة"),
+            "QA" to listOf("قطر", "قطري", "qatar", "qatari"),
+            "AE" to listOf("الإمارات", "اماراتي", "uae", "emirati", "abu dhabi", "ابوظبي"),
             "KW" to listOf("الكويت", "كويتي", "kuwait", "kuwaiti"),
             "BH" to listOf("البحرين", "بحريني", "bahrain", "bahraini"),
             "OM" to listOf("عمان", "عُمان", "oman", "omani"),
@@ -1005,8 +1009,8 @@ class AdminActivity : Activity() {
             "YE" to listOf("اليمن", "يمني", "yemen", "yemeni"),
             "SD" to listOf("السودان", "سوداني", "sudan", "sudanese"),
             "FR" to listOf("فرنسا", "فرنسي", "france", "french", "france 24", "فرانس 24",),
-            "GB" to listOf("بريطانيا", "المملكة المتحدة", "britain", "british", "united kingdom", "bbc", "itv", "sky news", "channel 4"),
-            "US" to listOf("أمريكا", "الولايات المتحدة", "american", "usa", "united states", "cnn", "fox news", "abc news", "nbc", "cbs"),
+            "GB" to listOf("بريطانيا", "المملكة المتحدة", "britain", "british", "united kingdom"),
+            "US" to listOf("أمريكا", "الولايات المتحدة", "american", "usa", "united states"),
             "DE" to listOf("ألمانيا", "الماني", "germany", "german",),
             "ES" to listOf("إسبانيا", "اسبانيا", "spain", "spanish",),
             "IT" to listOf("إيطاليا", "ايطاليا", "italy", "italian",),
