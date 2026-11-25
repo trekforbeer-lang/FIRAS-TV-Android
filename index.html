@@ -502,6 +502,39 @@ body{background:#070a08}
 }
 @media(prefers-reduced-motion:reduce){.ctl{transition:none}}
 
+
+/* FINAL UI OVERRIDES — wide player, dark graphite, gold + emerald */
+:root{--bg:#080b0a;--pane:#101713;--sel:#1b3427;--red:#e8bd45;--mu:#a5b2aa;--ok:#35d07f;--line:#263a2e;--surface:#141d17;--gold:#e8bd45;--green:#35d07f}
+html,body{background:var(--bg);color:#f5f7f5}
+#app{background:radial-gradient(ellipse at 50% -18%,#1b3022 0,transparent 48%),var(--bg)}
+#hd{background:transparent}
+#hb{color:var(--gold);text-shadow:0 0 22px #e8bd4530;letter-spacing:-.8px}
+#tabs button.on{border-color:var(--gold);color:var(--gold)}
+#bn{background:rgba(13,20,16,.97);border-color:var(--line)}
+#bn button.on{background:linear-gradient(145deg,#263a29,#1b2b20);color:var(--green);box-shadow:inset 0 0 0 1px #35d07f35}
+#pl{width:100%;aspect-ratio:16/9;background:#000;border-bottom:1px solid var(--line)}
+#pl video{width:100%;height:100%;object-fit:contain}
+#idle{background:radial-gradient(circle at 50% 42%,#233b29 0,#101610 50%,#000 100%)}
+#idle b{color:var(--gold)}
+#lv{background:var(--green);color:#07110b}
+#body{background:#0b110d}
+#cats{flex-basis:36%;max-width:250px;background:#0d1510}
+#cats button{border-radius:0 13px 13px 0}
+#cats button.on{background:linear-gradient(90deg,#1c3828,#14231a);box-shadow:inset 3px 0 var(--gold);color:var(--green)}
+#cats .ci{background:#1b2d21;color:var(--gold)}
+#side{background:var(--pane);border-left:1px solid var(--line)}
+#q,.sq{background:#090f0b;border-color:var(--line)}
+#q:focus,.sq:focus{border-color:var(--gold);box-shadow:0 0 0 2px #e8bd4520}
+#wk{background:#111a14;border-color:var(--line)}
+#wk.on{background:var(--green);border-color:var(--green);color:#07110b}
+#list{background:var(--pane)}
+.ch{border-color:transparent}
+.ch.on{background:linear-gradient(90deg,#1b3827,#132019);border-color:#2c4935;box-shadow:inset 3px 0 var(--gold)}
+.ch.hd{background:#17231b;border-color:var(--line)}
+.more{background:#1b3827;border:1px solid var(--line);color:var(--green)}
+button:focus-visible,[role=button]:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+@media(orientation:landscape) and (max-height:500px){#plSlot{width:58%}#plSlot #pl{width:100%;height:100%;aspect-ratio:auto}#cats{flex-basis:34%}}
+
 </style>
 </head>
 <body>
