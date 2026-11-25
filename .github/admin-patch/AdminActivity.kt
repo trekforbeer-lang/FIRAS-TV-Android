@@ -890,7 +890,18 @@ class AdminActivity : Activity() {
                         }
                         // Imported channels are stored directly in their country sections.
                         // Country metadata wins; recognizable broadcaster/channel names are a fallback.
-                        val grouped = unique.groupBy { channel ->
+                        val legacyImported = mutableListOf<JSONObject>()
+                        for (i in 0 until groups.length()) {
+                            val section = groups.optJSONObject(i) ?: continue
+                            if (section.optString("title") == "قنوات مستوردة") {
+                                val oldItems = section.optJSONArray("items") ?: JSONArray()
+                                for (j in 0 until oldItems.length()) {
+                                    oldItems.optJSONObject(j)?.let { legacyImported.add(it) }
+                                }
+                                section.put("items", JSONArray())
+                            }
+                        }
+                        val grouped = (legacyImported + unique).groupBy { channel ->
                             val code = detectImportedCountry(channel)
                             channel.put("cc", code)
                             code
