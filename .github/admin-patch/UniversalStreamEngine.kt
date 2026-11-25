@@ -167,6 +167,7 @@ object UniversalStreamEngine {
                             val headers = linkedMapOf<String, String>()
                             item.optString("referer").takeIf { it.isNotBlank() }?.let { headers["Referer"] = it }
                             item.optString("userAgent").takeIf { it.isNotBlank() }?.let { headers["User-Agent"] = it }
+                            item.optString("cookie").takeIf { it.isNotBlank() }?.let { headers["Cookie"] = it }
                             val qualityUrls = linkedMapOf<String, String>()
                             item.optJSONObject("qualityUrls")?.let { q -> listOf("SD", "HD", "FHD", "4K").forEach { label -> q.optString(label).takeIf { it.isNotBlank() }?.let { qualityUrls[label] = it } } }
                             result += LegacyChannel(item.optString("id", "legacy-$i-$j"), item.optString("name", "Channel $j"),
@@ -186,8 +187,10 @@ object UniversalStreamEngine {
                         (item.optJSONObject("headers") ?: JSONObject()).let { extra ->
                             extra.keys().forEach { key -> headers[key] = extra.optString(key) }
                         }
+                        val qualityUrls = linkedMapOf<String, String>()
+                        item.optJSONObject("qualityUrls")?.let { q -> listOf("SD", "HD", "FHD", "4K").forEach { label -> q.optString(label).takeIf { it.isNotBlank() }?.let { qualityUrls[label] = it } } }
                         result += LegacyChannel(item.optString("id", "legacy-$i"), item.optString("name", "Channel $i"),
-                            item.optString("category"), item.optString("logo"), stream, headers)
+                            item.optString("category"), item.optString("logo"), stream, headers, qualityUrls)
                     }
                 }
             }
