@@ -33,6 +33,11 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
     private val cache = object : LinkedHashMap<String, Bitmap>(48, .75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Bitmap>?): Boolean = size > 48
     }
+    // Reuse fallback artwork during RecyclerView rebinding instead of allocating
+    // a new 160x160 bitmap on every scroll pass.
+    private val fallbackCache = object : LinkedHashMap<String, Bitmap>(32, .75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Bitmap>?): Boolean = size > 64
+    }
 
     object Diff : DiffUtil.ItemCallback<Channel>() {
         override fun areItemsTheSame(oldItem: Channel, newItem: Channel) =
@@ -145,7 +150,11 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
             try { BitmapFactory.decodeFile(localPath) } catch (_: Exception) { null }
         } else null
         if (localBitmap != null) synchronized(cache) { cache[channel.logo] = localBitmap }
-        holder.logo.setImageBitmap(cached ?: localBitmap ?: fallbackLogo(channel.name))
+        val placeholder = synchronized(fallbackCache) { fallbackCache[channel.name] }
+            ?: fallbackLogo(channel.name).also { bitmap ->
+                synchronized(fallbackCache) { fallbackCache[channel.name] = bitmap }
+            }
+        holder.logo.setImageBitmap(cached ?: localBitmap ?: placeholder)
         val retryAt = failedUntil[channel.logo] ?: 0L
         if (cached == null && localBitmap == null && channel.logo.startsWith("http", true) &&
             System.currentTimeMillis() >= retryAt && inFlight.add(channel.logo)) {
