@@ -36,6 +36,7 @@ class MainActivity : AppCompatActivity() {
     private var sections: List<Section> = emptyList()
     private var selected = ""
     private var selectedRegion = ""
+    private var selectedCountryCode = ""
     private var query = ""
     private var lastLaunchAt = 0L
     private var returningFromAdmin = false
@@ -72,6 +73,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
         sections = ChannelRepository.load(this)
+        selectedCountryCode = homePrefs.getString("selected_country_code", "").orEmpty()
         val appCtx = applicationContext
         Thread { StreamConfigStore.ensureLoaded(appCtx) }.start()
         adapter = ChannelAdapter(onClick = { c ->
@@ -149,6 +151,7 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, MoreActivity::class.java))
         }
         restoreButton.setOnClickListener { startManualChannelRestore() }
+        findViewById<Button>(R.id.countryPickerButton).setOnClickListener { showCountryPicker() }
         observeChannelRestore()
         refresh()
         CloudChannelSync.refreshPublic(applicationContext) { changed ->
@@ -387,7 +390,7 @@ class MainActivity : AppCompatActivity() {
             ).apply { topMargin = dp(8) })
         }
         entry("الرئيسية", "العودة إلى الصفحة الرئيسية") {
-            selected = ""; selectedRegion = ""; rebuildChips(chips); refresh()
+            selected = ""; selectedRegion = ""; selectedCountryCode = ""; rebuildChips(chips); refresh()
             updateBottomNavigation(R.id.navHome)
             channelRecycler.smoothScrollToPosition(0)
         }
@@ -563,6 +566,29 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun showCountryPicker() {
+        val countries = sections
+            .filter { it.countryCode.isNotBlank() }
+            .groupBy { it.countryCode.trim().uppercase() }
+            .map { (code, groups) -> code to groups.first().title }
+            .sortedBy { it.second.lowercase() }
+        val labels = arrayOf("كل الدول") + countries.map { (code, name) -> countryFlag(code) + "  " + name }
+        val selectedIndex = countries.indexOfFirst { it.first == selectedCountryCode } + 1
+        AlertDialog.Builder(this)
+            .setTitle("اختر الدولة")
+            .setSingleChoiceItems(labels, selectedIndex) { dialog, which ->
+                selectedCountryCode = if (which == 0) "" else countries[which - 1].first
+                homePrefs.edit().putString("selected_country_code", selectedCountryCode).apply()
+                selected = ""
+                selectedRegion = ""
+                rebuildChips(chips)
+                refresh()
+                dialog.dismiss()
+            }
+            .setNegativeButton("إلغاء", null)
+            .show()
+    }
+
     private fun countryFlag(code: String): String {
         val normalized = code.trim().uppercase()
         if (normalized.length != 2 || normalized.any { it !in 'A'..'Z' }) return "🌐"
@@ -571,7 +597,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refresh() {
-        val list = sections.filter { (selectedRegion.isEmpty() || it.region == selectedRegion) && (selected.isEmpty() || it.title == selected) }.flatMap { it.items }
+        val list = sections.filter { (selectedRegion.isEmpty() || it.region == selectedRegion) && (selectedCountryCode.isEmpty() || it.countryCode.equals(selectedCountryCode, true)) && (selected.isEmpty() || it.title == selected) }.flatMap { it.items }
             .filter { query.isEmpty() || it.name.contains(query, ignoreCase = true) }
             .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name.trim() })
         adapter.submitList(list)
