@@ -73,8 +73,18 @@ class MainActivity : AppCompatActivity() {
         val appCtx = applicationContext
         Thread { StreamConfigStore.ensureLoaded(appCtx) }.start()
         adapter = ChannelAdapter(onClick = { c ->
-            if (c.url.isBlank()) {
-                Toast.makeText(this, "رابط البث غير مضاف لهذه القناة بعد. أضفه من لوحة الإدارة.", Toast.LENGTH_LONG).show()
+            val channelState = c.status.trim().lowercase()
+            val unavailable = c.url.isBlank() || channelState in setOf(
+                "maintenance", "paused", "disabled", "offline", "صيانة", "قيد الصيانة", "متوقف",
+                "soon", "coming_soon", "قريباً", "قريبا", "updating", "pending", "تحديث", "قيد التحديث"
+            )
+            if (unavailable) {
+                val message = when (channelState) {
+                    "soon", "coming_soon", "قريباً", "قريبا" -> "هذه القناة ستتوفر قريباً."
+                    "updating", "pending", "تحديث", "قيد التحديث" -> "القناة قيد التحديث حالياً، حاول لاحقاً."
+                    else -> "القناة في وضع الصيانة حالياً، سنعيدها للخدمة قريباً."
+                }
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                 return@ChannelAdapter
             }
             val now = SystemClock.elapsedRealtime()
@@ -460,32 +470,66 @@ class MainActivity : AppCompatActivity() {
         group.removeAllViews()
         fun addChip(label: String, tag: String, checked: Boolean) {
             val chip = layoutInflater.inflate(R.layout.item_chip, group, false) as Chip
-            chip.id = View.generateViewId(); chip.text = label; chip.tag = tag; chip.isChecked = checked
+            chip.id = View.generateViewId()
+            chip.text = label
+            chip.tag = tag
+            chip.isChecked = checked
             group.addView(chip)
         }
-        addChip("الكل", "", selected.isEmpty() && selectedRegion.isEmpty())
+
+        addChip("كل الدول", "", selectedCountryCode.isEmpty() && selectedRegion.isEmpty())
         addChip("الدول العربية", "__region_arab__", selectedRegion == "arab")
         addChip("الدول الأجنبية", "__region_foreign__", selectedRegion == "foreign")
-        sections.filter { (selectedRegion.isEmpty() || it.region == selectedRegion) && (selectedCountryCode.isEmpty() || it.countryCode.equals(selectedCountryCode, true)) }.forEach {
-            addChip(countryFlag(it.countryCode) + " " + it.title, it.title, selected == it.title)
-        }
+
+        val countries = sections
+            .filter { it.countryCode.isNotBlank() }
+            .groupBy { it.countryCode.trim().uppercase(Locale.ROOT) }
+            .map { (code, groups) ->
+                val name = countryDisplayName(code, groups.first().title)
+                val count = groups.sumOf { it.items.size }
+                Triple(code, name, count)
+            }
+            .sortedBy { it.second.lowercase(Locale.ROOT) }
+
+        countries
+            .filter { selectedRegion.isEmpty() || countriesRegion(it.first) == selectedRegion }
+            .forEach { (code, name, count) ->
+                addChip("${countryFlag(code)}  $name  ·  $count", code, selectedCountryCode == code)
+            }
+
         group.setOnCheckedStateChangeListener { g, ids ->
             val tag = ids.firstOrNull()?.let { g.findViewById<Chip>(it)?.tag as? String }.orEmpty()
             when (tag) {
                 "__region_arab__" -> {
-                    selectedRegion = "arab"; selected = ""; selectedCountryCode = ""
-                    homePrefs.edit().putString("selected_country_code", "").apply()
+                    selectedRegion = "arab"
+                    selected = ""
+                    selectedCountryCode = ""
                 }
                 "__region_foreign__" -> {
-                    selectedRegion = "foreign"; selected = ""; selectedCountryCode = ""
-                    homePrefs.edit().putString("selected_country_code", "").apply()
+                    selectedRegion = "foreign"
+                    selected = ""
+                    selectedCountryCode = ""
                 }
-                "" -> { selectedRegion = ""; selectedCountryCode = ""; homePrefs.edit().putString("selected_country_code", "").apply(); selected = "" }
-                else -> selected = tag
+                "" -> {
+                    selectedRegion = ""
+                    selectedCountryCode = ""
+                    selected = ""
+                }
+                else -> {
+                    selectedRegion = ""
+                    selected = ""
+                    selectedCountryCode = tag
+                }
             }
+            homePrefs.edit().putString("selected_country_code", selectedCountryCode).apply()
             rebuildChips(group)
             refresh()
         }
+    }
+
+    private fun countriesRegion(code: String): String {
+        val arabCountries = setOf("DZ", "SA", "EG", "MA", "TN", "LY", "SD", "IQ", "SY", "JO", "LB", "PS", "YE", "OM", "AE", "QA", "BH", "KW", "MR", "SO", "DJ", "KM")
+        return if (code.uppercase(Locale.ROOT) in arabCountries) "arab" else "foreign"
     }
 
     private fun showCountryPicker() {
