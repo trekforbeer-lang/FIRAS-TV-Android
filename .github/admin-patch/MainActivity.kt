@@ -176,7 +176,7 @@ class MainActivity : AppCompatActivity() {
             isFocusable = true
         }
         val name = TextView(this).apply {
-            text = "فراس"
+            text = "RAHMANI"
             gravity = Gravity.CENTER
             textSize = 48f
             setTextColor(Color.rgb(217, 180, 91))
