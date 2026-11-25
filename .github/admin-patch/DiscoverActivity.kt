@@ -74,7 +74,7 @@ class DiscoverActivity : AppCompatActivity() {
             setTextColor(Color.WHITE)
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
-                setColor(Color.rgb(224, 66, 104))
+                setColor(Color.rgb(222, 174, 67))
             }
         }, LinearLayout.LayoutParams(dp(46), dp(46)))
         root.addView(top)
@@ -89,7 +89,7 @@ class DiscoverActivity : AppCompatActivity() {
             background = GradientDrawable().apply {
                 setColor(Color.rgb(27, 29, 39))
                 cornerRadius = dp(14).toFloat()
-                setStroke(dp(1), Color.rgb(63, 48, 60))
+                setStroke(dp(1), Color.rgb(75, 67, 42))
             }
         }
         root.addView(search, LinearLayout.LayoutParams(-1, dp(50)).apply { topMargin = dp(18) })
@@ -118,7 +118,7 @@ class DiscoverActivity : AppCompatActivity() {
         }, LinearLayout.LayoutParams(0, -2, 1f))
         countView = TextView(this).apply {
             textSize = 11f
-            setTextColor(Color.rgb(255, 139, 164))
+            setTextColor(Color.rgb(95, 211, 148))
         }
         resultsHeader.addView(countView)
         root.addView(resultsHeader)
@@ -169,8 +169,8 @@ class DiscoverActivity : AppCompatActivity() {
                 setPadding(dp(15), 0, dp(15), 0)
                 background = GradientDrawable().apply {
                     cornerRadius = dp(18).toFloat()
-                    setColor(if (selected) Color.rgb(194, 54, 88) else Color.rgb(31, 32, 43))
-                    if (selected) setStroke(dp(1), Color.rgb(242, 111, 143))
+                    setColor(if (selected) Color.rgb(112, 86, 34) else Color.rgb(31, 32, 43))
+                    if (selected) setStroke(dp(1), Color.rgb(222, 174, 67))
                 }
                 isClickable = true
                 isFocusable = true
