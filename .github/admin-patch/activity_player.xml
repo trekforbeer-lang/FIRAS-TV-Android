@@ -15,17 +15,17 @@
  </LinearLayout>
  <LinearLayout android:id="@+id/centerControls" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:gravity="center" android:orientation="horizontal" android:background="@drawable/rahmani_panel_bg" android:padding="9dp" android:elevation="14dp">
   <Button android:id="@+id/previousChannelButton" android:layout_width="58dp" android:layout_height="62dp" android:minWidth="0dp" android:minHeight="0dp" android:backgroundTint="#00000000" android:text="|◀" android:textColor="#FFFFFF" android:textSize="22sp"/>
-  <Button android:id="@+id/playPauseButton" android:layout_width="78dp" android:layout_height="72dp" android:minWidth="0dp" android:minHeight="0dp" android:backgroundTint="#E50914" android:text="▶" android:textColor="#10131A" android:textSize="38sp"/>
+  <Button android:id="@+id/playPauseButton" android:layout_width="78dp" android:layout_height="72dp" android:minWidth="0dp" android:minHeight="0dp" android:backgroundTint="#D9B45B" android:text="▶" android:textColor="#10131A" android:textSize="38sp"/>
   <Button android:id="@+id/nextChannelButton" android:layout_width="58dp" android:layout_height="62dp" android:minWidth="0dp" android:minHeight="0dp" android:backgroundTint="#00000000" android:text="▶|" android:textColor="#FFFFFF" android:textSize="22sp"/>
  </LinearLayout>
  <LinearLayout android:id="@+id/bottomPanel" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_gravity="bottom" android:layout_marginStart="8dp" android:layout_marginEnd="8dp" android:layout_marginBottom="8dp" android:orientation="vertical" android:paddingStart="13dp" android:paddingEnd="13dp" android:paddingTop="11dp" android:paddingBottom="10dp" android:background="@drawable/rahmani_panel_bg" android:elevation="10dp">
   <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
-   <TextView android:id="@+id/liveBadge" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="مباشر" android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="11sp" android:padding="7dp" android:background="#E50914"/>
-   <TextView android:id="@+id/statusText" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="end" android:text="FIRAS • بث مباشر" android:textColor="#E5E5E5" android:textSize="10sp"/>
+   <TextView android:id="@+id/liveBadge" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="مباشر" android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="11sp" android:padding="7dp" android:background="#D9B45B"/>
+   <TextView android:id="@+id/statusText" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="end" android:text="RAHMANI TV • بث مباشر" android:textColor="#E5E5E5" android:textSize="10sp"/>
   </LinearLayout>
-  <View android:layout_width="match_parent" android:layout_height="3dp" android:layout_marginTop="10dp" android:background="#66E50914"/>
+  <View android:layout_width="match_parent" android:layout_height="3dp" android:layout_marginTop="10dp" android:background="#66D9B45B"/>
   <LinearLayout android:layout_width="match_parent" android:layout_height="44dp" android:gravity="center" android:orientation="horizontal">
-   <Button android:id="@+id/subtitleButton" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1" android:minHeight="0dp" android:text="ترجمة وصوت" android:textAllCaps="false" android:textSize="9sp" android:backgroundTint="#263044" android:textColor="#E8EDF5"/>
+   <Button android:id="@+id/subtitleButton" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1" android:minHeight="0dp" android:text="ترجمة وصوت" android:textAllCaps="false" android:textSize="9sp" android:backgroundTint="#252525" android:textColor="#E8EDF5"/>
    <Button android:id="@+id/zoomButton" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1" android:minHeight="0dp" android:text="ملء / Fit" android:textAllCaps="false" android:textSize="10sp" android:backgroundTint="#33222222" android:textColor="#FFFFFF"/>
    <Button android:id="@+id/channelListButton" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1" android:minHeight="0dp" android:text="القنوات" android:textAllCaps="false" android:textSize="10sp" android:backgroundTint="#33222222" android:textColor="#FFFFFF"/>
    <Button android:id="@+id/pictureInPictureButton" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1" android:minHeight="0dp" android:text="مصغّر" android:textAllCaps="false" android:textSize="10sp" android:backgroundTint="#33222222" android:textColor="#FFFFFF"/>
@@ -34,7 +34,7 @@
   </LinearLayout>
  </LinearLayout>
  <LinearLayout android:id="@+id/channelPanel" android:layout_width="220dp" android:layout_height="match_parent" android:layout_gravity="start|center_vertical" android:layout_marginStart="12dp" android:layout_marginTop="84dp" android:layout_marginBottom="84dp" android:orientation="vertical" android:padding="10dp" android:background="@drawable/rahmani_panel_bg" android:elevation="16dp" android:visibility="gone">
-  <TextView android:layout_width="match_parent" android:layout_height="42dp" android:gravity="center_vertical|end" android:text="قائمة القنوات" android:textColor="#D6B36A" android:textStyle="bold" android:textSize="15sp" android:paddingEnd="8dp"/>
+  <TextView android:layout_width="match_parent" android:layout_height="42dp" android:gravity="center_vertical|end" android:text="قائمة القنوات" android:textColor="#D9B45B" android:textStyle="bold" android:textSize="15sp" android:paddingEnd="8dp"/>
   <androidx.recyclerview.widget.RecyclerView android:id="@+id/channelList" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:clipToPadding="false" android:paddingTop="4dp" android:paddingBottom="4dp"/>
  </LinearLayout>
 </FrameLayout>
