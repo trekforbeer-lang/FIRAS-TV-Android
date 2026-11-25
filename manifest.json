@@ -1,6 +1,6 @@
 {
- "name": "FIRAS TV",
- "short_name": "FIRAS TV",
+ "name": "RAHMANI TV",
+ "short_name": "RAHMANI",
  "start_url": "./index.html",
  "display": "fullscreen",
  "display_override": [
@@ -14,7 +14,7 @@
  "dir": "rtl",
  "icons": [
   {
-   "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='110' fill='%23e50914'/><path d='M190 140l190 116-190 116z' fill='white'/></svg>",
+   "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='110' fill='%23e8bd45'/><path d='M190 140l190 116-190 116z' fill='white'/></svg>",
    "sizes": "512x512",
    "type": "image/svg+xml",
    "purpose": "any"

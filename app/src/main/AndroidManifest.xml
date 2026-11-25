@@ -6,7 +6,7 @@
         android:allowBackup="true"
         android:usesCleartextTraffic="false"
         android:hardwareAccelerated="true"
-        android:label="FIRAS TV"
+        android:label="RAHMANI TV"
         android:theme="@style/AppTheme"
         android:supportsRtl="true">
         <activity
