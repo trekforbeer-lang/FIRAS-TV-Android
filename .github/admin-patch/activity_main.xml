@@ -396,7 +396,7 @@
 
                 <LinearLayout
                     android:id="@+id/categoryRail"
-                    android:layout_width="104dp"
+                    android:layout_width="124dp"
                     android:layout_height="match_parent"
                     android:orientation="vertical"
                     android:padding="6dp"
@@ -405,7 +405,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="34dp"
                         android:gravity="center"
-                        android:text="التصنيفات"
+                        android:text="الدول"
                         android:textColor="#D9B45B"
                         android:textStyle="bold"
                         android:textSize="12sp"/>
