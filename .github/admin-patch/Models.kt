@@ -4,7 +4,7 @@ import android.content.Context
 import org.json.JSONObject
 import java.io.File
 
-data class Channel(val name: String, val logo: String, val url: String, val referer: String, val id: String = "", val isPrivate: Boolean = false, val countryCode: String = "")
+data class Channel(val name: String, val logo: String, val url: String, val referer: String, val id: String = "", val isPrivate: Boolean = false, val countryCode: String = "", val status: String = "")
 data class Section(val title: String, val items: List<Channel>, val region: String = "", val countryCode: String = "")
 
 object ChannelRepository {
@@ -31,7 +31,7 @@ object ChannelRepository {
                 val url = item.optString("url", item.optString("stream")).trim()
                 if (url.isNotBlank() && !(url.startsWith("http://", true) || url.startsWith("https://", true))) return@mapNotNull null
                 Channel(item.optString("name", "قناة"), item.optString("logo"), url,
-                    item.optString("referer"), item.optString("id"), item.optBoolean("priv", false), item.optString("countryCode", item.optString("cc", section.optString("countryCode"))))
+                    item.optString("referer"), item.optString("id"), item.optBoolean("priv", false), item.optString("countryCode", item.optString("cc", section.optString("countryCode"))), item.optString("status", if (item.optBoolean("maintenance", false)) "maintenance" else if (url.isBlank()) "maintenance" else "live"))
             }
             if (channels.isEmpty() && section.optString("region").isBlank() && section.optString("countryCode").isBlank()) null else {
                 val code = section.optString("countryCode").ifBlank { channels.firstOrNull()?.countryCode.orEmpty() }.trim().uppercase()
