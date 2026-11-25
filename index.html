@@ -673,6 +673,7 @@ function openCountry(k){
   if(!ch.some(function(c){return c.cc===k}))loadCountry(k);
 }
 function loadCountry(k){
+  if(loading===k)return;
   loading=k;toast('جارٍ تحميل قنوات '+cname(k)+'...');render();
   fetchList(B+'countries/'+k.toLowerCase()+'.m3u').then(function(a){
     loading='';var n=addChannels(a,undefined,k);
