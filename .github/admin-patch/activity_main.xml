@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#081321"
+    android:background="#000000"
     android:layoutDirection="rtl"
     android:fitsSystemWindows="true">
 
@@ -38,8 +38,8 @@
                 android:id="@+id/adminSecretTrigger"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="RAHMANI TV"
-                android:textColor="#D6B36A"
+                android:text="Firas"
+                android:textColor="#E50914"
                 android:textSize="25sp"
                 android:textStyle="bold|italic"
                 android:letterSpacing="0.06"
@@ -119,7 +119,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="RAHMANI  /  PREMIUM STREAMING"
+                        android:text="FIRAS  /  PREMIUM STREAMING"
                         android:textColor="#E7C77E"
                         android:textStyle="bold"
                         android:textSize="9sp"
@@ -269,7 +269,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="RAHMANI SPORTS"
+                        android:text="FIRAS SPORTS"
                         android:textColor="#D6B36A"
                         android:textStyle="bold"
                         android:textSize="9sp"
