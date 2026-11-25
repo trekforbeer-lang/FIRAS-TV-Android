@@ -25,6 +25,7 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
+import androidx.work.WorkManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -391,6 +392,7 @@ class AdminActivity : Activity() {
         }
         panel.addView(action("＋  إضافة دولة (عربية / أجنبية)") { addCountry() })
         panel.addView(action("استيراد قائمة M3U / روابط") { importChannels() })
+        panel.addView(action("استعادة قنوات من المصادر") { startCatalogRestore() })
         panel.addView(action("فحص روابط القنوات") { checkChannels() })
         panel.addView(action("نسخ نسخة احتياطية آمنة") { backup() })
         panel.addView(action("استعادة نسخة احتياطية") { restore() })
@@ -819,6 +821,16 @@ class AdminActivity : Activity() {
     }
 
     private var adminChannelLimit = 60
+    private var observedRestoreTotal = -1
+
+    private fun startCatalogRestore() {
+        val started = RestoreChannelsWorker.start(applicationContext)
+        if (started) {
+            Toast.makeText(this, "بدأت استعادة القنوات في الخلفية؛ يمكنك استخدام التطبيق أثناء العمل", Toast.LENGTH_LONG).show()
+        } else {
+            Toast.makeText(this, "الاستعادة جارية بالفعل أو توجد دفعة مجدولة", Toast.LENGTH_LONG).show()
+        }
+    }
 
     private fun importChannels() {
         val input = EditText(this).apply {
@@ -889,17 +901,19 @@ class AdminActivity : Activity() {
                         val batches = unique.chunked(100)
                         batches.forEach { batch ->
                             batch.forEach { channel -> destination.put(channel); added++ }
-                            val target = File(filesDir, "channels.json")
-                            val temp = File(filesDir, "channels.json.import.tmp")
-                            temp.writeText(workingRoot.toString(), Charsets.UTF_8)
-                            if (!temp.renameTo(target)) { temp.copyTo(target, overwrite = true); temp.delete() }
                             val done = added
                             val total = unique.size
                             runOnUiThread {
                                 if (!isFinishing && !isDestroyed && progress.isShowing) {
-                                    progress.setMessage("تم تجهيز $done من $total قناة، على دفعات من 100...")
+                                    progress.setMessage("تم تجهيز $done من $total قناة...")
                                 }
                             }
+                        }
+                        if (added > 0) {
+                            val target = File(filesDir, "channels.json")
+                            val temp = File(filesDir, "channels.json.import.tmp")
+                            temp.writeText(workingRoot.toString(), Charsets.UTF_8)
+                            if (!temp.renameTo(target)) { temp.copyTo(target, overwrite = true); temp.delete() }
                         }
                         outcome = workingRoot to added
                     } catch (_: Exception) { }
