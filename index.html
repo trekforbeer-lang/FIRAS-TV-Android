@@ -1028,6 +1028,12 @@ $('#bk').onclick=function(e){
 $('#bk2').onclick=function(e){e.stopPropagation();if(ovOpen)closeOv();else stopPlay();setPage('home')};
 function showOv(){if(ovOpen)return;ovOpen=true;$('#ovp').appendChild(pl);$('#ovp').classList.add('on')}
 function closeOv(){exitFs();stopPlay();ovOpen=false;$('#plSlot').appendChild(pl);$('#ovp').classList.remove('on');idle.style.display='none'}
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'||e.key==='Backspace'&&e.target===document.body){
+    if(ovOpen){e.preventDefault();closeOv()}
+    else if(plFs()||v.webkitDisplayingFullscreen){e.preventDefault();exitFs()}
+  }
+});
 function plFs(){return (document.fullscreenElement||document.webkitFullscreenElement)===pl}
 function lockLandscape(){
   try{if(screen.orientation&&screen.orientation.lock){var q=screen.orientation.lock('landscape');if(q&&q.catch)q.catch(function(){});}}catch(e){}
