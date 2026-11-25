@@ -48,7 +48,7 @@ class MoreActivity : AppCompatActivity() {
         content.addView(header)
 
         section(content, "المشاهدة")
-        item(content, "⚽", "الرياضة والمباريات", "تابع المباريات والنتائج", Color.rgb(225, 72, 111)) {
+        item(content, "⚽", "الرياضة والمباريات", "تابع المباريات والنتائج", Color.rgb(58, 190, 129)) {
             startActivity(Intent(this, SportsActivity::class.java))
         }
         item(content, "★", "قائمتي", "القنوات التي حفظتها", Color.rgb(190, 126, 54)) {
@@ -59,7 +59,7 @@ class MoreActivity : AppCompatActivity() {
         }
 
         section(content, "التخصيص")
-        item(content, "♥", "اهتماماتي الرياضية", "اختر الفرق التي تتابعها", Color.rgb(160, 83, 139)) {
+        item(content, "♥", "اهتماماتي الرياضية", "اختر الفرق التي تتابعها", Color.rgb(64, 154, 124)) {
             startActivity(Intent(this, TeamPreferencesActivity::class.java))
         }
         item(content, "⌕", "اكتشف القنوات", "ابحث حسب الاسم والتصنيف", Color.rgb(65, 145, 137)) {
@@ -81,7 +81,7 @@ class MoreActivity : AppCompatActivity() {
             text = "RAHMANI"
             textSize = 19f
             typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.rgb(238, 82, 119))
+            setTextColor(Color.rgb(222, 174, 67))
             gravity = Gravity.CENTER
         })
         about.addView(TextView(this).apply {
@@ -102,7 +102,7 @@ class MoreActivity : AppCompatActivity() {
             text = title
             textSize = 13f
             typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.rgb(255, 145, 168))
+            setTextColor(Color.rgb(255, 219, 145))
             setPadding(dp(3), dp(10), dp(3), dp(9))
         })
     }
@@ -157,7 +157,7 @@ class MoreActivity : AppCompatActivity() {
     private fun panelBackground(color: Int) = GradientDrawable().apply {
         setColor(color)
         cornerRadius = dp(16).toFloat()
-        setStroke(dp(1), Color.rgb(49, 42, 53))
+        setStroke(dp(1), Color.rgb(75, 67, 42))
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density + 0.5f).toInt()
