@@ -22,7 +22,7 @@
             android:layout_marginStart="8dp"
             android:gravity="center"
             android:text="☰"
-            android:textColor="#7CEBFF"
+            android:textColor="#E7C77E"
             android:textSize="23sp"
             android:background="@drawable/rahmani_action_button"
             android:contentDescription="فتح القائمة الجانبية"
@@ -39,7 +39,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="RAHMANI TV"
-                android:textColor="#35D6F2"
+                android:textColor="#D6B36A"
                 android:textSize="25sp"
                 android:textStyle="bold|italic"
                 android:letterSpacing="0.06"
@@ -120,7 +120,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="RAHMANI  /  PREMIUM STREAMING"
-                        android:textColor="#7CEBFF"
+                        android:textColor="#E7C77E"
                         android:textStyle="bold"
                         android:textSize="9sp"
                         android:letterSpacing="0.12"
@@ -270,7 +270,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="RAHMANI SPORTS"
-                        android:textColor="#35D6F2"
+                        android:textColor="#D6B36A"
                         android:textStyle="bold"
                         android:textSize="9sp"
                         android:letterSpacing="0.08"/>
@@ -393,7 +393,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="8dp"
                     android:text="0 قناة"
-                    android:textColor="#35D6F2"
+                    android:textColor="#D6B36A"
                     android:textStyle="bold"
                     android:textSize="10sp"/>
                 <Button
@@ -429,7 +429,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="استعادة القنوات"
-                    android:textColor="#7CEBFF"
+                    android:textColor="#E7C77E"
                     android:textSize="13sp"
                     android:textStyle="bold"/>
 
@@ -449,8 +449,8 @@
                     android:layout_height="4dp"
                     android:layout_marginTop="12dp"
                     android:indeterminate="true"
-                    android:indeterminateTint="#35D6F2"
-                    android:progressTint="#35D6F2"
+                    android:indeterminateTint="#D6B36A"
+                    android:progressTint="#D6B36A"
                     android:progressBackgroundTint="#244D68"/>
             </LinearLayout>
 
