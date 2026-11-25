@@ -630,7 +630,7 @@ function row(c,list){
   var r=el('div','ch'+(cur&&cur.id===c.id?' on':'')+(c.ok===false?' dead':''));r.setAttribute('role','button');r.tabIndex=0;r.dataset.id=c.id;
   var lg=el('div','lg');
   function ph(){lg.className='lg ph';lg.style.background='hsl('+hue(c.name)+',45%,30%)';lg.textContent=(c.name.replace(/[^\p{L}\p{N}]/gu,'').slice(0,2)||'TV').toUpperCase()}
-  if(c.logo){var im=new Image();im.loading='lazy';im.alt='';im.referrerPolicy='no-referrer';im.onerror=function(){im.remove();ph()};im.src=c.logo;lg.appendChild(im)}else ph();
+  if(c.logo){var im=new Image();im.loading='lazy';im.decoding='async';im.alt='';im.referrerPolicy='no-referrer';im.onerror=function(){im.remove();ph()};im.src=c.logo;lg.appendChild(im)}else ph();
   var nm=el('div','nm');if(c.ok===true)nm.appendChild(el('span','dot'));nm.appendChild(document.createTextNode(c.name));
   r.appendChild(lg);r.appendChild(nm);
   if(admin){var ed=el('button','st','✎');ed.setAttribute('aria-label','تعديل');ed.style.fontSize='20px';ed.onclick=function(e){e.stopPropagation();editCh(c)};r.appendChild(ed)}
