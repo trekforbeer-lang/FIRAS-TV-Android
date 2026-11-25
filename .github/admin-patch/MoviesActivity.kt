@@ -69,7 +69,7 @@ class MoviesActivity : AppCompatActivity() {
         toolbar.addView(titleBlock, LinearLayout.LayoutParams(0, -2, 1f))
         toolbar.addView(TextView(this).apply {
             text = "RAHMANI"; textSize = 14f; typeface = android.graphics.Typeface.DEFAULT_BOLD
-            setTextColor(0xFFF0445E.toInt())
+            setTextColor(0xFFE4B64C.toInt())
         })
         root.addView(toolbar)
 
@@ -79,7 +79,7 @@ class MoviesActivity : AppCompatActivity() {
             setPadding(18, 12, 18, 12)
             background = android.graphics.drawable.GradientDrawable(
                 android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,
-                intArrayOf(0xFF512039.toInt(), 0xFF242033.toInt(), 0xFF171820.toInt())
+                intArrayOf(0xFF35402D.toInt(), 0xFF202B29.toInt(), 0xFF111820.toInt())
             ).apply { cornerRadius = 22f * resources.displayMetrics.density }
         }
         hero.addView(TextView(this).apply {
@@ -226,7 +226,7 @@ class MoviesActivity : AppCompatActivity() {
 
         override fun onCreateViewHolder(parent: ViewGroup, type: Int): FilmHolder {
             val box = LinearLayout(parent.context).apply { orientation = LinearLayout.VERTICAL; setPadding(5, 5, 5, 10) }
-            val image = ImageView(parent.context).apply { scaleType = ImageView.ScaleType.CENTER_CROP; setBackgroundColor(0xFF242630.toInt()) }
+            val image = ImageView(parent.context).apply { scaleType = ImageView.ScaleType.CENTER_CROP; setBackgroundColor(0xFF202B29.toInt()) }
             box.addView(image, LinearLayout.LayoutParams(-1, (resources.displayMetrics.widthPixels / 2.15f * 1.42f).toInt()))
             val title = TextView(parent.context).apply { setTextColor(-1); textSize = 13f; maxLines = 2; setPadding(3, 5, 3, 0) }
             box.addView(title)
