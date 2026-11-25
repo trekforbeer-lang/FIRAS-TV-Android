@@ -632,8 +632,8 @@ function row(c,list){
   var nm=el('div','nm');if(c.ok===true)nm.appendChild(el('span','dot'));nm.appendChild(document.createTextNode(c.name));
   r.appendChild(lg);r.appendChild(nm);
   if(admin){var ed=el('button','st','✎');ed.setAttribute('aria-label','تعديل');ed.style.fontSize='20px';ed.onclick=function(e){e.stopPropagation();editCh(c)};r.appendChild(ed)}
-  var isF=favs.indexOf(c.id)>-1,st=el('button','st'+(isF?' f':''),isF?'★':'☆');st.setAttribute('aria-label','مفضلة');
-  st.onclick=function(e){e.stopPropagation();toggleFav(c);var f=favs.indexOf(c.id)>-1;st.textContent=f?'★':'☆';st.classList.toggle('f',f);if(view.t==='fav')render(true)};
+  var isF=favs.indexOf(c.id)>-1,st=el('button','st'+(isF?' f':''),isF?'★':'☆');st.setAttribute('aria-label','مفضلة');st.setAttribute('aria-pressed',String(isF));
+  st.onclick=function(e){e.stopPropagation();toggleFav(c);var f=favs.indexOf(c.id)>-1;st.textContent=f?'★':'☆';st.classList.toggle('f',f);st.setAttribute('aria-pressed',String(f));if(view.t==='fav')render(true)};
   r.appendChild(st);
   function activateRow(){if(list)curList=list;play(c)}
   r.onclick=activateRow;
