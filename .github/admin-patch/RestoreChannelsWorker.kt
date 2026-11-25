@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Manually-started, persistent channel restore.
- * Imports at most 100 new channels per run, then queues the next batch 30 minutes later.
+ * Imports up to 500 new channels per run, then queues the next batch after a short delay.
  */
 class RestoreChannelsWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
     companion object {
@@ -30,6 +30,7 @@ class RestoreChannelsWorker(context: Context, params: WorkerParameters) : Worker
         private const val KEY_TOTAL = "total_added"
         private const val KEY_BATCH = "batch"
         private const val KEY_LAST_ERROR = "last_error"
+        private const val BATCH_LIMIT = 500
 
         fun start(context: Context): Boolean {
             val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -93,7 +94,7 @@ class RestoreChannelsWorker(context: Context, params: WorkerParameters) : Worker
             )
 
             for ((title, endpoint) in sources) {
-                if (added >= 100) break
+                if (added >= BATCH_LIMIT) break
                 var section: JSONObject? = null
                 for (i in 0 until groups.length()) {
                     val item = groups.optJSONObject(i)
@@ -127,7 +128,7 @@ class RestoreChannelsWorker(context: Context, params: WorkerParameters) : Worker
                                 name = value.substringAfterLast(',').trim()
                                 logo = extractM3uAttribute(value, "tvg-logo").take(2048)
                             } else if (value.startsWith("http", true) && name.isNotBlank()) {
-                                if (value !in known && added < 100) {
+                                if (value !in known && added < BATCH_LIMIT) {
                                     items.put(JSONObject()
                                         .put("id", "iptv-" + value.hashCode())
                                         .put("name", name.take(120))
@@ -139,7 +140,7 @@ class RestoreChannelsWorker(context: Context, params: WorkerParameters) : Worker
                                 }
                                 name = ""
                                 logo = ""
-                                if (added >= 100) break
+                                if (added >= BATCH_LIMIT) break
                             }
                         }
                     }
@@ -161,9 +162,9 @@ class RestoreChannelsWorker(context: Context, params: WorkerParameters) : Worker
             prefs.edit().putInt(KEY_TOTAL, total).putInt(KEY_BATCH, batch).apply()
             setProgressAsync(workDataOf("added" to added, "total" to total, "batch" to batch))
 
-            if (added == 100) {
+            if (added == BATCH_LIMIT) {
                 // A fresh request is queued so Android can resume the import after the app is closed.
-                enqueueBatch(applicationContext, batch + 1, 30)
+                enqueueBatch(applicationContext, batch + 1, 1)
             } else {
                 prefs.edit().putBoolean(KEY_RUNNING, false).apply()
             }
