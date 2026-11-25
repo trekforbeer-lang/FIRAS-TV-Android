@@ -947,49 +947,27 @@ class PlayerActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
-    // Draw a compact local brand mark so every channel has a visible logo,
-    // even when its remote image is SVG, unavailable, or blocked by the host.
+    // Use neutral initials when the official channel logo is unavailable.
+    // This avoids drawing imitation broadcaster trademarks.
     private fun makeChannelLogo(name: String): Bitmap {
         val size = 128
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        val lower = name.lowercase()
-        val isBein = lower.contains("bein")
-        val isMbc = lower.contains("mbc")
-        val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = if (isMbc) Color.WHITE else if (isBein) Color.rgb(24, 28, 58) else Color.rgb(45, 43, 66)
-        }
+        val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(18, 34, 54) }
         canvas.drawRoundRect(0f, 0f, size.toFloat(), size.toFloat(), 18f, 18f, bg)
-        val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        val words = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+        val initials = when {
+            words.isEmpty() -> "TV"
+            words.size > 1 -> words.take(2).joinToString("") { it.first().uppercase() }
+            else -> words.first().take(2).uppercase()
+        }
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.rgb(126, 235, 255)
             textAlign = Paint.Align.CENTER
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            color = if (isMbc) Color.DKGRAY else Color.WHITE
+            textSize = if (initials.length > 1) 48f else 58f
         }
-        if (isBein) {
-            p.textSize = 39f
-            canvas.drawText("beIN", 64f, 61f, p)
-            p.textSize = 17f
-            canvas.drawText("SPORTS", 64f, 86f, p)
-            Regex("\\d+").find(name)?.value?.let {
-                p.textSize = 14f
-                canvas.drawText(it, 64f, 111f, p)
-            }
-        } else if (isMbc) {
-            val letters = listOf("M", "B", "C")
-            val colors = listOf(Color.rgb(0, 145, 205), Color.rgb(224, 62, 105), Color.rgb(238, 148, 38))
-            val xs = listOf(37f, 64f, 91f)
-            p.textSize = 43f
-            letters.forEachIndexed { i, letter ->
-                p.color = colors[i]
-                canvas.drawText(letter, xs[i], 65f, p)
-            }
-            p.color = Color.DKGRAY
-            p.textSize = 13f
-            canvas.drawText(name.substringAfter("MBC").trim().uppercase().take(13), 64f, 94f, p)
-        } else {
-            p.textSize = 24f
-            canvas.drawText(name.take(10).uppercase(), 64f, 72f, p)
-        }
+        canvas.drawText(initials, 64f, 78f, paint)
         return bitmap
     }
 
@@ -1004,9 +982,9 @@ class PlayerActivity : AppCompatActivity() {
                 gravity = Gravity.CENTER_VERTICAL
                 setPadding(dp(context, 9), dp(context, 6), dp(context, 10), dp(context, 6))
                 background = android.graphics.drawable.GradientDrawable().apply {
-                    setColor(Color.rgb(25, 24, 21))
+                    setColor(Color.rgb(12, 20, 34))
                     cornerRadius = dp(context, 10).toFloat()
-                    setStroke(dp(context, 1), Color.rgb(105, 87, 55))
+                    setStroke(dp(context, 1), Color.rgb(39, 69, 100))
                 }
                 layoutParams = RecyclerView.LayoutParams(-1, dp(context, 58)).apply {
                     topMargin = dp(context, 3)
@@ -1019,7 +997,7 @@ class PlayerActivity : AppCompatActivity() {
             }
             card.addView(logo, LinearLayout.LayoutParams(dp(context, 36), dp(context, 36)))
             val label = TextView(context).apply {
-                setTextColor(Color.rgb(235, 219, 181))
+                setTextColor(Color.rgb(126, 235, 255))
                 textSize = 12f
                 typeface = Typeface.DEFAULT_BOLD
                 maxLines = 2
@@ -1043,34 +1021,21 @@ class PlayerActivity : AppCompatActivity() {
             val size = 128
             val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
-            val lower = name.lowercase()
-            val isBein = lower.contains("bein")
-            val isMbc = lower.contains("mbc")
-            val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = if (isMbc) Color.WHITE else if (isBein) Color.rgb(24, 28, 58) else Color.rgb(45, 43, 66)
+            val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(18, 34, 54) }
+            canvas.drawRoundRect(0f, 0f, size.toFloat(), size.toFloat(), 18f, 18f, bg)
+            val words = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+            val initials = when {
+                words.isEmpty() -> "TV"
+                words.size > 1 -> words.take(2).joinToString("") { it.first().uppercase() }
+                else -> words.first().take(2).uppercase()
             }
-            canvas.drawRoundRect(0f, 0f, 128f, 128f, 18f, 18f, bg)
-            val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.rgb(126, 235, 255)
                 textAlign = Paint.Align.CENTER
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                color = if (isMbc) Color.DKGRAY else Color.WHITE
+                textSize = if (initials.length > 1) 48f else 58f
             }
-            if (isBein) {
-                p.textSize = 38f
-                canvas.drawText("beIN", 64f, 61f, p)
-                p.textSize = 16f
-                canvas.drawText("SPORTS", 64f, 86f, p)
-                Regex("\\d+").find(name)?.value?.let { p.textSize = 13f; canvas.drawText(it, 64f, 110f, p) }
-            } else if (isMbc) {
-                val colors = listOf(Color.rgb(0,145,205), Color.rgb(224,62,105), Color.rgb(238,148,38))
-                listOf("M","B","C").forEachIndexed { i, ch -> p.color = colors[i]; p.textSize = 43f; canvas.drawText(ch, 37f + i*27f, 65f, p) }
-                p.color = Color.DKGRAY
-                p.textSize = 13f
-                canvas.drawText(name.substringAfter("MBC").trim().uppercase().take(13), 64f, 94f, p)
-            } else {
-                p.textSize = 24f
-                canvas.drawText(name.take(10).uppercase(), 64f, 72f, p)
-            }
+            canvas.drawText(initials, 64f, 78f, paint)
             return bitmap
         }
 
