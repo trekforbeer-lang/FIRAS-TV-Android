@@ -635,7 +635,9 @@ function row(c,list){
   var isF=favs.indexOf(c.id)>-1,st=el('button','st'+(isF?' f':''),isF?'★':'☆');st.setAttribute('aria-label','مفضلة');
   st.onclick=function(e){e.stopPropagation();toggleFav(c);var f=favs.indexOf(c.id)>-1;st.textContent=f?'★':'☆';st.classList.toggle('f',f);if(view.t==='fav')render(true)};
   r.appendChild(st);
-  r.onclick=function(){if(list)curList=list;play(c)};r.onkeydown=function(e){if(e.key==='Enter'){if(list)curList=list;play(c)}};
+  function activateRow(){if(list)curList=list;play(c)}
+  r.onclick=activateRow;
+  r.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();activateRow()}};
   return r;
 }
 function toggleFav(c){var i=favs.indexOf(c.id);if(i>-1)favs.splice(i,1);else favs.push(c.id);sv('fr_fav',favs)}
