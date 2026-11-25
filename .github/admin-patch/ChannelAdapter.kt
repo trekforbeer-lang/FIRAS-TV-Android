@@ -121,14 +121,30 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
     override fun onBindViewHolder(holder: Holder, position: Int) {
         val channel = getItem(position)
         holder.title.text = channel.name
-        holder.subtitle.text = if (channel.url.isBlank()) "الرابط غير متوفر" else "رابط البث مضاف"
-        holder.subtitle.setTextColor(if (channel.url.isBlank()) Color.rgb(170, 170, 170) else Color.rgb(229, 9, 20))
+        val state = channel.status.trim().lowercase()
+        val maintenance = channel.url.isBlank() || state in setOf("maintenance", "paused", "disabled", "offline", "صيانة", "قيد الصيانة", "متوقف")
+        val comingSoon = state in setOf("soon", "coming_soon", "قريباً", "قريبا")
+        val updating = state in setOf("updating", "pending", "تحديث", "قيد التحديث")
+        val stateLabel = when {
+            maintenance -> "●  القناة في وضع الصيانة"
+            comingSoon -> "◷  قريباً"
+            updating -> "↻  قيد التحديث"
+            else -> "●  متاحة للمشاهدة"
+        }
+        val stateColor = when {
+            maintenance -> Color.rgb(242, 174, 76)
+            comingSoon -> Color.rgb(151, 171, 205)
+            updating -> Color.rgb(115, 190, 220)
+            else -> Color.rgb(92, 205, 145)
+        }
+        holder.subtitle.text = stateLabel
+        holder.subtitle.setTextColor(stateColor)
         holder.subtitle.background = GradientDrawable().apply {
-            setColor(if (channel.url.isBlank()) Color.rgb(25, 25, 25) else Color.rgb(45, 17, 20))
+            setColor(Color.argb(28, stateColor.red(), stateColor.green(), stateColor.blue()))
             cornerRadius = dp(9).toFloat()
         }
-        holder.subtitle.setPadding(dp(7), dp(3), dp(7), dp(3))
-        holder.card.contentDescription = if (channel.url.isBlank()) "${channel.name}، الرابط غير مضاف" else "${channel.name}، جاهزة للتشغيل"
+        holder.subtitle.setPadding(dp(7), dp(4), dp(7), dp(4))
+        holder.card.contentDescription = "${channel.name}، ${stateLabel}"
         holder.card.setOnClickListener { onClick(channel) }
         fun updateFavoriteLabel() {
             val saved = FavoriteChannels.contains(holder.itemView.context, channel)
