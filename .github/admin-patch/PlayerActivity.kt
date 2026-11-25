@@ -56,7 +56,8 @@ private data class DisplayChannel(
     val legacyUrl: String,
     val legacyHeaders: Map<String, String>,
     val logo: String,
-    val advanced: StreamConfig?
+    val advanced: StreamConfig?,
+    val qualityUrls: Map<String, String> = emptyMap()
 )
 
 class PlayerActivity : AppCompatActivity() {
@@ -172,7 +173,7 @@ class PlayerActivity : AppCompatActivity() {
         channels = UniversalStreamEngine.loadLegacy(this).map { legacy ->
             DisplayChannel(
                 legacy.id, legacy.name, legacy.stream, legacy.headers, legacy.logo,
-                UniversalStreamEngine.match(advanced, legacy.id, legacy.name)
+                UniversalStreamEngine.match(advanced, legacy.id, legacy.name), legacy.qualityUrls
             )
         }
         list.layoutManager = LinearLayoutManager(this, RecyclerView.VERTICAL, false)
@@ -189,11 +190,7 @@ class PlayerActivity : AppCompatActivity() {
         zoom.setOnClickListener { showDisplayModePicker() }
         retry.setOnClickListener { hardRefreshCurrentStream(resetRecoveryAttempts = true) }
         server.setOnClickListener { nextCandidateOrRetry() }
-        quality.setOnClickListener {
-            val active = player
-            if (active == null) Toast.makeText(this, "شغّل قناة أولاً", Toast.LENGTH_SHORT).show()
-            else TrackSelectionDialogBuilder(this, "اختيار الجودة", active, C.TRACK_TYPE_VIDEO).build().show()
-        }
+        quality.setOnClickListener { showQualityPicker() }
 
         val requestedId = intent.getStringExtra(EXTRA_CHANNEL_ID).orEmpty()
         val requestedUrl = intent.getStringExtra(EXTRA_URL).orEmpty().trim()
@@ -395,6 +392,35 @@ class PlayerActivity : AppCompatActivity() {
                     }
                 })
             }
+    }
+
+    private fun showQualityPicker() {
+        val channel = current ?: run {
+            Toast.makeText(this, "شغّل قناة أولاً", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val entries = mutableListOf<Pair<String, String>>()
+        if (isHttpUrl(channel.legacyUrl)) entries += "الرابط الأساسي" to channel.legacyUrl
+        channel.qualityUrls.forEach { (label, url) -> if (isHttpUrl(url)) entries += label to url }
+        if (entries.isEmpty()) {
+            val active = player
+            if (active != null) TrackSelectionDialogBuilder(this, "مسارات الجودة داخل البث", active, C.TRACK_TYPE_VIDEO).build().show()
+            else Toast.makeText(this, "لا توجد روابط جودة لهذه القناة", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val labels = entries.map { (label, _) -> if (label == "الرابط الأساسي") label else "جودة $label" }.toTypedArray()
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("اختر جودة المشاهدة")
+            .setItems(labels) { _, which ->
+                val selected = channel.copy(legacyUrl = entries[which].second, advanced = null)
+                playerPrefs.edit().putString("quality_${channel.id}", entries[which].first).apply()
+                current = selected
+                currentAdvanced = null
+                recoveryAttempts = 0
+                play(selected)
+            }
+            .setNegativeButton("إلغاء", null)
+            .show()
     }
 
     private fun play(channel: DisplayChannel) {
