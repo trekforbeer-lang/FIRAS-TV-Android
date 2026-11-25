@@ -1025,7 +1025,7 @@ $('#bk').onclick=function(e){
   if(ovOpen)return closeOv();
   stopPlay();setPage('home');
 };
-$('#bk2').onclick=function(e){e.stopPropagation();setPage('home')};
+$('#bk2').onclick=function(e){e.stopPropagation();if(ovOpen)closeOv();else stopPlay();setPage('home')};
 function showOv(){if(ovOpen)return;ovOpen=true;$('#ovp').appendChild(pl);$('#ovp').classList.add('on')}
 function closeOv(){stopPlay();ovOpen=false;$('#plSlot').appendChild(pl);$('#ovp').classList.remove('on');idle.style.display='none'}
 function plFs(){return (document.fullscreenElement||document.webkitFullscreenElement)===pl}
