@@ -35,12 +35,12 @@ class MoviesActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = 0xFF090A0F.toInt()
-        window.navigationBarColor = 0xFF15161D.toInt()
+        window.statusBarColor = 0xFF081321.toInt()
+        window.navigationBarColor = 0xFF0B1B2D.toInt()
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(14, 8, 14, 8)
-            setBackgroundColor(0xFF090A0F.toInt())
+            setBackgroundColor(0xFF081321.toInt())
         }
         val toolbar = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -69,7 +69,7 @@ class MoviesActivity : AppCompatActivity() {
         toolbar.addView(titleBlock, LinearLayout.LayoutParams(0, -2, 1f))
         toolbar.addView(TextView(this).apply {
             text = "RAHMANI"; textSize = 14f; typeface = android.graphics.Typeface.DEFAULT_BOLD
-            setTextColor(0xFFF0445E.toInt())
+            setTextColor(0xFF35D6F2.toInt())
         })
         root.addView(toolbar)
 
@@ -79,7 +79,7 @@ class MoviesActivity : AppCompatActivity() {
             setPadding(18, 12, 18, 12)
             background = android.graphics.drawable.GradientDrawable(
                 android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,
-                intArrayOf(0xFF512039.toInt(), 0xFF242033.toInt(), 0xFF171820.toInt())
+                intArrayOf(0xFF174A69.toInt(), 0xFF102D49.toInt(), 0xFF0A192A.toInt())
             ).apply { cornerRadius = 22f * resources.displayMetrics.density }
         }
         hero.addView(TextView(this).apply {
@@ -88,7 +88,7 @@ class MoviesActivity : AppCompatActivity() {
         })
         hero.addView(TextView(this).apply {
             text = "تصفّح الملصقات واختر الفيلم الذي يناسبك"; textSize = 11f
-            setTextColor(0xFFD0CCD5.toInt()); setPadding(0, 4, 0, 0)
+            setTextColor(0xFFD2E0EC.toInt()); setPadding(0, 4, 0, 0)
         })
         root.addView(hero, LinearLayout.LayoutParams(-1, 104).apply { bottomMargin = 10 })
 
@@ -100,9 +100,9 @@ class MoviesActivity : AppCompatActivity() {
             textSize = 14f
             setPadding(16, 0, 16, 0)
             background = android.graphics.drawable.GradientDrawable().apply {
-                setColor(0xFF1A1B23.toInt())
+                setColor(0xFF10243A.toInt())
                 cornerRadius = 14f * resources.displayMetrics.density
-                setStroke((resources.displayMetrics.density).toInt().coerceAtLeast(1), 0xFF343541.toInt())
+                setStroke((resources.displayMetrics.density).toInt().coerceAtLeast(1), 0xFF2D5874.toInt())
             }
         }
         root.addView(search, LinearLayout.LayoutParams(-1, 48).apply { bottomMargin = 6 })
