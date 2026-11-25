@@ -1030,17 +1030,28 @@ class AdminActivity : Activity() {
         val v = value.trim().uppercase(Locale.ROOT)
         if (v.matches(Regex("[A-Z]{2}"))) return v
         val names = mapOf(
-            "ALGERIA" to "DZ", "DZ" to "DZ", "EGYPT" to "EG", "MOROCCO" to "MA",
-            "TUNISIA" to "TN", "LIBYA" to "LY", "SAUDI ARABIA" to "SA", "QATAR" to "QA",
-            "UNITED ARAB EMIRATES" to "AE", "UAE" to "AE", "KUWAIT" to "KW", "BAHRAIN" to "BH",
-            "OMAN" to "OM", "IRAQ" to "IQ", "JORDAN" to "JO", "LEBANON" to "LB",
-            "PALESTINE" to "PS", "SYRIA" to "SY", "YEMEN" to "YE", "SUDAN" to "SD",
-            "FRANCE" to "FR", "UNITED KINGDOM" to "GB", "UK" to "GB", "GREAT BRITAIN" to "GB",
-            "UNITED STATES" to "US", "USA" to "US", "GERMANY" to "DE", "SPAIN" to "ES",
-            "ITALY" to "IT", "TURKEY" to "TR", "INDIA" to "IN", "CANADA" to "CA",
-            "RUSSIA" to "RU", "CHINA" to "CN", "NETHERLANDS" to "NL", "BELGIUM" to "BE",
-            "SWITZERLAND" to "CH", "PORTUGAL" to "PT", "JAPAN" to "JP", "SOUTH KOREA" to "KR",
-            "AUSTRALIA" to "AU"
+            "ALGERIA" to "DZ", "الجزائر" to "DZ", "DZ" to "DZ",
+            "EGYPT" to "EG", "مصر" to "EG", "MOROCCO" to "MA", "المغرب" to "MA",
+            "TUNISIA" to "TN", "تونس" to "TN", "LIBYA" to "LY", "ليبيا" to "LY",
+            "SAUDI ARABIA" to "SA", "السعودية" to "SA", "QATAR" to "QA", "قطر" to "QA",
+            "UNITED ARAB EMIRATES" to "AE", "الإمارات" to "AE", "UAE" to "AE",
+            "KUWAIT" to "KW", "الكويت" to "KW", "BAHRAIN" to "BH", "البحرين" to "BH",
+            "OMAN" to "OM", "عمان" to "OM", "عُمان" to "OM", "IRAQ" to "IQ", "العراق" to "IQ",
+            "JORDAN" to "JO", "الأردن" to "JO", "LEBANON" to "LB", "لبنان" to "LB",
+            "PALESTINE" to "PS", "فلسطين" to "PS", "SYRIA" to "SY", "سوريا" to "SY",
+            "YEMEN" to "YE", "اليمن" to "YE", "SUDAN" to "SD", "السودان" to "SD",
+            "FRANCE" to "FR", "فرنسا" to "FR", "UNITED KINGDOM" to "GB", "UK" to "GB",
+            "GREAT BRITAIN" to "GB", "BRITAIN" to "GB", "بريطانيا" to "GB",
+            "UNITED STATES" to "US", "UNITED STATES OF AMERICA" to "US", "USA" to "US",
+            "US" to "US", "أمريكا" to "US", "الولايات المتحدة" to "US",
+            "GERMANY" to "DE", "ألمانيا" to "DE", "SPAIN" to "ES", "إسبانيا" to "ES",
+            "ITALY" to "IT", "إيطاليا" to "IT", "TURKEY" to "TR", "تركيا" to "TR",
+            "INDIA" to "IN", "الهند" to "IN", "CANADA" to "CA", "كندا" to "CA",
+            "RUSSIA" to "RU", "روسيا" to "RU", "CHINA" to "CN", "الصين" to "CN",
+            "NETHERLANDS" to "NL", "هولندا" to "NL", "BELGIUM" to "BE", "بلجيكا" to "BE",
+            "SWITZERLAND" to "CH", "سويسرا" to "CH", "PORTUGAL" to "PT", "البرتغال" to "PT",
+            "JAPAN" to "JP", "اليابان" to "JP", "SOUTH KOREA" to "KR", "كوريا الجنوبية" to "KR",
+            "AUSTRALIA" to "AU", "أستراليا" to "AU"
         )
         return names[v].orEmpty()
     }
