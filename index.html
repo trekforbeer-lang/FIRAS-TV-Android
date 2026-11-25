@@ -645,10 +645,13 @@ function row(c,list){
 function toggleFav(c){var i=favs.indexOf(c.id);if(i>-1)favs.splice(i,1);else favs.push(c.id);sv('fr_fav',favs)}
 var lastMarkedRow=null;
 function mark(){
-  document.querySelectorAll('.ch[data-id]').forEach(function(r){r.classList.toggle('on',!!cur&&r.dataset.id===cur.id)});
-  var on=document.querySelector('.ch.on');
-  if(on&&on!==lastMarkedRow&&on.scrollIntoView)on.scrollIntoView({block:'nearest'});
-  lastMarkedRow=on||null;
+  var id=cur&&cur.id;
+  if(lastMarkedRow&&lastMarkedRow.isConnected&&lastMarkedRow.dataset.id===id)return;
+  if(lastMarkedRow){lastMarkedRow.classList.remove('on');lastMarkedRow=null}
+  if(!id)return;
+  var rows=document.querySelectorAll('.ch[data-id]'),on=null;
+  for(var i=0;i<rows.length;i++)if(rows[i].dataset.id===id){on=rows[i];break}
+  if(on){on.classList.add('on');lastMarkedRow=on;if(on.scrollIntoView)on.scrollIntoView({block:'nearest'})}
 }
 /* countries */
 function drawCountries(box,q,quiet){
