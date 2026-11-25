@@ -970,7 +970,7 @@ function play(c,keep,ai){
   if(location.protocol==='https:'&&/^http:/i.test(u)){showMsg('هذه القناة تستخدم رابطاً غير آمن (http) ولا يمكن تشغيلها داخل صفحة https.');return}
   if(/\.m3u8?(\?|$)/i.test(u)&&!window.Hls){
     showMsg('جارٍ تجهيز المشغّل...');
-    loadHls().then(function(){if(tok===playTok&&cur===c)startStream(u,fail)});return;
+    loadHls().then(function(ok){if(tok!==playTok||cur!==c)return;if(ok)startStream(u,fail);else{showMsg('تعذّر تحميل مشغّل HLS. تحقق من اتصال الإنترنت أو جرّب رابطاً بديلاً.');fail()}});return;
   }
   startStream(u,fail);
 }
@@ -1267,9 +1267,3 @@ function drawAdm(){
 
 /* Do not force the whole document into fullscreen on the first tap.
    Fullscreen is requested only by the player's fullscreen button. */
-
-/* =====================================================================
-   9) BOOT
-   ===================================================================== */
-document.title=APP_NAME;$('#brand').textContent=APP_NAME;
-drawTabs();$('#hb').textContent=APP_NAME;
