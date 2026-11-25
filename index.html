@@ -551,7 +551,7 @@ ensureDefaults();upgradeV2();save();
 /* =====================================================================
    4) BROWSER UI: categories, channel list, countries
    ===================================================================== */
-var view={t:'cat',id:'sports'},curList=[],shown=0,PAGE=80,loading='',admin=false;
+var view={t:'cat',id:'sports'},curList=[],shown=0,PAGE=40,loading='',admin=false;
 function navItems(){
   return cats.map(function(k){return{id:k.id,n:k.n,t:k.t,c:k.c,v:{t:'cat',id:k.id}}}).concat([
     {id:'fav',n:'المفضلة',t:'⭐',c:'#3a3a1a',v:{t:'fav'}},
@@ -672,7 +672,13 @@ function loadCountry(k){
     if(view.t==='country'&&view.cc===k)render();
   }).catch(function(){loading='';toast('تعذّر التحميل، تحقق من الاتصال');if(view.t==='country'&&view.cc===k)render()});
 }
-$('#q').addEventListener('input',function(){render()});
+var searchTimer=0;
+$('#q').addEventListener('input',function(){
+  clearTimeout(searchTimer);
+  searchTimer=setTimeout(function(){render()},140);
+});
+$('#q').addEventListener('keydown',function(e){if(e.key==='Enter'){clearTimeout(searchTimer);render()}});
+
 $('#wk').addEventListener('click',function(){cfg.onlyOk=!cfg.onlyOk;sv('fr_cfg',cfg);render()});
 
 /* =====================================================================
