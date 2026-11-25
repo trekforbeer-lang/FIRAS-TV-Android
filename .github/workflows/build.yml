@@ -54,6 +54,12 @@ jobs:
           cp .github/admin-patch/rahmani_nav_capsule.xml app/src/main/res/drawable/rahmani_nav_capsule.xml
           cp .github/admin-patch/rahmani_nav_item_bg.xml app/src/main/res/drawable/rahmani_nav_item_bg.xml
           cp .github/admin-patch/rahmani_card_stroke.xml app/src/main/res/drawable/rahmani_card_stroke.xml
+          cp .github/admin-patch/rahmani_player_panel.xml app/src/main/res/drawable/rahmani_player_panel.xml
+          cp .github/admin-patch/rahmani_player_icon.xml app/src/main/res/drawable/rahmani_player_icon.xml
+          cp .github/admin-patch/rahmani_player_primary.xml app/src/main/res/drawable/rahmani_player_primary.xml
+          cp .github/admin-patch/rahmani_player_chip.xml app/src/main/res/drawable/rahmani_player_chip.xml
+          cp .github/admin-patch/rahmani_player_top_scrim.xml app/src/main/res/drawable/rahmani_player_top_scrim.xml
+          cp .github/admin-patch/rahmani_player_bottom_scrim.xml app/src/main/res/drawable/rahmani_player_bottom_scrim.xml
           cp .github/admin-patch/AndroidManifest.xml app/src/main/AndroidManifest.xml
           cp .github/admin-patch/MoviesActivity.kt app/src/main/java/com/firas/tv/MoviesActivity.kt
           cp .github/admin-patch/SportsActivity.kt app/src/main/java/com/firas/tv/SportsActivity.kt
