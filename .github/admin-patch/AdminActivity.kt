@@ -328,8 +328,10 @@ class AdminActivity : Activity() {
             total += list.length()
             for (j in 0 until list.length()) {
                 val channel = list.optJSONObject(j) ?: continue
-                if (channel.optString("url").isBlank()) missing++
-                else if (channel.has("ok")) {
+                val channelStatus = channel.optString("status").trim().lowercase()
+                if (channel.optString("url").isBlank() || channelStatus in setOf("maintenance", "paused", "disabled", "offline", "soon", "coming_soon", "updating", "pending")) {
+                    missing++
+                } else if (channel.has("ok")) {
                     if (channel.optBoolean("ok")) ready++ else broken++
                 }
             }
@@ -369,7 +371,7 @@ class AdminActivity : Activity() {
             LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = 6 })
         panel.addView(metricsTop)
         val metricsBottom = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        metricsBottom.addView(metricCard("تحتاج رابطاً", missing.toString(), "قنوات بلا رابط بث", 0xFFFBBF24.toInt()),
+        metricsBottom.addView(metricCard("قيد الصيانة", missing.toString(), "قنوات غير متاحة أو قيد التجهيز", 0xFFFBBF24.toInt()),
             LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = 6; topMargin = 10 })
         metricsBottom.addView(metricCard("فشل آخر فحص", broken.toString(), "أعد الفحص قبل الحذف", 0xFFF87171.toInt()),
             LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = 6; topMargin = 10 })
