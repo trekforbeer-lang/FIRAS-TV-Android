@@ -370,13 +370,13 @@ class PlayerActivity : AppCompatActivity() {
                                 recoveryAttempts = 0
                                 recoveryTask?.let(handler::removeCallbacks)
                                 recoveryTask = null
-                                "FIRAS • البث جاهز"
+                                "RAHMANI TV • البث جاهز"
                             }
                             Player.STATE_ENDED -> {
                                 showLoading(false)
                                 "انتهى البث"
                             }
-                            else -> "FIRAS • بث مباشر"
+                            else -> "RAHMANI TV • بث مباشر"
                         }
                         playPause.text = if (exo.isPlaying) "Ⅱ" else "▶"
                     }
@@ -496,7 +496,7 @@ class PlayerActivity : AppCompatActivity() {
                 currentUrls = validUrls
                 currentUrlIndex = 0
                 if (keepPosition && previousUrl == validUrls.first()) {
-                    status.text = "FIRAS • البث مستمر"
+                    status.text = "RAHMANI TV • البث مستمر"
                     return@runOnUiThread
                 }
                 playUrl(validUrls.first(), oldPosition)
@@ -515,7 +515,7 @@ class PlayerActivity : AppCompatActivity() {
             .setMediaMetadata(
                 MediaMetadata.Builder()
                     .setTitle(current?.name ?: "بث مباشر")
-                    .setArtist("FIRAS")
+                    .setArtist("RAHMANI TV")
                     .build()
             )
         // Preserve HLS handling for extension-less and PHP resolver endpoints,
@@ -953,7 +953,7 @@ class PlayerActivity : AppCompatActivity() {
         val size = 128
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(18, 34, 54) }
+        val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(24, 24, 24) }
         canvas.drawRoundRect(0f, 0f, size.toFloat(), size.toFloat(), 18f, 18f, bg)
         val words = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
         val initials = when {
@@ -962,7 +962,7 @@ class PlayerActivity : AppCompatActivity() {
             else -> words.first().take(2).uppercase()
         }
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.rgb(126, 235, 255)
+            color = Color.rgb(217, 180, 91)
             textAlign = Paint.Align.CENTER
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             textSize = if (initials.length > 1) 48f else 58f
@@ -982,9 +982,9 @@ class PlayerActivity : AppCompatActivity() {
                 gravity = Gravity.CENTER_VERTICAL
                 setPadding(dp(context, 9), dp(context, 6), dp(context, 10), dp(context, 6))
                 background = android.graphics.drawable.GradientDrawable().apply {
-                    setColor(Color.rgb(12, 20, 34))
+                    setColor(Color.rgb(18, 18, 18))
                     cornerRadius = dp(context, 10).toFloat()
-                    setStroke(dp(context, 1), Color.rgb(39, 69, 100))
+                    setStroke(dp(context, 1), Color.rgb(74, 74, 74))
                 }
                 layoutParams = RecyclerView.LayoutParams(-1, dp(context, 58)).apply {
                     topMargin = dp(context, 3)
@@ -997,7 +997,7 @@ class PlayerActivity : AppCompatActivity() {
             }
             card.addView(logo, LinearLayout.LayoutParams(dp(context, 36), dp(context, 36)))
             val label = TextView(context).apply {
-                setTextColor(Color.rgb(126, 235, 255))
+                setTextColor(Color.rgb(217, 180, 91))
                 textSize = 12f
                 typeface = Typeface.DEFAULT_BOLD
                 maxLines = 2
@@ -1021,7 +1021,7 @@ class PlayerActivity : AppCompatActivity() {
             val size = 128
             val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
-            val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(18, 34, 54) }
+            val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(24, 24, 24) }
             canvas.drawRoundRect(0f, 0f, size.toFloat(), size.toFloat(), 18f, 18f, bg)
             val words = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
             val initials = when {
@@ -1030,7 +1030,7 @@ class PlayerActivity : AppCompatActivity() {
                 else -> words.first().take(2).uppercase()
             }
             val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.rgb(126, 235, 255)
+                color = Color.rgb(217, 180, 91)
                 textAlign = Paint.Align.CENTER
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                 textSize = if (initials.length > 1) 48f else 58f
