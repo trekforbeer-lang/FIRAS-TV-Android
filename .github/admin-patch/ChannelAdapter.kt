@@ -50,15 +50,15 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
-            setPadding(dp(10), dp(10), dp(10), dp(10))
-            minimumHeight = dp(104)
+            setPadding(dp(11), dp(11), dp(11), dp(11))
+            minimumHeight = dp(112)
             elevation = dp(2).toFloat()
             background = android.graphics.drawable.RippleDrawable(
                 android.content.res.ColorStateList.valueOf(Color.rgb(44, 196, 232)),
                 GradientDrawable().apply {
                     setColor(Color.rgb(12, 20, 34))
-                    cornerRadius = dp(16).toFloat()
-                    setStroke(dp(1), Color.rgb(39, 69, 100))
+                    cornerRadius = dp(18).toFloat()
+                    setStroke(dp(1), Color.rgb(42, 91, 122))
                 },
                 null
             )
@@ -94,7 +94,7 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
         }
         details.addView(title, LinearLayout.LayoutParams(-1, -2))
         val subtitle = TextView(context).apply {
-            setTextColor(Color.rgb(157, 160, 172))
+            setTextColor(Color.rgb(165, 190, 207))
             textSize = 10f
             gravity = Gravity.RIGHT
             text = "مباشر"
@@ -107,8 +107,9 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
             setPadding(dp(9), dp(8), dp(9), dp(8))
             setTextColor(Color.rgb(126, 235, 255))
             background = GradientDrawable().apply {
-                setColor(Color.rgb(15, 39, 57))
+                setColor(Color.rgb(15, 43, 62))
                 cornerRadius = dp(10).toFloat()
+                setStroke(dp(1), Color.rgb(36, 91, 119))
             }
         }
         details.addView(favorite, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(8) })
@@ -120,8 +121,8 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
     override fun onBindViewHolder(holder: Holder, position: Int) {
         val channel = getItem(position)
         holder.title.text = channel.name
-        holder.subtitle.text = if (channel.url.isBlank()) "لا يوجد رابط" else "رابط مضاف"
-        holder.subtitle.setTextColor(if (channel.url.isBlank()) Color.rgb(126, 190, 210) else Color.rgb(126, 235, 255))
+        holder.subtitle.text = if (channel.url.isBlank()) "الرابط غير متوفر" else "رابط البث مضاف"
+        holder.subtitle.setTextColor(if (channel.url.isBlank()) Color.rgb(165, 190, 207) else Color.rgb(126, 235, 255))
         holder.subtitle.background = GradientDrawable().apply {
             setColor(if (channel.url.isBlank()) Color.rgb(17, 38, 54) else Color.rgb(20, 47, 66))
             cornerRadius = dp(9).toFloat()
