@@ -22,7 +22,7 @@
             android:layout_marginStart="8dp"
             android:gravity="center"
             android:text="☰"
-            android:textColor="#E8C98E"
+            android:textColor="#7CEBFF"
             android:textSize="23sp"
             android:background="@drawable/rahmani_action_button"
             android:contentDescription="فتح القائمة الجانبية"
@@ -39,7 +39,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="RAHMANI TV"
-                android:textColor="#D6B879"
+                android:textColor="#35D6F2"
                 android:textSize="25sp"
                 android:textStyle="bold|italic"
                 android:letterSpacing="0.06"
@@ -48,7 +48,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="كل ما تحب مشاهدته في مكان واحد"
-                android:textColor="#B8B1A0"
+                android:textColor="#A8B8CE"
                 android:textSize="10sp"/>
         </LinearLayout>
         <Button
@@ -120,7 +120,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="RAHMANI  /  ENTERTAINMENT"
-                        android:textColor="#D6B879"
+                        android:textColor="#35D6F2"
                         android:textStyle="bold"
                         android:textSize="9sp"
                         android:letterSpacing="0.12"
@@ -138,7 +138,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
                         android:text="قنوات مباشرة، رياضة وأفلام بواجهة واحدة"
-                        android:textColor="#D8D2C4"
+                        android:textColor="#C5D9EA"
                         android:textSize="11sp"/>
                     <Button
                         android:id="@+id/featuredMoviesButton"
@@ -270,7 +270,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="RAHMANI SPORTS"
-                        android:textColor="#D6B879"
+                        android:textColor="#35D6F2"
                         android:textStyle="bold"
                         android:textSize="9sp"
                         android:letterSpacing="0.08"/>
@@ -369,7 +369,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="3dp"
                         android:text="اختر قناة وابدأ المشاهدة"
-                        android:textColor="#A49C8D"
+                        android:textColor="#9BAFC5"
                         android:textSize="10sp"/>
                 </LinearLayout>
                 <TextView
@@ -378,7 +378,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="8dp"
                     android:text="0 قناة"
-                    android:textColor="#D6B879"
+                    android:textColor="#35D6F2"
                     android:textStyle="bold"
                     android:textSize="10sp"/>
                 <Button
@@ -414,7 +414,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="استعادة القنوات"
-                    android:textColor="#E8C98E"
+                    android:textColor="#7CEBFF"
                     android:textSize="13sp"
                     android:textStyle="bold"/>
 
@@ -434,8 +434,8 @@
                     android:layout_height="4dp"
                     android:layout_marginTop="12dp"
                     android:indeterminate="true"
-                    android:indeterminateTint="#D6B879"
-                    android:progressTint="#D6B879"
+                    android:indeterminateTint="#35D6F2"
+                    android:progressTint="#35D6F2"
                     android:progressBackgroundTint="#39342A"/>
             </LinearLayout>
 
@@ -460,7 +460,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:text="لا توجد قنوات في هذا القسم حالياً"
-                    android:textColor="#B8B1A0"
+                    android:textColor="#A8B8CE"
                     android:visibility="gone"/>
             </FrameLayout>
         </LinearLayout>
