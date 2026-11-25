@@ -918,6 +918,7 @@ var v=$('#v'),pl=$('#pl'),ctl=$('#ctl'),msg=$('#msg'),idle=$('#idle');
 var cur=null,hls=null,retry=0,hideT,failFn=function(){};
 var PLAY='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>',PAUSE='<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>';
 function showMsg(t){msg.textContent=t||'';msg.style.display=t?'flex':'none'}
+function requestPlayback(){try{var p=v.play();if(p&&typeof p.catch==='function')p.catch(function(){});}catch(e){}}
 function destroy(){if(hls){try{hls.destroy()}catch(e){}hls=null}v.removeAttribute('src');try{v.load()}catch(e){}}
 function maint(c){
   var o=el('div');o.style.cssText='position:fixed;inset:0;z-index:150;background:#000b;display:flex;align-items:center;justify-content:center;padding:24px';
@@ -962,7 +963,6 @@ function play(c,keep,ai){
   }
   failFn=fail;
   if(location.protocol==='https:'&&/^http:/i.test(u)){showMsg('هذه القناة تستخدم رابطاً غير آمن (http) ولا يمكن تشغيلها داخل صفحة https.');return}
-  var tok=++playTok;
   if(/\.m3u8?(\?|$)/i.test(u)&&!window.Hls){
     showMsg('جارٍ تجهيز المشغّل...');
     loadHls().then(function(){if(tok===playTok&&cur===c)startStream(u,fail)});return;
@@ -990,7 +990,7 @@ function startStream2(u,fail){
     });
     hls.loadSource(u);hls.attachMedia(v);
   }else{v.src=u}
-  v.play().catch(function(){});
+  requestPlayback();
 }
 function step(d){
   if(cur&&cur.film)return toast('التنقل غير متاح أثناء مشاهدة فيلم');
@@ -1010,7 +1010,7 @@ v.addEventListener('timeupdate',function(){
 });
 $('#sk').addEventListener('input',function(){if(isFinite(v.duration)&&v.duration)v.currentTime=this.value/1000*v.duration});
 $('#pp').innerHTML=PLAY;
-$('#pp').onclick=function(e){e.stopPropagation();if(!cur)return;v.paused?v.play().catch(function(){}):v.pause();wake()};
+$('#pp').onclick=function(e){e.stopPropagation();if(!cur)return;v.paused?requestPlayback():v.pause();wake()};
 $('#pv').onclick=function(e){e.stopPropagation();step(-1)};
 $('#nx').onclick=function(e){e.stopPropagation();step(1)};
 $('#fs').onclick=function(e){e.stopPropagation();fs()};
