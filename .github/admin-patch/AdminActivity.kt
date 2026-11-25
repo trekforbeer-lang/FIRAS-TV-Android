@@ -671,6 +671,22 @@ class AdminActivity : Activity() {
         }
         val country = field("رمز الدولة مثل DZ أو SA", old?.optString("cc")?.takeIf { it.isNotBlank() } ?: sectionIndex?.let { sections().optJSONObject(it)?.optString("countryCode") }.orEmpty())
         val category = field("التصنيف", sectionIndex?.let { sections().optJSONObject(it)?.optString("title") }.orEmpty())
+        val statusValues = arrayOf("live", "maintenance", "soon", "updating")
+        val statusLabels = arrayOf("متاحة للمشاهدة", "قيد الصيانة", "قريباً", "قيد التحديث")
+        form.addView(TextView(this).apply {
+            text = "حالة القناة"
+            textSize = 13f
+            setTextColor(0xFFB9B9C2.toInt())
+            setPadding(4, 10, 4, 4)
+        })
+        val statusSpinner = android.widget.Spinner(this).apply {
+            adapter = android.widget.ArrayAdapter(this@AdminActivity, android.R.layout.simple_spinner_dropdown_item, statusLabels)
+            val savedState = old?.optString("status").orEmpty().ifBlank {
+                if (old?.optString("url").isNullOrBlank()) "maintenance" else "live"
+            }
+            setSelection(statusValues.indexOf(savedState).coerceAtLeast(0))
+        }
+        form.addView(statusSpinner)
         val alts = field("روابط بديلة - رابط في كل سطر", old?.optJSONArray("alts")?.let { a -> (0 until a.length()).joinToString("\n") { a.optString(it) } }.orEmpty(), true)
         val privateBox = CheckBox(this).apply { text = "قناة خاصة (لا تظهر في القائمة العامة)"; isChecked = old?.optBoolean("priv", false) ?: false }
         form.addView(privateBox)
@@ -681,8 +697,13 @@ class AdminActivity : Activity() {
                 val stream = url.text.toString().trim()
                 val logoUrl = logo.text.toString().trim()
                 val primaryStream = stream.ifBlank { qualityUrls.values.firstOrNull { it.text.toString().trim().isNotBlank() }?.text?.toString()?.trim().orEmpty() }
-                if (channelName.isBlank() || primaryStream.isBlank() || !safe(primaryStream) || qualityUrls.values.any { it.text.toString().trim().let { value -> value.isNotBlank() && !safe(value) } } || (logoUrl.startsWith("http", true) && !safe(logoUrl))) {
-                    Toast.makeText(this, "تحقق من الاسم والروابط", Toast.LENGTH_LONG).show(); return@setPositiveButton
+                val channelStatus = statusValues[statusSpinner.selectedItemPosition.coerceIn(0, statusValues.lastIndex)]
+                if (channelName.isBlank() ||
+                    (channelStatus == "live" && primaryStream.isBlank()) ||
+                    (primaryStream.isNotBlank() && !safe(primaryStream)) ||
+                    qualityUrls.values.any { it.text.toString().trim().let { value -> value.isNotBlank() && !safe(value) } } ||
+                    (logoUrl.startsWith("http", true) && !safe(logoUrl))) {
+                    Toast.makeText(this, "تحقق من اسم القناة وروابطها وحالتها", Toast.LENGTH_LONG).show(); return@setPositiveButton
                 }
                 val altValues = alts.text.toString().lineSequence().map { it.trim() }.filter { it.isNotBlank() }.toList()
                 if (altValues.any { !safe(it) }) { Toast.makeText(this, "يوجد رابط بديل غير صالح", Toast.LENGTH_LONG).show(); return@setPositiveButton }
@@ -701,6 +722,7 @@ class AdminActivity : Activity() {
                     edit.text.toString().trim().takeIf { it.isNotBlank() }?.let { qualityObject.put(label, it) }
                 }
                 item.put("name", channelName).put("url", primaryStream).put("logo", logoUrl)
+                    .put("status", channelStatus)
                     .put("qualityUrls", qualityObject)
                     .put("referer", referer.text.toString().trim())
                     .put("userAgent", userAgent.text.toString().trim())
