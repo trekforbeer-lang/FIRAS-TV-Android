@@ -542,7 +542,8 @@ function upgradeV2(){
   if(!cats.some(function(k){return k.id==='sports'}))cats.unshift({id:'sports',n:'رياضة',t:'⚽',c:'#5c2d91'});
   cfg.ver=2;
 }
-if(ch===null){migrate()}
+/* Recover legacy saved channels if the current store is missing or empty. */
+if(ch===null||(Array.isArray(ch)&&ch.length===0&&(Array.isArray(ld('ftv_ch',[]))&&ld('ftv_ch',[]).length||Object.keys(ld('df_own',{} )||{}).length))){migrate()}
 ensureDefaults();upgradeV2();save();
 
 /* =====================================================================
