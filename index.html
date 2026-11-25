@@ -340,6 +340,77 @@ button:focus-visible,[role=button]:focus-visible,input:focus-visible{outline:2px
   #cats .ci{flex-basis:36px;width:36px;height:36px}
 }
 
+
+/* ===== FIRAS TV visual pass: streaming-style home and navigation ===== */
+:root{--firas-gold:#f5c542;--firas-green:#35d07f;--bg:#070a08;--pane:#101611;--sel:#202a22;--surface:#141b15;--line:#29372c}
+body{background:#070a08}
+#hd{padding:13px 18px 7px}
+#hb{font-size:30px;letter-spacing:1.1px;color:var(--firas-gold);text-shadow:0 3px 22px #f5c54225}
+#hs{width:42px;height:42px;padding:9px;border-radius:50%;background:#172019;border:1px solid #2b3a2d}
+#tabs{gap:22px;padding:5px 18px 0;direction:rtl}
+#tabs button{font-size:15px;padding:11px 3px;color:#aeb8ad;border-bottom-width:2px}
+#tabs button.on{color:var(--firas-gold);border-color:var(--firas-gold)}
+#bn{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));height:68px;padding:0 5px;background:rgba(15,22,16,.94);border:1px solid #344335;box-shadow:0 12px 34px #0009}
+#bn button{min-width:0;flex:1;height:56px;padding:0 5px;font-size:11px;color:#aab5a9}
+#bn button .i{width:24px;height:24px}
+#bn button.on{background:linear-gradient(145deg,#293a25,#1c2b20);color:#fff;box-shadow:inset 0 0 0 1px #5a873e55}
+#bn button.on .i{color:var(--firas-gold)}
+#pgHome{padding-bottom:105px;background:linear-gradient(180deg,#0c120d 0,#080b08 260px,#070a08 100%)}
+.hs{gap:13px;padding:13px 16px 5px;scroll-padding-inline:16px}
+.sl{flex-basis:88%;height:clamp(255px,49vh,430px);border-radius:22px;border:1px solid #3b4937;background:#172018;box-shadow:0 13px 32px #0008}
+.sl .bgi{filter:saturate(.92)}
+.sl .lgb{left:25%;right:25%;top:12%;border-radius:16px;background:#f8f8f2;padding:14px;box-shadow:0 8px 24px #0005}
+.sl .sh2{background:linear-gradient(180deg,#0001 12%,#0004 42%,#050906f2 100%)}
+.sl .si{padding:17px;gap:8px}
+.sl .si b{font-size:clamp(21px,5vw,29px);text-shadow:0 2px 12px #000}
+.sl .si small{color:#d0d7cb}
+.sl .bs{gap:9px;margin-top:7px}
+.bw{background:linear-gradient(135deg,#f5cf55,#e0ad22);color:#15170e;border-radius:13px;min-height:46px}
+.bt2{background:#ffffff1b;border:1px solid #ffffff38;border-radius:13px;min-height:46px}
+.rh{margin:23px 0 11px;padding:0 18px;direction:rtl}
+.rh h3{font-size:18px;font-weight:850;color:#f4f6ef}
+.rh button{width:32px;height:32px;border-radius:50%;background:#18231a;color:var(--firas-gold);font-size:24px;line-height:1}
+.hr{gap:12px;padding:0 16px 6px}
+.pc{flex-basis:clamp(112px,31vw,148px)}
+.pc .pw{border-radius:13px;background:linear-gradient(145deg,#1c281d,#101610);border:1px solid #2b3a2c;box-shadow:0 6px 18px #0005}
+.pc .pt{color:#c4cec1;font-size:12px;font-weight:650}
+.cc{flex-basis:116px}
+.cc .cl{border-radius:13px;background:#f4f5ef;border:1px solid #344235;box-shadow:0 6px 16px #0005}
+.cc .cn{color:#d9e1d5;font-size:12px;font-weight:700}
+#pgDisc,#pgMy,#pgMore{background:linear-gradient(180deg,#0d130e,#080b08)}
+.pgt{padding:18px 18px 8px;color:var(--firas-gold);font-size:25px}
+.sq{background:#131b14;border-color:#2e3b30;border-radius:15px}
+.mi{background:linear-gradient(145deg,#172019,#101610);border:1px solid #2b3b2d;border-radius:15px}
+.mi.on{border-color:#477b4c}
+#cats{background:#0d130e}
+#side{background:#101710;border-left:1px solid #263329}
+#q{background:#080d09;border-color:#2b3a2d}
+#q:focus{border-color:var(--firas-green)}
+.ch{border-radius:13px}
+.ch.on{background:#202d22;border-color:#3c6140}
+.ch .lg{background:#f4f5ef}
+.ch .nm{color:#eef2eb}
+.more{background:#1b281d;border:1px solid #36513a;color:#e7f1e4}
+#idle{background:radial-gradient(circle at 50% 42%,#26391e 0,#10170e 48%,#000 82%)}
+#idle b{color:var(--firas-gold);text-shadow:0 0 24px #f5c54255}
+#toast{background:#18231a;border-color:#40513d;color:#fff}
+@media(max-width:380px){
+ #tabs{gap:16px;padding-inline:14px}
+ .sl{flex-basis:91%;height:clamp(235px,46vh,340px)}
+ .rh{margin-top:19px}
+ .pc{flex-basis:108px}
+ .cc{flex-basis:104px}
+ #bn{left:8px;right:8px}
+ #bn button{font-size:10px}
+}
+@media(min-width:700px){
+ #pgHome{max-width:1100px;margin-inline:auto;width:100%}
+ .sl{flex-basis:min(72%,720px);height:min(54vh,440px)}
+ .pc{flex-basis:150px}
+ .cc{flex-basis:140px}
+}
+@media(prefers-reduced-motion:reduce){.sl,.pc,.cc,#bn button{transition:none!important}}
+
 </style>
 </head>
 <body>
