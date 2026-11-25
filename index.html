@@ -1047,6 +1047,8 @@ function fs(){
 function exitFs(){
   try{if(screen.orientation&&screen.orientation.unlock)screen.orientation.unlock()}catch(e){}
   if(plFs()){var x=document.exitFullscreen||document.webkitExitFullscreen;if(x)try{var r=x.call(document);if(r&&r.catch)r.catch(function(){})}catch(e){}}
+  /* Safari/WebView may use native video fullscreen instead of the element API. */
+  if(v.webkitDisplayingFullscreen&&v.webkitExitFullscreen)try{v.webkitExitFullscreen()}catch(e){}
 }
 document.addEventListener('fullscreenchange',function(){if(plFs())lockLandscape()});
 document.addEventListener('webkitfullscreenchange',function(){if(plFs())lockLandscape()});
