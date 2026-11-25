@@ -587,7 +587,7 @@ class MainActivity : AppCompatActivity() {
         }
         val searchBox = EditText(this).apply {
             hint = "ابحث عن دولة"
-            singleLine = true
+            setSingleLine(true)
             setTextColor(Color.WHITE)
             setHintTextColor(Color.rgb(155, 181, 200))
             setPadding(dp(12), dp(8), dp(12), dp(8))
