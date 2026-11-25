@@ -14,7 +14,33 @@
 <title>فيراس</title>
 <style>
 /* ===== base ===== */
-:root{--bg:#000;--sel:#2b2b2b;--pane:#121212;--red:#e53935;--mu:#9a9a9a;--ok:#4ade80}
+/* ===== refreshed gold + green streaming theme ===== */
+#hd{padding:12px 18px 6px}
+#hb{color:var(--gold);text-shadow:0 2px 18px #e8bd4528}
+#tabs button.on{border-color:var(--gold);color:var(--gold)}
+#bn{background:rgba(13,20,16,.96);border-color:var(--line);box-shadow:0 10px 32px #0008}
+#bn button.on{background:#1d392a;color:var(--green)}
+#pl{border-bottom:1px solid var(--line);box-shadow:0 8px 24px #0005}
+#idle{background:radial-gradient(circle at 50% 45%,#203a2b 0,#080b0a 72%)}
+#idle b{color:var(--gold)}
+#lv{background:var(--green);color:#07110b}
+#cats{padding:8px 6px 8px 0}
+#cats button{margin:3px 0;padding:12px 10px;border-radius:0 13px 13px 0;transition:background .18s,color .18s}
+#cats button.on{background:linear-gradient(90deg,#1b3929,#14231b);color:var(--green);box-shadow:inset 3px 0 0 var(--gold)}
+#cats .ci{background:#1b2c22;color:var(--gold)}
+#side{border-left:1px solid var(--line)}
+#q{background:#080e0a;border-color:var(--line)}
+#q:focus,.sq:focus{border-color:var(--gold);box-shadow:0 0 0 2px #e8bd4520}
+#wk.on{background:var(--green);border-color:var(--green);color:#06110a}
+.ch{margin:3px 0;transition:background .16s,transform .16s}
+.ch.on{background:linear-gradient(90deg,#1b3929,#132019);box-shadow:inset 3px 0 0 var(--gold)}
+.ch.hd{background:#17231b;border-bottom:1px solid var(--line)}
+.ch .lg{border:1px solid #dce8df22}
+.more{background:#1b3929;color:var(--green);border:1px solid var(--line)}
+.sq{background:#101713;border-color:var(--line)}
+@media(hover:hover){.ch:not(.hd):hover,#cats button:hover{background:#17271d}}
+
+:root{--bg:#080b0a;--sel:#1c3428;--pane:#101713;--red:#e8bd45;--mu:#a5b2aa;--ok:#3bd27a;--gold:#e8bd45;--green:#3bd27a;--line:#263a2e}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;font-family:system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif}
 html,body{height:100%;background:var(--bg);color:#fff;overflow:hidden;overscroll-behavior:none}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
@@ -83,7 +109,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 #pl{position:relative;width:100%;aspect-ratio:16/9;background:#000;flex:0 0 auto;overflow:hidden}
 #pl:fullscreen{aspect-ratio:auto;height:100%}
 video{width:100%;height:100%;object-fit:contain;background:#000}
-#idle{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:radial-gradient(circle,#2a0a0c,#000 70%);text-align:center;padding:12px}
+#idle{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:radial-gradient(circle,#24351f,#080b0a 72%);text-align:center;padding:12px}
 #idle b{font-size:28px;color:var(--red);letter-spacing:1px;user-select:none}
 #idle span{color:var(--mu);font-size:13px}
 #msg{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:20px;font-weight:700;line-height:1.8;background:#000a;z-index:2;white-space:pre-line}
@@ -140,7 +166,7 @@ video{width:100%;height:100%;object-fit:contain;background:#000}
 .sp-bar{width:150px;height:4px;border-radius:4px;background:#ffffff1f;overflow:hidden;opacity:0;animation:fadeup .6s ease .9s forwards}
 .sp-bar i{display:block;height:100%;width:40%;border-radius:4px;background:var(--red);animation:slide 1.1s ease-in-out infinite}
 @keyframes spin{from{opacity:0;transform:scale(.4) rotate(-6deg);filter:blur(10px)}to{opacity:1;transform:none;filter:none}}
-@keyframes glow{0%,100%{text-shadow:0 0 12px #e5393555}50%{text-shadow:0 0 34px #e53935cc}}
+@keyframes glow{0%,100%{text-shadow:0 0 12px #e8bd4555}50%{text-shadow:0 0 34px #e53935cc}}
 @keyframes fadeup{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @keyframes slide{0%{margin-left:-40%}100%{margin-left:100%}}
 @keyframes pgin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
