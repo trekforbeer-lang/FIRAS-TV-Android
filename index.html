@@ -411,6 +411,38 @@ body{background:#070a08}
 }
 @media(prefers-reduced-motion:reduce){.sl,.pc,.cc,#bn button{transition:none!important}}
 
+
+/* ===== FIRAS reference-inspired secondary screens ===== */
+#pgDisc,#pgMy,#pgMore{padding:10px 14px 118px;direction:rtl}
+#pgDisc .sq{width:100%;margin:8px 0 18px;padding:15px 17px;border-radius:16px;background:#111a12;border:1px solid #304232;box-shadow:0 8px 22px #0004}
+#pgDisc .sq:focus{border-color:#35d07f;box-shadow:0 0 0 3px #35d07f18}
+#pgDisc .sec{font-size:18px;font-weight:850;color:#f5c542;margin:18px 4px 12px}
+#pgDisc .lst{display:flex;flex-direction:column;gap:8px}
+#pgMy .pgt,#pgMore .pgt{font-size:25px;font-weight:900;color:#f5c542;padding:12px 4px 18px;letter-spacing:.1px}
+#pgMy .rh{margin:20px 0 12px;padding:0 4px}
+#pgMy .rh h3{font-size:17px;color:#f0f4eb}
+#pgMy .gd{padding:0 2px;gap:13px}
+#pgMy .lst{display:flex;flex-direction:column;gap:8px;padding:0 2px}
+#pgMy .emp{margin:22px 0;padding:35px 22px;border:1px dashed #3b4c3c;border-radius:20px;background:linear-gradient(145deg,#172119,#0d130e);color:#b9c6b8;line-height:1.9}
+#pgMore{display:flex;flex-direction:column;gap:10px}
+#pgMore .mi{width:100%;min-height:70px;padding:13px 16px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:5px;text-align:right;direction:rtl;background:linear-gradient(110deg,#172219,#101710);border:1px solid #2b3b2d;border-radius:16px;box-shadow:0 5px 16px #0003}
+#pgMore .mi span{font-size:15px;font-weight:800;color:#eef4eb}
+#pgMore .mi small{font-size:12px;color:#aab8a8}
+#pgMore .mi.on{border-color:#56804a;background:linear-gradient(110deg,#203323,#142019)}
+#pgMore .mi.on small{color:#69db91}
+#pgMore .mi:active{transform:scale(.99);background:#263829}
+#pgHome .emp,#pgDisc .emp{margin:20px 16px;padding:25px 18px;border-radius:18px;background:#121b13;border:1px solid #2b3b2d;color:#b9c6b8;line-height:1.9}
+#pgHome .rh button:focus-visible,#bn button:focus-visible,#tabs button:focus-visible{outline:2px solid #f5c542;outline-offset:3px}
+@media(min-width:700px){
+ #pgDisc,#pgMy,#pgMore{max-width:1000px;margin-inline:auto}
+ #pgMore .mi{min-height:76px}
+}
+@media(max-width:380px){
+ #pgDisc,#pgMy,#pgMore{padding-inline:10px}
+ #pgMy .gd{gap:10px}
+ #pgMore .mi{min-height:64px;padding:11px 13px}
+}
+
 </style>
 </head>
 <body>
