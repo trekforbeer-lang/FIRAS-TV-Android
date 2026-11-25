@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#090909"
+    android:background="#081321"
     android:layoutDirection="rtl"
     android:fitsSystemWindows="true">
 
@@ -92,7 +92,7 @@
                 android:layout_marginBottom="15dp"
                 android:background="@drawable/search_bg"
                 android:hint="⌕   ابحث عن قناة أو فيلم أو تصنيف"
-                android:textColorHint="#9B9588"
+                android:textColorHint="#9BB5C8"
                 android:textColor="#FFFFFF"
                 android:singleLine="true"
                 android:imeOptions="actionSearch"
@@ -104,7 +104,7 @@
             <FrameLayout
                 android:id="@+id/homeHeroSection"
                 android:layout_width="match_parent"
-                android:layout_height="280dp"
+                android:layout_height="300dp"
                 android:layout_marginStart="6dp"
                 android:layout_marginEnd="6dp"
                 android:background="@drawable/home_hero_bg"
