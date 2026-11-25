@@ -982,7 +982,7 @@ class AdminActivity : Activity() {
         val explicitCode = normalizeImportedCountry(explicit)
         if (explicitCode.isNotBlank()) return explicitCode
 
-        val text = (channel.optString("group") + " " + channel.optString("name"))
+        val text = (explicit + " " + channel.optString("group") + " " + channel.optString("name"))
             .lowercase(Locale.ROOT)
             .replace('_', ' ')
         val aliases = listOf(
@@ -1077,7 +1077,7 @@ class AdminActivity : Activity() {
         var country = ""
         val logoPattern = Regex("tvg-logo=\"([^\"]*)\"")
         val groupPattern = Regex("group-title=\"([^\"]*)\"")
-        val countryPattern = Regex("(?:tvg-country|country|countryCode)=\"([^\"]*)\"", RegexOption.IGNORE_CASE)
+        val countryPattern = Regex("""(?:tvg-country-code|tvg-country|country|countryCode)\s*=\s*["']([^"']*)["']""", RegexOption.IGNORE_CASE)
         for (line0 in raw.lineSequence()) {
             if (out.size >= 15000) break
             val line = line0.trim()
