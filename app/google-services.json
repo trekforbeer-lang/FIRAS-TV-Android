@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "307152308333",
+    "project_id": "rahmani-tv",
+    "storage_bucket": "rahmani-tv.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:307152308333:android:a8cd46700a77549f921764",
+        "android_client_info": {
+          "package_name": "com.firas.tv"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBItAH_GneKLMgu3sGJ3fRJ1yRRea-sE24"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

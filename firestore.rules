@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // The single owner account is authorized by its Firebase Authentication UID.
+    // This keeps admin access independent of Firestore document-read permissions.
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.uid == "fpmTwA03drg2QF04qefubOdfmjf1";
+    }
+
+    function validChannel(data) {
+      return data.keys().hasAll(["name", "url", "active"])
+        && data.keys().hasOnly([
+          "name", "url", "logo", "referer", "userAgent", "countryCode",
+          "countryName", "category", "region", "active", "sortOrder", "updatedAt",
+          "alts", "priv", "group"
+        ])
+        && data.name is string
+        && data.name.size() > 0
+        && data.name.size() <= 120
+        && data.url is string
+        && data.url.matches("^https?://.{1,2040}$")
+        && data.active is bool
+        && (!("logo" in data) || (data.logo is string && data.logo.size() <= 2048))
+        && (!("referer" in data) || (data.referer is string && data.referer.size() <= 2048))
+        && (!("userAgent" in data) || (data.userAgent is string && data.userAgent.size() <= 512))
+        && (!("countryCode" in data) || (data.countryCode is string && data.countryCode.size() <= 8))
+        && (!("countryName" in data) || (data.countryName is string && data.countryName.size() <= 80))
+        && (!("category" in data) || (data.category is string && data.category.size() <= 80))
+        && (!("region" in data) || data.region in ["arab", "foreign", ""])
+        && (!("sortOrder" in data) || (data.sortOrder is int && data.sortOrder >= 0 && data.sortOrder <= 100000))
+        && (!("updatedAt" in data) || data.updatedAt is timestamp)
+        && (!("alts" in data) || (data.alts is list && data.alts.size() <= 10))
+        && (!("priv" in data) || data.priv is bool)
+        && (!("group" in data) || (data.group is string && data.group.size() <= 120));
+    }
+
+    // A user can read only their own role document. No client can create,
+    // modify, enumerate, or delete admin grants. Project owners manage these
+    // documents through Firebase Console / Admin SDK.
+    match /admins/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+      allow list, create, update, delete: if false;
+    }
+
+    match /channels/{channelId} {
+      // Private channels are visible only to an authorized administrator.
+      allow read: if (resource.data.active == true
+          && resource.data.get("priv", false) == false) || isAdmin();
+      allow create: if isAdmin() && validChannel(request.resource.data);
+      allow update: if isAdmin() && validChannel(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    function validMovie(data) {
+      return data.keys().hasAll(["title", "url", "active"])
+        && data.keys().hasOnly(["title", "url", "poster", "country", "active", "updatedAt"])
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 180
+        && data.url is string && data.url.matches("^https?://.{1,2040}$")
+        && data.active is bool
+        && (!("poster" in data) || (data.poster is string && data.poster.size() <= 2048))
+        && (!("country" in data) || (data.country is string && data.country.size() <= 80))
+        && (!("updatedAt" in data) || data.updatedAt is timestamp);
+    }
+
+    match /movies/{movieId} {
+      allow read: if resource.data.active == true || isAdmin();
+      allow create, update: if isAdmin() && validMovie(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -33,8 +33,8 @@ class DiscoverActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = Color.rgb(9, 10, 16)
-        window.navigationBarColor = Color.rgb(9, 10, 16)
+        window.statusBarColor = Color.rgb(0, 0, 0)
+        window.navigationBarColor = Color.rgb(0, 0, 0)
         window.decorView.layoutDirection = View.LAYOUT_DIRECTION_RTL
 
         val sections = ChannelRepository.load(this)
@@ -42,7 +42,7 @@ class DiscoverActivity : AppCompatActivity() {
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.rgb(9, 10, 16))
+            setBackgroundColor(Color.rgb(0, 0, 0))
             layoutDirection = View.LAYOUT_DIRECTION_RTL
             setPadding(dp(16), dp(18), dp(16), dp(10))
         }
@@ -74,7 +74,7 @@ class DiscoverActivity : AppCompatActivity() {
             setTextColor(Color.WHITE)
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
-                setColor(Color.rgb(224, 66, 104))
+                setColor(Color.rgb(229, 9, 20))
             }
         }, LinearLayout.LayoutParams(dp(46), dp(46)))
         root.addView(top)
@@ -87,9 +87,9 @@ class DiscoverActivity : AppCompatActivity() {
             setSingleLine(true)
             setPadding(dp(15), 0, dp(15), 0)
             background = GradientDrawable().apply {
-                setColor(Color.rgb(27, 29, 39))
+                setColor(Color.rgb(14, 14, 14))
                 cornerRadius = dp(14).toFloat()
-                setStroke(dp(1), Color.rgb(63, 48, 60))
+                setStroke(dp(1), Color.rgb(90, 23, 29))
             }
         }
         root.addView(search, LinearLayout.LayoutParams(-1, dp(50)).apply { topMargin = dp(18) })
@@ -118,7 +118,7 @@ class DiscoverActivity : AppCompatActivity() {
         }, LinearLayout.LayoutParams(0, -2, 1f))
         countView = TextView(this).apply {
             textSize = 11f
-            setTextColor(Color.rgb(255, 139, 164))
+            setTextColor(Color.rgb(229, 9, 20))
         }
         resultsHeader.addView(countView)
         root.addView(resultsHeader)
@@ -126,7 +126,7 @@ class DiscoverActivity : AppCompatActivity() {
         val content = FrameLayout(this)
         adapter = ChannelAdapter(onClick = { channel -> openChannel(channel) }, onFavoriteChanged = { renderResults() })
         val recycler = RecyclerView(this).apply {
-            layoutManager = GridLayoutManager(this@DiscoverActivity, if (resources.configuration.screenWidthDp >= 600) 4 else 2)
+            layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this@DiscoverActivity)
             adapter = this@DiscoverActivity.adapter
             setHasFixedSize(false)
             clipToPadding = false
@@ -169,8 +169,8 @@ class DiscoverActivity : AppCompatActivity() {
                 setPadding(dp(15), 0, dp(15), 0)
                 background = GradientDrawable().apply {
                     cornerRadius = dp(18).toFloat()
-                    setColor(if (selected) Color.rgb(194, 54, 88) else Color.rgb(31, 32, 43))
-                    if (selected) setStroke(dp(1), Color.rgb(242, 111, 143))
+                    setColor(if (selected) Color.rgb(20, 105, 143) else Color.rgb(31, 32, 43))
+                    if (selected) setStroke(dp(1), Color.rgb(229, 9, 20))
                 }
                 isClickable = true
                 isFocusable = true

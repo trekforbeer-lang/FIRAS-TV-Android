@@ -1,8 +1,9 @@
+# RAHMANI luxury UI, immersive player, and restore reliability build
 name: FIRAS TV v4 Build APK
 # Build includes the latest committed admin-patch Kotlin sources, RAHMANI UI resources, and saved-channel screen.
 on:
   push:
-    branches: [kotlin-v3]
+    branches: [kotlin-v3, security/firebase-admin-auth]
   workflow_dispatch:
 permissions:
   contents: write
@@ -25,10 +26,13 @@ jobs:
           rm -f .github/workflows/v4-source-*.b64
           cp .github/admin-patch/AdminActivity.kt app/src/main/java/com/firas/tv/AdminActivity.kt
           cp .github/admin-patch/MainActivity.kt app/src/main/java/com/firas/tv/MainActivity.kt
+          cp .github/admin-patch/RestoreChannelsWorker.kt app/src/main/java/com/firas/tv/RestoreChannelsWorker.kt
           cp .github/admin-patch/FavoriteChannels.kt app/src/main/java/com/firas/tv/FavoriteChannels.kt # saved-channel screen and favorites
           cp .github/admin-patch/DiscoverActivity.kt app/src/main/java/com/firas/tv/DiscoverActivity.kt # channel discovery and category search
           cp .github/admin-patch/MoreActivity.kt app/src/main/java/com/firas/tv/MoreActivity.kt # dedicated More hub
           cp .github/admin-patch/Models.kt app/src/main/java/com/firas/tv/Models.kt
+          cp .github/admin-patch/CloudChannelSync.kt app/src/main/java/com/firas/tv/CloudChannelSync.kt
+          cp .github/admin-patch/CloudMovieSync.kt app/src/main/java/com/firas/tv/CloudMovieSync.kt
           cp .github/admin-patch/UniversalStreamEngine.kt app/src/main/java/com/firas/tv/UniversalStreamEngine.kt
           cp .github/admin-patch/ChannelAdapter.kt app/src/main/java/com/firas/tv/ChannelAdapter.kt
           cp .github/admin-patch/activity_main.xml app/src/main/res/layout/activity_main.xml
@@ -61,8 +65,18 @@ jobs:
           # RAHMANI architecture dependencies and modern Android configuration.
           sed -i 's/minSdk = 21/minSdk = 24/' app/build.gradle.kts
           sed -i -E 's/targetSdk = [0-9]+/targetSdk = 34/' app/build.gradle.kts
-          sed -i '/id("org.jetbrains.kotlin.android") version "2.0.21" apply false/a\    id("org.jetbrains.kotlin.kapt") version "2.0.21" apply false' build.gradle.kts
-          sed -i '/id("org.jetbrains.kotlin.android")/a\    id("org.jetbrains.kotlin.kapt")' app/build.gradle.kts
+          # Firebase Android SDK 24.x uses Kotlin 2.1 metadata; align the app compiler and KAPT.
+          sed -i -E 's/(id\("org\.jetbrains\.kotlin\.android"\) version ")[0-9.]+/\12.1.0/' build.gradle.kts
+          if grep -q 'id("org.jetbrains.kotlin.kapt") version' build.gradle.kts; then
+            sed -i -E 's/(id\("org\.jetbrains\.kotlin\.kapt"\) version ")[0-9.]+/\12.1.0/' build.gradle.kts
+          else
+            sed -i '/id("org.jetbrains.kotlin.android") version "2.1.0" apply false/a\    id("org.jetbrains.kotlin.kapt") version "2.1.0" apply false' build.gradle.kts
+          fi
+          if ! grep -q 'id("org.jetbrains.kotlin.kapt")' app/build.gradle.kts; then
+            sed -i '/id("org.jetbrains.kotlin.android")/a\    id("org.jetbrains.kotlin.kapt")' app/build.gradle.kts
+          fi
+          grep -q 'org.jetbrains.kotlin.android.*2.1.0' build.gradle.kts
+          grep -q 'org.jetbrains.kotlin.kapt' app/build.gradle.kts
           sed -i '/^android[[:space:]]*{/a\    buildFeatures { viewBinding = true }' app/build.gradle.kts
           sed -i '/implementation("androidx.appcompat:appcompat:1.7.0")/a\    implementation("androidx.activity:activity-ktx:1.10.0")\n    implementation("androidx.fragment:fragment-ktx:1.8.5")\n    implementation("androidx.constraintlayout:constraintlayout:2.2.0")\n    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")\n    implementation("androidx.viewpager2:viewpager2:1.1.0")\n    implementation("androidx.navigation:navigation-fragment-ktx:2.8.5")\n    implementation("androidx.navigation:navigation-ui-ktx:2.8.5")\n    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")\n    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")\n    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")\n    implementation("androidx.room:room-runtime:2.6.1")\n    implementation("androidx.room:room-ktx:2.6.1")\n    kapt("androidx.room:room-compiler:2.6.1")\n    implementation("androidx.paging:paging-runtime-ktx:3.3.5")\n    implementation("androidx.datastore:datastore-preferences:1.1.1")\n    implementation("io.coil-kt:coil:2.7.0")' app/build.gradle.kts
           grep -q 'minSdk = 24' app/build.gradle.kts
@@ -87,6 +101,15 @@ jobs:
           grep -q 'media3-datasource-okhttp:1.5.1' app/build.gradle.kts
           # Media3 1.5.1 requires compileSdk 35; AGP 8.6.1 supports it with Gradle 8.7.
           sed -i 's/id("com.android.application") version "8.5.2"/id("com.android.application") version "8.6.1"/' build.gradle.kts
+          # Firebase Auth is the authority for admin access; local app data is never an admin credential.
+          sed -i '/id("com.android.application") version "8.6.1" apply false/a\    id("com.google.gms.google-services") version "4.4.2" apply false' build.gradle.kts
+          sed -i '/id("com.android.application")/a\    id("com.google.gms.google-services")' app/build.gradle.kts
+          sed -i '/^dependencies[[:space:]]*{/a\    implementation(platform("com.google.firebase:firebase-bom:34.0.0"))\n    implementation("com.google.firebase:firebase-auth")\n    implementation("com.google.firebase:firebase-firestore")' app/build.gradle.kts
+          test -f app/google-services.json
+          grep -q 'com.google.gms.google-services' build.gradle.kts
+          grep -q 'com.google.gms.google-services' app/build.gradle.kts
+          grep -q 'firebase-auth' app/build.gradle.kts
+          grep -q 'firebase-firestore' app/build.gradle.kts
           sed -i -E 's/compileSdk = [0-9]+/compileSdk = 35/' app/build.gradle.kts
           grep -q 'version "8.6.1"' build.gradle.kts
           grep -q 'compileSdk = 35' app/build.gradle.kts
@@ -113,6 +136,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/kotlin-v3'
         with:
           tag_name: rahmani-android-${{ github.run_number }}
           name: RAHMANI Android (Build ${{ github.run_number }})

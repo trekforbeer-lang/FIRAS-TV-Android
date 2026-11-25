@@ -66,11 +66,6 @@ class MoreActivity : AppCompatActivity() {
             startActivity(Intent(this, DiscoverActivity::class.java))
         }
 
-        section(content, "الإدارة")
-        item(content, "⚙", "لوحة الإدارة", "إدارة القنوات والروابط والشعارات", Color.rgb(99, 108, 133)) {
-            startActivity(Intent(this, AdminActivity::class.java))
-        }
-
         val about = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER

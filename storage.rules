@@ -1,0 +1,14 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Logo upload stays disabled until the app uses the Firestore admin role
+    // check in Storage Rules as well. Public read is limited to channel logos.
+    match /channel-logos/{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -20,7 +20,7 @@ import java.net.URL
 import java.net.URLEncoder
 import java.util.concurrent.Executors
 
-private data class FilmItem(val id: String, val title: String)
+private data class FilmItem(val id: String, val title: String, val stream: String = "", val poster: String = "", val country: String = "")
 
 class MoviesActivity : AppCompatActivity() {
     private val io = Executors.newFixedThreadPool(4)
@@ -35,12 +35,12 @@ class MoviesActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = 0xFF090A0F.toInt()
-        window.navigationBarColor = 0xFF15161D.toInt()
+        window.statusBarColor = 0xFF000000.toInt()
+        window.navigationBarColor = 0xFF0E0E0E.toInt()
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(14, 8, 14, 8)
-            setBackgroundColor(0xFF090A0F.toInt())
+            setBackgroundColor(0xFF000000.toInt())
         }
         val toolbar = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -69,7 +69,7 @@ class MoviesActivity : AppCompatActivity() {
         toolbar.addView(titleBlock, LinearLayout.LayoutParams(0, -2, 1f))
         toolbar.addView(TextView(this).apply {
             text = "RAHMANI"; textSize = 14f; typeface = android.graphics.Typeface.DEFAULT_BOLD
-            setTextColor(0xFFF0445E.toInt())
+            setTextColor(0xFFE50914.toInt())
         })
         root.addView(toolbar)
 
@@ -79,7 +79,7 @@ class MoviesActivity : AppCompatActivity() {
             setPadding(18, 12, 18, 12)
             background = android.graphics.drawable.GradientDrawable(
                 android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,
-                intArrayOf(0xFF512039.toInt(), 0xFF242033.toInt(), 0xFF171820.toInt())
+                intArrayOf(0xFF351014.toInt(), 0xFF1A0A0C.toInt(), 0xFF0E0E0E.toInt())
             ).apply { cornerRadius = 22f * resources.displayMetrics.density }
         }
         hero.addView(TextView(this).apply {
@@ -88,7 +88,7 @@ class MoviesActivity : AppCompatActivity() {
         })
         hero.addView(TextView(this).apply {
             text = "تصفّح الملصقات واختر الفيلم الذي يناسبك"; textSize = 11f
-            setTextColor(0xFFD0CCD5.toInt()); setPadding(0, 4, 0, 0)
+            setTextColor(0xFFD2E0EC.toInt()); setPadding(0, 4, 0, 0)
         })
         root.addView(hero, LinearLayout.LayoutParams(-1, 104).apply { bottomMargin = 10 })
 
@@ -100,9 +100,9 @@ class MoviesActivity : AppCompatActivity() {
             textSize = 14f
             setPadding(16, 0, 16, 0)
             background = android.graphics.drawable.GradientDrawable().apply {
-                setColor(0xFF1A1B23.toInt())
+                setColor(0xFF171717.toInt())
                 cornerRadius = 14f * resources.displayMetrics.density
-                setStroke((resources.displayMetrics.density).toInt().coerceAtLeast(1), 0xFF343541.toInt())
+                setStroke((resources.displayMetrics.density).toInt().coerceAtLeast(1), 0xFF5A171D.toInt())
             }
         }
         root.addView(search, LinearLayout.LayoutParams(-1, 48).apply { bottomMargin = 6 })
@@ -136,7 +136,7 @@ class MoviesActivity : AppCompatActivity() {
                 if (dy > 0 && !busy && lm.findLastVisibleItemPosition() >= films.size - 6) load(false)
             }
         })
-        load(true)
+        CloudMovieSync.refreshPublic(this) { load(true) }
     }
 
     private fun request(address: String): String {
@@ -156,7 +156,25 @@ class MoviesActivity : AppCompatActivity() {
             if (reset) reloadAfterBusy = true
             return
         }
-        if (reset) { page = 1; hasMore = true; films.clear(); adapter.notifyDataSetChanged() }
+        if (reset) {
+            page = 1; hasMore = true; films.clear()
+            try {
+                val catalog = java.io.File(filesDir, "movies.json")
+                if (catalog.isFile) {
+                    val rows = JSONObject(catalog.readText(Charsets.UTF_8)).optJSONArray("movies")
+                    if (rows != null) for (i in 0 until rows.length()) {
+                        val row = rows.optJSONObject(i) ?: continue
+                        val id = row.optString("id").ifBlank { "local-" + i }
+                        val title = row.optString("title").trim()
+                        val stream = row.optString("url").trim()
+                        if (title.isNotBlank() && (query.isBlank() || title.contains(query, true)) && (stream.startsWith("https://", true) || stream.startsWith("http://", true))) {
+                            films.add(FilmItem("local:" + id, title, stream, row.optString("poster"), row.optString("country")))
+                        }
+                    }
+                }
+            } catch (_: Exception) { }
+            adapter.notifyDataSetChanged()
+        }
         if (!hasMore) return
         busy = true; status.text = "جارٍ تحميل الأفلام..."
         io.execute {
@@ -170,7 +188,7 @@ class MoviesActivity : AppCompatActivity() {
                 if (docs != null) for (i in 0 until docs.length()) {
                     val d = docs.optJSONObject(i) ?: continue
                     val id = d.optString("identifier")
-                    if (id.isNotBlank()) found.add(FilmItem(id, d.optString("title", "فيلم")))
+                    if (id.isNotBlank()) found.add(FilmItem("archive:" + id, d.optString("title", "فيلم")))
                 }
                 runOnUiThread {
                     if (reset) films.clear()
@@ -202,13 +220,13 @@ class MoviesActivity : AppCompatActivity() {
         status.text = "جارٍ تجهيز " + film.title
         io.execute {
             try {
-                val files = JSONObject(request("https://archive.org/metadata/" + URLEncoder.encode(film.id, "UTF-8"))).optJSONArray("files") ?: throw IllegalStateException()
+                val files = JSONObject(request("https://archive.org/metadata/" + URLEncoder.encode(film.id.removePrefix("archive:"), "UTF-8"))).optJSONArray("files") ?: throw IllegalStateException()
                 val candidates = (0 until files.length()).mapNotNull { files.optJSONObject(it) }
                     .filter { it.optString("name").endsWith(".mp4", true) }
                     .sortedByDescending { it.optString("format").equals("h.264", true) }
                 val name = candidates.firstOrNull()?.optString("name") ?: throw IllegalStateException()
                 val path = name.split("/").joinToString("/") { URLEncoder.encode(it, "UTF-8").replace("+", "%20") }
-                val stream = "https://archive.org/download/" + URLEncoder.encode(film.id, "UTF-8") + "/" + path
+                val stream = "https://archive.org/download/" + URLEncoder.encode(film.id.removePrefix("archive:"), "UTF-8") + "/" + path
                 runOnUiThread { startActivity(Intent(this, MoviePlayerActivity::class.java).putExtra("movie_title", film.title).putExtra("movie_url", stream)) }
             } catch (_: Exception) {
                 runOnUiThread { Toast.makeText(this, "لا يوجد ملف MP4 متاح لهذا الفيلم", Toast.LENGTH_LONG).show() }
@@ -245,7 +263,8 @@ class MoviesActivity : AppCompatActivity() {
                 io.execute {
                     var bitmap: android.graphics.Bitmap? = null
                     try {
-                        val address = "https://archive.org/services/img/" + URLEncoder.encode(film.id, "UTF-8")
+                        val address = if (film.poster.startsWith("http://", true) || film.poster.startsWith("https://", true))
+                            film.poster else "https://archive.org/services/img/" + URLEncoder.encode(film.id.removePrefix("archive:"), "UTF-8")
                         val connection = URL(address).openConnection() as HttpURLConnection
                         connection.connectTimeout = 8000
                         connection.readTimeout = 10000

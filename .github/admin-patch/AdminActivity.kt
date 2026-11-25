@@ -2,10 +2,10 @@ package com.firas.tv
 
 import android.app.Activity
 import android.app.AlertDialog
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.content.Intent
+import android.content.ClipboardManager
+import android.content.ClipData
+import android.content.Context
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -19,23 +19,20 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
-import android.util.Base64
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
-import java.security.SecureRandom
 import java.util.concurrent.Executors
-import javax.crypto.SecretKeyFactory
-import javax.crypto.spec.PBEKeySpec
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 /**
- * Native port of the original FIRAS TV admin workflow.
- * Bundled channels are protected from edit/delete; user-added channels remain manageable.
+ * Native admin console. Entry is gated by a server-managed Firestore role.
+ * Channel catalog edits in this build are stored locally on this device.
  */
 class AdminActivity : Activity() {
-    private val prefs by lazy { getSharedPreferences("firas_admin_auth", MODE_PRIVATE) }
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var panel: LinearLayout
     private var root = JSONObject()
@@ -47,7 +44,9 @@ class AdminActivity : Activity() {
     private val autoLogout = Runnable {
         if (authenticated) {
             authenticated = false
-            Toast.makeText(this, "انتهت جلسة الإدارة", Toast.LENGTH_LONG).show()
+            // Keep the Firebase owner session on this device. The admin role is
+            // re-checked from Firestore every time the hidden admin entry is opened.
+            Toast.makeText(this, "انتهت مهلة لوحة الإدارة", Toast.LENGTH_LONG).show()
             finish()
         }
     }
@@ -116,64 +115,65 @@ class AdminActivity : Activity() {
         }
     }
 
+    /**
+     * لا توجد كلمة مرور محلية أو صلاحية قابلة لإعادة الإنشاء بعد مسح البيانات.
+     * يتم التحقق من وثيقة admins/{uid} في Firestore، والعميل لا يملك صلاحية
+     * إنشاء هذه الوثيقة أو تعديلها؛ يضيفها مالك Firebase من لوحة التحكم فقط.
+     */
+    // Owner account UID configured for this app. Firebase keeps the signed-in
+    // session on the owner's device, so no email/password prompt is shown again.
+    private val ownerAdminUid = "fpmTwA03drg2QF04qefubOdfmjf1"
+
     private fun authenticate() {
-        val lockUntil = prefs.getLong("lock_until", 0L)
-        if (System.currentTimeMillis() < lockUntil) {
-            Toast.makeText(this, "محاولات كثيرة. حاول لاحقاً.", Toast.LENGTH_LONG).show()
-            finish()
+        val auth = FirebaseAuth.getInstance()
+        val current = auth.currentUser
+        if (current != null && current.uid == ownerAdminUid) {
+            enterPanel()
             return
         }
-        val salt = prefs.getString("salt", null)
-        val box = LinearLayout(this).apply {
+        if (current != null) auth.signOut()
+        val email = EditText(this).apply {
+            hint = "البريد الإلكتروني للمالك"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+        }
+        val password = EditText(this).apply {
+            hint = "كلمة المرور"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+        val form = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(32, 20, 32, 8)
+            setPadding(24, 8, 24, 0)
+            addView(email)
+            addView(password)
         }
-        val first = EditText(this).apply {
-            hint = if (salt == null) "كلمة مرور الإدارة (10 أحرف على الأقل)" else "كلمة مرور الإدارة"
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-        }
-        box.addView(first)
-        val second = if (salt == null) EditText(this).apply {
-            hint = "أعد كتابة كلمة المرور"
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-        } else null
-        second?.let(box::addView)
         val dialog = AlertDialog.Builder(this)
-            .setTitle(if (salt == null) "إنشاء كلمة مرور الإدارة" else "دخول الإدارة")
-            .setMessage(if (salt == null) "استخدم 10 أحرف على الأقل مع حرف ورقم." else "أدخل كلمة المرور للمتابعة.")
-            .setView(box)
-            .setPositiveButton(if (salt == null) "إنشاء" else "دخول", null)
+            .setTitle("دخول مالك التطبيق")
+            .setMessage("سجّل الدخول مرة واحدة، وسيحتفظ التطبيق بالجلسة.")
+            .setView(form)
+            .setPositiveButton("دخول", null)
             .setNegativeButton("إلغاء") { _, _ -> finish() }
+            .setCancelable(false)
             .create()
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                val password = first.text.toString()
-                if (salt == null) {
-                    if (!strong(password) || password != second?.text?.toString()) {
-                        Toast.makeText(this, "كلمة المرور ضعيفة أو غير متطابقة", Toast.LENGTH_LONG).show()
-                        return@setOnClickListener
-                    }
-                    val newSalt = ByteArray(16).also { SecureRandom().nextBytes(it) }
-                    prefs.edit().putString("salt", Base64.encodeToString(newSalt, Base64.NO_WRAP))
-                        .putString("hash", hashPassword(password, newSalt)).putInt("fails", 0).apply()
-                    dialog.dismiss()
-                    enterPanel()
-                } else {
-                    val decoded = try { Base64.decode(salt, Base64.NO_WRAP) } catch (_: Exception) { ByteArray(0) }
-                    val expected = prefs.getString("hash", "").orEmpty()
-                    if (decoded.isNotEmpty() && constantTimeEquals(hashPassword(password, decoded), expected)) {
-                        prefs.edit().putInt("fails", 0).putLong("lock_until", 0L).apply()
+                val mail = email.text.toString().trim()
+                val pass = password.text.toString()
+                if (mail.isBlank() || pass.isBlank()) {
+                    Toast.makeText(this, "أدخل البريد وكلمة المرور", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = false
+                auth.signInWithEmailAndPassword(mail, pass).addOnCompleteListener { task ->
+                    val signedIn = auth.currentUser
+                    if (task.isSuccessful && signedIn != null && signedIn.uid == ownerAdminUid) {
                         dialog.dismiss()
                         enterPanel()
                     } else {
-                        val fails = prefs.getInt("fails", 0) + 1
-                        val edit = prefs.edit().putInt("fails", fails)
-                        if (fails >= 5) {
-                            val exponent = (fails - 5).coerceAtMost(8)
-                            edit.putLong("lock_until", System.currentTimeMillis() + minOf(24L * 60 * 60 * 1000, 5L * 60 * 1000 * (1L shl exponent)))
+                        auth.signOut()
+                        if (!isFinishing && !isDestroyed) {
+                            dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
+                            Toast.makeText(this, "تعذر الدخول أو أن الحساب ليس حساب المالك", Toast.LENGTH_LONG).show()
                         }
-                        edit.apply()
-                        Toast.makeText(this, "كلمة المرور غير صحيحة", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -181,22 +181,16 @@ class AdminActivity : Activity() {
         dialog.show()
     }
 
-    private fun strong(value: String) =
-        value.length >= 10 && value.any { it.isLetter() } && value.any { it.isDigit() }
-
-    private fun hashPassword(password: String, salt: ByteArray): String {
-        val spec = PBEKeySpec(password.toCharArray(), salt, 120_000, 256)
-        return try {
-            SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1").generateSecret(spec).encoded
-                .joinToString("") { "%02x".format(it) }
-        } finally { spec.clearPassword() }
-    }
-
-    private fun constantTimeEquals(a: String, b: String): Boolean {
-        if (a.length != b.length) return false
-        var diff = 0
-        for (i in a.indices) diff = diff or (a[i].code xor b[i].code)
-        return diff == 0
+    private fun verifyAdminRole() {
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user == null || user.uid != ownerAdminUid) {
+            Toast.makeText(this, "غير مصرح بالدخول إلى لوحة الإدارة", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+        // The Firebase UID is the owner allow-list. Avoid a Firestore role-document
+        // lookup here because its read rules were blocking the owner from entering.
+        enterPanel()
     }
 
     private fun enterPanel() {
@@ -212,6 +206,25 @@ class AdminActivity : Activity() {
         scroll.addView(panel)
         setContentView(scroll)
         render()
+
+        // Pull the current public cloud catalog before any publish operation.
+        // Opening the admin panel must never overwrite newer Firestore data with
+        // a stale local JSON snapshot.
+        CloudChannelSync.refreshPublic(applicationContext) { changed ->
+            runOnUiThread {
+                if (!authenticated || isFinishing || isDestroyed) return@runOnUiThread
+                root = readRoot()
+                render()
+                Toast.makeText(
+                    this,
+                    if (changed > 0) "تم تحديث القنوات من السحابة" else "القنوات المحلية محدثة",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+        CloudMovieSync.refreshPublic(this) {
+            runOnUiThread { if (authenticated && !isFinishing && !isDestroyed) render() }
+        }
     }
 
     private fun readRoot(): JSONObject {
@@ -238,7 +251,14 @@ class AdminActivity : Activity() {
             temp.copyTo(target, overwrite = true)
             temp.delete()
         }
-        Toast.makeText(this, "تم حفظ القنوات", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "تم الحفظ على هذا الجهاز", Toast.LENGTH_SHORT).show()
+        CloudChannelSync.publishAll(this, root) { success, error ->
+            if (!success && authenticated) {
+                Toast.makeText(this, "حُفظت محلياً، وتعذرت المزامنة السحابية: ${error ?: "تحقق من الاتصال"}", Toast.LENGTH_LONG).show()
+            } else if (success && authenticated) {
+                Toast.makeText(this, "تمت مزامنة القنوات مع السحابة", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun isOriginal(channel: JSONObject): Boolean {
@@ -336,7 +356,7 @@ class AdminActivity : Activity() {
             text = "●"; textSize = 10f; setTextColor(0xFF34D399.toInt())
         })
         status.addView(TextView(this).apply {
-            text = "  يعمل محلياً على هذا الجهاز  ·  البيانات محفوظة محلياً"
+            text = "  حماية المدير مفعّلة  ·  القنوات والأفلام تحفظ محلياً وتزامن عند توفر Firebase"
             textSize = 10f; setTextColor(0xFFA1A1AA.toInt())
         })
         panel.addView(status, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 16 })
@@ -358,7 +378,18 @@ class AdminActivity : Activity() {
             setTextColor(0xFFF4F4F5.toInt()); setPadding(2, 22, 2, 7)
         })
         panel.addView(action("＋  إضافة قناة جديدة") { editChannel(null, null) })
-        panel.addView(action("＋  إضافة تصنيف") { addCategory() })
+        val movieRows = movieCatalog()
+        panel.addView(TextView(this).apply {
+            text = "مكتبة الأفلام  ·  " + movieRows.length() + " فيلم"
+            textSize = 15f; typeface = android.graphics.Typeface.DEFAULT_BOLD
+            setTextColor(0xFFF4F4F5.toInt()); setPadding(2, 22, 2, 7)
+        })
+        panel.addView(action("＋  إضافة فيلم") { editMovie(null) })
+        for (m in 0 until movieRows.length()) {
+            val film = movieRows.optJSONObject(m) ?: continue
+            panel.addView(action("🎬  " + film.optString("title") + "  ·  تعديل / حذف") { editMovie(m) })
+        }
+        panel.addView(action("＋  إضافة دولة (عربية / أجنبية)") { addCountry() })
         panel.addView(action("استيراد قائمة M3U / روابط") { importChannels() })
         panel.addView(action("فحص روابط القنوات") { checkChannels() })
         panel.addView(action("نسخ نسخة احتياطية آمنة") { backup() })
@@ -369,18 +400,19 @@ class AdminActivity : Activity() {
             render()
         })
         panel.addView(TextView(this).apply {
-            text = "القنوات والتصنيفات"; textSize = 15f
+            text = "الدول والقنوات"; textSize = 15f
             typeface = android.graphics.Typeface.DEFAULT_BOLD
             setTextColor(0xFFF4F4F5.toInt()); setPadding(2, 24, 2, 7)
         })
         for (i in 0 until groups.length()) {
             val section = groups.optJSONObject(i) ?: continue
             val list = items(i)
-            val visibleItems = (0 until list.length()).filter { index ->
+            val matchingItems = (0 until list.length()).filter { index ->
                 val item = list.optJSONObject(index) ?: return@filter false
                 !showOnlyMissingUrls || item.optString("url").isBlank()
             }
-            if (visibleItems.isEmpty()) continue
+            val visibleItems = matchingItems.take(adminChannelLimit)
+            if (visibleItems.isEmpty() && section.optString("region").isBlank()) continue
             val sectionBox = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL; setPadding(12, 9, 12, 10)
                 background = android.graphics.drawable.GradientDrawable().apply {
@@ -392,7 +424,7 @@ class AdminActivity : Activity() {
                 orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             }
             heading.addView(TextView(this@AdminActivity).apply {
-                text = section.optString("title"); textSize = 14f
+                text = section.optString("flag", "") + "  " + section.optString("title") + "  ·  " + if (section.optString("region") == "foreign") "أجنبية" else if (section.optString("region") == "arab") "عربية" else "غير محدد"; textSize = 14f
                 typeface = android.graphics.Typeface.DEFAULT_BOLD
                 setTextColor(0xFFE4E4E7.toInt())
             }, LinearLayout.LayoutParams(0, -2, 1f))
@@ -409,6 +441,7 @@ class AdminActivity : Activity() {
                 if (!protected) deleteCategory(i)
                 else Toast.makeText(this@AdminActivity, "التصنيف يحتوي قنوات أصلية؛ لن نحذفه.", Toast.LENGTH_LONG).show()
             }, LinearLayout.LayoutParams(0, -2, 1f))
+            categoryActions.addView(action("＋ قناة لهذه الدولة") { editChannel(i, null) }, LinearLayout.LayoutParams(0, -2, 1f))
             sectionBox.addView(categoryActions)
             for (j in visibleItems) {
                 val channel = list.optJSONObject(j) ?: continue
@@ -455,10 +488,99 @@ class AdminActivity : Activity() {
                 row.addView(buttons)
                 sectionBox.addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 7 })
             }
+            if (matchingItems.size > visibleItems.size) {
+                sectionBox.addView(action("عرض المزيد من القنوات (" + (matchingItems.size - visibleItems.size) + " متبقية)") {
+                    adminChannelLimit += 60
+                    render()
+                }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 8 })
+            }
             panel.addView(sectionBox, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 10 })
         }
-        panel.addView(action("تغيير كلمة مرور الإدارة") { changePassword() })
-        panel.addView(action("تسجيل الخروج") { authenticated = false; handler.removeCallbacks(autoLogout); finish() })
+        panel.addView(action("إرسال رابط إعادة تعيين كلمة المرور") { changePassword() })
+        panel.addView(action("تسجيل الخروج") { authenticated = false; handler.removeCallbacks(autoLogout); FirebaseAuth.getInstance().signOut(); finish() })
+    }
+
+
+    private fun addCountry() {
+        val form = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(22, 8, 22, 8) }
+        val name = EditText(this).apply { hint = "اسم الدولة (مثال: الجزائر)" }
+        val code = EditText(this).apply { hint = "رمز الدولة (DZ / SA / EG)" }
+        val region = android.widget.Spinner(this)
+        region.adapter = android.widget.ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, listOf("دولة عربية", "دولة أجنبية"))
+        form.addView(name); form.addView(code); form.addView(region)
+        AlertDialog.Builder(this).setTitle("إضافة دولة جديدة").setView(form)
+            .setPositiveButton("إضافة الدولة") { _, _ ->
+                val title = name.text.toString().trim()
+                val cc = code.text.toString().trim().uppercase()
+                if (title.isBlank() || cc.length !in 2..3) {
+                    Toast.makeText(this, "أدخل اسم الدولة ورمزاً صحيحاً", Toast.LENGTH_LONG).show()
+                    return@setPositiveButton
+                }
+                if ((0 until sections().length()).any { sections().optJSONObject(it)?.optString("title").equals(title, true) }) {
+                    Toast.makeText(this, "هذه الدولة موجودة بالفعل", Toast.LENGTH_LONG).show()
+                    return@setPositiveButton
+                }
+                sections().put(JSONObject().put("title", title).put("countryCode", cc)
+                    .put("region", if (region.selectedItemPosition == 0) "arab" else "foreign")
+                    .put("items", JSONArray()))
+                save(); render()
+            }.setNegativeButton("إلغاء", null).show()
+    }
+
+    private fun movieCatalog(): JSONArray {
+        val file = File(filesDir, "movies.json")
+        return try { JSONObject(file.readText(Charsets.UTF_8)).optJSONArray("movies") ?: JSONArray() }
+        catch (_: Exception) { JSONArray() }
+    }
+
+    private fun saveMovieCatalog(rows: JSONArray) {
+        val file = File(filesDir, "movies.json")
+        val temp = File(filesDir, "movies.json.tmp")
+        temp.writeText(JSONObject().put("movies", rows).toString(2), Charsets.UTF_8)
+        if (!temp.renameTo(file)) { temp.copyTo(file, overwrite = true); temp.delete() }
+        CloudMovieSync.publishAll(this, rows) { success, error ->
+            if (!success && authenticated) Toast.makeText(this, "حُفظت الأفلام محلياً لكن تعذرت مزامنتها: " + (error ?: "تحقق من الاتصال"), Toast.LENGTH_LONG).show()
+            else if (success && authenticated) Toast.makeText(this, "تمت مزامنة مكتبة الأفلام", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun editMovie(index: Int?) {
+        val rows = movieCatalog()
+        val old = index?.let { rows.optJSONObject(it) }
+        val form = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(22, 8, 22, 8) }
+        fun movieField(hint: String, value: String = "") = EditText(this).apply {
+            this.hint = hint; setText(value); setSingleLine(true); form.addView(this)
+        }
+        val title = movieField("اسم الفيلم", old?.optString("title").orEmpty())
+        val stream = movieField("رابط الفيلم MP4 أو M3U8", old?.optString("url").orEmpty())
+        val poster = movieField("رابط صورة الملصق (اختياري)", old?.optString("poster").orEmpty())
+        val country = movieField("الدولة (اختياري)", old?.optString("country").orEmpty())
+        AlertDialog.Builder(this).setTitle(if (old == null) "إضافة فيلم" else "تعديل الفيلم")
+            .setView(ScrollView(this).apply { addView(form) })
+            .setPositiveButton("حفظ") { _, _ ->
+                val t = title.text.toString().trim()
+                val u = stream.text.toString().trim()
+                val p = poster.text.toString().trim()
+                if (t.isBlank() || !safe(u) || (p.isNotBlank() && !safe(p))) {
+                    Toast.makeText(this, "أدخل اسم الفيلم ورابط مشاهدة HTTP/HTTPS صالحاً", Toast.LENGTH_LONG).show()
+                    return@setPositiveButton
+                }
+                val row = old ?: JSONObject().put("id", "movie-" + System.currentTimeMillis())
+                row.put("title", t).put("url", u).put("poster", p).put("country", country.text.toString().trim())
+                if (old == null) rows.put(row)
+                saveMovieCatalog(rows); Toast.makeText(this, "تم حفظ الفيلم محلياً", Toast.LENGTH_SHORT).show(); render()
+            }.setNeutralButton(if (old == null) "إغلاق" else "حذف") { _, _ ->
+                if (old != null) {
+                    AlertDialog.Builder(this).setTitle("حذف الفيلم")
+                        .setMessage("هل تريد حذف الفيلم: " + old.optString("title") + "؟")
+                        .setPositiveButton("حذف") { _, _ ->
+                            rows.remove(index!!)
+                            saveMovieCatalog(rows)
+                            render()
+                        }
+                        .setNegativeButton("إلغاء", null).show()
+                }
+            }.setNegativeButton("إلغاء", null).show()
     }
 
     private fun addCategory() {
@@ -520,6 +642,13 @@ class AdminActivity : Activity() {
         val name = field("اسم القناة", old?.optString("name").orEmpty())
         val url = field("رابط البث (الصق رابط M3U8 أو MP4)", old?.optString("url").orEmpty())
         form.addView(action("لصق الرابط من الحافظة") { pasteInto(url) })
+        val qualityUrls = linkedMapOf(
+            "SD" to field("رابط جودة SD", old?.optJSONObject("qualityUrls")?.optString("SD").orEmpty()),
+            "HD" to field("رابط جودة HD", old?.optJSONObject("qualityUrls")?.optString("HD").orEmpty()),
+            "FHD" to field("رابط جودة FHD", old?.optJSONObject("qualityUrls")?.optString("FHD").orEmpty()),
+            "4K" to field("رابط جودة 4K", old?.optJSONObject("qualityUrls")?.optString("4K").orEmpty())
+        )
+        form.addView(TextView(this).apply { text = "روابط مستقلة لكل جودة — اترك غير المتوفر فارغاً" })
         val logo = field("رابط الشعار أو مسار صورة محفوظة", old?.optString("logo").orEmpty())
         val logoActions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         logoActions.addView(action("اختيار شعار من الهاتف") {
@@ -537,7 +666,7 @@ class AdminActivity : Activity() {
         val cookie = field("Cookie (بيانات وصول خاصة بالقناة)", old?.let { readStreamCookie(it) }.orEmpty()).apply {
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
         }
-        val country = field("رمز الدولة مثل DZ أو SA", old?.optString("cc").orEmpty())
+        val country = field("رمز الدولة مثل DZ أو SA", old?.optString("cc")?.takeIf { it.isNotBlank() } ?: sectionIndex?.let { sections().optJSONObject(it)?.optString("countryCode") }.orEmpty())
         val category = field("التصنيف", sectionIndex?.let { sections().optJSONObject(it)?.optString("title") }.orEmpty())
         val alts = field("روابط بديلة - رابط في كل سطر", old?.optJSONArray("alts")?.let { a -> (0 until a.length()).joinToString("\n") { a.optString(it) } }.orEmpty(), true)
         val privateBox = CheckBox(this).apply { text = "قناة خاصة (لا تظهر في القائمة العامة)"; isChecked = old?.optBoolean("priv", false) ?: false }
@@ -548,7 +677,8 @@ class AdminActivity : Activity() {
                 val channelName = name.text.toString().trim()
                 val stream = url.text.toString().trim()
                 val logoUrl = logo.text.toString().trim()
-                if (channelName.isBlank() || (stream.isNotBlank() && !safe(stream)) || (logoUrl.startsWith("http", true) && !safe(logoUrl))) {
+                val primaryStream = stream.ifBlank { qualityUrls.values.firstOrNull { it.text.toString().trim().isNotBlank() }?.text?.toString()?.trim().orEmpty() }
+                if (channelName.isBlank() || primaryStream.isBlank() || !safe(primaryStream) || qualityUrls.values.any { it.text.toString().trim().let { value -> value.isNotBlank() && !safe(value) } } || (logoUrl.startsWith("http", true) && !safe(logoUrl))) {
                     Toast.makeText(this, "تحقق من الاسم والروابط", Toast.LENGTH_LONG).show(); return@setPositiveButton
                 }
                 val altValues = alts.text.toString().lineSequence().map { it.trim() }.filter { it.isNotBlank() }.toList()
@@ -563,7 +693,12 @@ class AdminActivity : Activity() {
                 val destinationIndex = targetIndex ?: return@setPositiveButton
                 val item = old ?: JSONObject().put("id", "admin-${System.currentTimeMillis()}")
                 if (item.optString("id").isBlank()) item.put("id", "channel-${System.currentTimeMillis()}")
-                item.put("name", channelName).put("url", stream).put("logo", logoUrl)
+                val qualityObject = JSONObject()
+                qualityUrls.forEach { (label, edit) ->
+                    edit.text.toString().trim().takeIf { it.isNotBlank() }?.let { qualityObject.put(label, it) }
+                }
+                item.put("name", channelName).put("url", primaryStream).put("logo", logoUrl)
+                    .put("qualityUrls", qualityObject)
                     .put("referer", referer.text.toString().trim())
                     .put("userAgent", userAgent.text.toString().trim())
                     .put("cc", country.text.toString().trim().uppercase())
@@ -673,10 +808,17 @@ class AdminActivity : Activity() {
                 val channel = items(sectionIndex).optJSONObject(itemIndex)
                 if (channel != null) {
                     removeStreamConfig(channel)
+                    CloudChannelSync.delete(this, channel) { success, error ->
+                        if (!success && authenticated) {
+                            Toast.makeText(this, "حُذفت محلياً، لكن تعذّر حذفها من السحابة: ${error ?: "تحقق من الاتصال"}", Toast.LENGTH_LONG).show()
+                        }
+                    }
                     items(sectionIndex).remove(itemIndex); save(); render()
                 }
             }.setNegativeButton("إلغاء", null).show()
     }
+
+    private var adminChannelLimit = 60
 
     private fun importChannels() {
         val input = EditText(this).apply {
@@ -685,28 +827,109 @@ class AdminActivity : Activity() {
             gravity = Gravity.TOP
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
         }
-        AlertDialog.Builder(this).setTitle("استيراد القنوات").setView(ScrollView(this).apply { addView(input) })
-            .setPositiveButton("استيراد") { _, _ ->
-                val parsed = parseM3u(input.text.toString())
-                var added = 0
-                val groups = sections()
-                val sectionName = "قنوات مستوردة"
-                var idx = (0 until groups.length()).firstOrNull { groups.optJSONObject(it)?.optString("title") == sectionName }
-                if (idx == null) { groups.put(JSONObject().put("title", sectionName).put("items", JSONArray())); idx = groups.length() - 1 }
-                val dest = items(idx)
-                val existing = mutableSetOf<String>()
-                for (i in 0 until groups.length()) {
-                    val arr = groups.optJSONObject(i)?.optJSONArray("items") ?: continue
-                    for (j in 0 until arr.length()) arr.optJSONObject(j)?.optString("url")?.let(existing::add)
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("استيراد القنوات")
+            .setView(ScrollView(this).apply { addView(input) })
+            .setPositiveButton("استيراد", null)
+            .setNegativeButton("إلغاء", null)
+            .create()
+
+        dialog.setOnShowListener {
+            val importButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            importButton.setOnClickListener {
+                val raw = input.text?.toString().orEmpty()
+                if (raw.isBlank()) {
+                    Toast.makeText(this, "ألصق قائمة القنوات أولاً", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
                 }
-                parsed.forEach { c ->
-                    val stream = c.optString("url")
-                    if (stream !in existing) { dest.put(c); existing.add(stream); added++ }
+                // Reject oversized input before allocating parser structures.
+                if (raw.length > 10 * 1024 * 1024) {
+                    Toast.makeText(this, "القائمة كبيرة جداً. الحد الأقصى 10 MB.", Toast.LENGTH_LONG).show()
+                    return@setOnClickListener
                 }
-                if (added > 0) save()
-                Toast.makeText(this, "تمت إضافة $added قناة جديدة", Toast.LENGTH_LONG).show()
-                render()
-            }.setNegativeButton("إلغاء", null).show()
+
+                importButton.isEnabled = false
+                importButton.text = "جارٍ التحليل..."
+                val progress = AlertDialog.Builder(this)
+                    .setTitle("استيراد القنوات")
+                    .setMessage("يتم تحليل القائمة وحفظها في الخلفية. قد يستغرق ذلك وقتاً حسب حجم الملف.")
+                    .setCancelable(false)
+                    .create()
+                progress.show()
+
+                val snapshot = root.toString()
+                Thread {
+                    var outcome: Pair<JSONObject, Int>? = null
+                    try {
+                        val parsed = parseM3u(raw).take(15000)
+                        val workingRoot = JSONObject(snapshot)
+                        val groups = workingRoot.optJSONArray("sections") ?: JSONArray().also { workingRoot.put("sections", it) }
+                        val existing = HashSet<String>()
+                        for (i in 0 until groups.length()) {
+                            val array = groups.optJSONObject(i)?.optJSONArray("items") ?: continue
+                            for (j in 0 until array.length()) {
+                                val url = array.optJSONObject(j)?.optString("url").orEmpty()
+                                if (url.isNotBlank()) existing.add(url)
+                            }
+                        }
+                        val sectionName = "قنوات مستوردة"
+                        var section: JSONObject? = null
+                        for (i in 0 until groups.length()) {
+                            val candidate = groups.optJSONObject(i)
+                            if (candidate?.optString("title") == sectionName) { section = candidate; break }
+                        }
+                        val destinationSection = section ?: JSONObject().put("title", sectionName).put("items", JSONArray()).also { groups.put(it) }
+                        val destination = destinationSection.optJSONArray("items")
+                            ?: JSONArray().also { destinationSection.put("items", it) }
+                        val unique = parsed.filter { channel ->
+                            val url = channel.optString("url")
+                            url.isNotBlank() && existing.add(url)
+                        }
+                        var added = 0
+                        val batches = unique.chunked(100)
+                        batches.forEach { batch ->
+                            batch.forEach { channel -> destination.put(channel); added++ }
+                            val target = File(filesDir, "channels.json")
+                            val temp = File(filesDir, "channels.json.import.tmp")
+                            temp.writeText(workingRoot.toString(), Charsets.UTF_8)
+                            if (!temp.renameTo(target)) { temp.copyTo(target, overwrite = true); temp.delete() }
+                            val done = added
+                            val total = unique.size
+                            runOnUiThread {
+                                if (!isFinishing && !isDestroyed && progress.isShowing) {
+                                    progress.setMessage("تم تجهيز $done من $total قناة، على دفعات من 100...")
+                                }
+                            }
+                        }
+                        outcome = workingRoot to added
+                    } catch (_: Exception) { }
+                    val completed = outcome
+                    runOnUiThread {
+                        if (isFinishing || isDestroyed) {
+                            progress.dismiss()
+                            return@runOnUiThread
+                        }
+                        progress.dismiss()
+                        if (completed == null) {
+                            importButton.isEnabled = true
+                            importButton.text = "إعادة المحاولة"
+                            Toast.makeText(this, "تعذّر تحليل أو حفظ القائمة. لم يتم اعتماد الاستيراد.", Toast.LENGTH_LONG).show()
+                            return@runOnUiThread
+                        }
+                        root = completed.first
+                        adminChannelLimit = 60
+                        CloudChannelSync.publishAll(this, root) { success, error ->
+                            if (!success && authenticated) Toast.makeText(this, "حُفظت محلياً، وتعذرت المزامنة: " + (error ?: "تحقق من الاتصال"), Toast.LENGTH_LONG).show()
+                            else if (success && authenticated) Toast.makeText(this, "تمت مزامنة القنوات مع السحابة", Toast.LENGTH_SHORT).show()
+                        }
+                        Toast.makeText(this, "تمت إضافة " + completed.second + " قناة جديدة", Toast.LENGTH_LONG).show()
+                        dialog.dismiss()
+                        render()
+                    }
+                }.start()
+            }
+        }
+        dialog.show()
     }
 
     private fun parseM3u(raw: String): List<JSONObject> {
@@ -714,13 +937,16 @@ class AdminActivity : Activity() {
         var name = ""
         var logo = ""
         var group = ""
-        for (line0 in raw.lines()) {
+        val logoPattern = Regex("tvg-logo=\"([^\"]*)\"")
+        val groupPattern = Regex("group-title=\"([^\"]*)\"")
+        for (line0 in raw.lineSequence()) {
+            if (out.size >= 15000) break
             val line = line0.trim()
             if (line.isBlank()) continue
             if (line.startsWith("#EXTINF", true)) {
                 name = line.substringAfterLast(',').trim().ifBlank { "قناة مستوردة" }
-                logo = Regex("tvg-logo=\"([^\"]*)\"").find(line)?.groupValues?.getOrNull(1).orEmpty()
-                group = Regex("group-title=\"([^\"]*)\"").find(line)?.groupValues?.getOrNull(1).orEmpty()
+                logo = logoPattern.find(line)?.groupValues?.getOrNull(1).orEmpty()
+                group = groupPattern.find(line)?.groupValues?.getOrNull(1).orEmpty()
             } else if (!line.startsWith("#") && safe(line)) {
                 val parts = if (line.contains('|')) line.split('|', limit = 2) else emptyList()
                 val channelName = if (parts.isNotEmpty()) parts[0].trim() else name.ifBlank { "قناة مستوردة" }
@@ -891,26 +1117,18 @@ class AdminActivity : Activity() {
     }
 
     private fun changePassword() {
-        val form = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(24, 8, 24, 8) }
-        val current = EditText(this).apply { hint = "كلمة المرور الحالية"; inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD }
-        val next = EditText(this).apply { hint = "كلمة المرور الجديدة"; inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD }
-        val confirm = EditText(this).apply { hint = "تأكيد كلمة المرور"; inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD }
-        form.addView(current); form.addView(next); form.addView(confirm)
-        AlertDialog.Builder(this).setTitle("تغيير كلمة المرور").setView(form)
-            .setPositiveButton("حفظ") { _, _ ->
-                val salt = try { Base64.decode(prefs.getString("salt", "").orEmpty(), Base64.NO_WRAP) } catch (_: Exception) { ByteArray(0) }
-                if (salt.isEmpty() || !constantTimeEquals(hashPassword(current.text.toString(), salt), prefs.getString("hash", "").orEmpty())) {
-                    Toast.makeText(this, "كلمة المرور الحالية خاطئة", Toast.LENGTH_LONG).show(); return@setPositiveButton
-                }
-                val value = next.text.toString()
-                if (!strong(value) || value != confirm.text.toString()) {
-                    Toast.makeText(this, "كلمة المرور الجديدة ضعيفة أو غير متطابقة", Toast.LENGTH_LONG).show(); return@setPositiveButton
-                }
-                val newSalt = ByteArray(16).also { SecureRandom().nextBytes(it) }
-                prefs.edit().putString("salt", Base64.encodeToString(newSalt, Base64.NO_WRAP))
-                    .putString("hash", hashPassword(value, newSalt)).apply()
-                Toast.makeText(this, "تم تغيير كلمة المرور", Toast.LENGTH_SHORT).show()
-            }.setNegativeButton("إلغاء", null).show()
+        val email = FirebaseAuth.getInstance().currentUser?.email
+        if (email.isNullOrBlank()) {
+            Toast.makeText(this, "لا يوجد بريد إلكتروني للحساب", Toast.LENGTH_LONG).show()
+            return
+        }
+        FirebaseAuth.getInstance().sendPasswordResetEmail(email)
+            .addOnSuccessListener {
+                Toast.makeText(this, "أرسلنا رابط إعادة تعيين كلمة المرور إلى بريدك", Toast.LENGTH_LONG).show()
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, "تعذّر إرسال رابط إعادة التعيين", Toast.LENGTH_LONG).show()
+            }
     }
 
     private fun safe(url: String) = url.startsWith("http://", true) || url.startsWith("https://", true)

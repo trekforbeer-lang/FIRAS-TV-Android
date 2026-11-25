@@ -4,28 +4,43 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#090D16"
+    android:background="#000000"
     android:layoutDirection="rtl"
     android:fitsSystemWindows="true">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="64dp"
+        android:layout_height="70dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="18dp"
-        android:paddingEnd="16dp">
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp">
+        <TextView
+            android:id="@+id/drawerMenuButton"
+            android:layout_width="46dp"
+            android:layout_height="46dp"
+            android:layout_marginStart="8dp"
+            android:gravity="center"
+            android:text="☰"
+            android:textColor="#E50914"
+            android:textSize="23sp"
+            android:background="@drawable/rahmani_action_button"
+            android:contentDescription="فتح القائمة الجانبية"
+            android:clickable="true"
+            android:focusable="true"
+            android:stateListAnimator="@null"/>
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical">
             <TextView
+                android:id="@+id/adminSecretTrigger"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="RAHMANI"
-                android:textColor="#FF557A"
-                android:textSize="24sp"
+                android:text="Firas"
+                android:textColor="#E50914"
+                android:textSize="25sp"
                 android:textStyle="bold|italic"
                 android:letterSpacing="0.06"
                 android:layoutDirection="ltr"/>
@@ -33,11 +48,12 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="كل ما تحب مشاهدته في مكان واحد"
-                android:textColor="#9CA8BC"
+                android:textColor="#B8B8B8"
                 android:textSize="10sp"/>
         </LinearLayout>
         <Button
             android:id="@+id/adminButton"
+            android:visibility="gone"
             android:layout_width="48dp"
             android:layout_height="42dp"
             android:minWidth="48dp"
@@ -45,7 +61,7 @@
             android:padding="0dp"
             android:text="⚙"
             android:textSize="17sp"
-            android:textColor="#F5F6FA"
+            android:textColor="#DDF7FF"
             android:background="@drawable/rahmani_action_button"
             android:backgroundTint="@null"
             android:contentDescription="لوحة الإدارة"
@@ -69,14 +85,14 @@
             <EditText
                 android:id="@+id/search"
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:layout_marginStart="18dp"
-                android:layout_marginEnd="18dp"
-                android:layout_marginTop="5dp"
+                android:layout_height="54dp"
+                android:layout_marginStart="7dp"
+                android:layout_marginEnd="7dp"
+                android:layout_marginTop="7dp"
                 android:layout_marginBottom="15dp"
                 android:background="@drawable/search_bg"
                 android:hint="⌕   ابحث عن قناة أو فيلم أو تصنيف"
-                android:textColorHint="#8996AA"
+                android:textColorHint="#A6A6A6"
                 android:textColor="#FFFFFF"
                 android:singleLine="true"
                 android:imeOptions="actionSearch"
@@ -88,9 +104,9 @@
             <FrameLayout
                 android:id="@+id/homeHeroSection"
                 android:layout_width="match_parent"
-                android:layout_height="218dp"
-                android:layout_marginStart="18dp"
-                android:layout_marginEnd="18dp"
+                android:layout_height="316dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="6dp"
                 android:background="@drawable/home_hero_bg"
                 android:foreground="@drawable/rahmani_card_stroke">
                 <LinearLayout
@@ -98,13 +114,13 @@
                     android:layout_height="match_parent"
                     android:orientation="vertical"
                     android:gravity="center_vertical"
-                    android:paddingStart="21dp"
-                    android:paddingEnd="18dp">
+                    android:paddingStart="23dp"
+                    android:paddingEnd="20dp">
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="RAHMANI  /  ENTERTAINMENT"
-                        android:textColor="#FFB4C5"
+                        android:text="FIRAS  /  PREMIUM STREAMING"
+                        android:textColor="#E50914"
                         android:textStyle="bold"
                         android:textSize="9sp"
                         android:letterSpacing="0.12"
@@ -113,7 +129,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
-                        android:text="ليلتك تبدأ من هنا"
+                        android:text="كل الترفيه في مكان واحد"
                         android:textColor="#FFFFFF"
                         android:textSize="27sp"
                         android:textStyle="bold"/>
@@ -121,9 +137,9 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
-                        android:text="قنوات مباشرة، رياضة وأفلام بواجهة واحدة"
-                        android:textColor="#D0D8E7"
-                        android:textSize="11sp"/>
+                        android:text="قنوات مباشرة • مباريات • أفلام ومسلسلات"
+                        android:textColor="#D0D0D0"
+                        android:textSize="12sp"/>
                     <Button
                         android:id="@+id/featuredMoviesButton"
                         android:layout_width="wrap_content"
@@ -132,7 +148,7 @@
                         android:layout_marginTop="14dp"
                         android:paddingStart="18dp"
                         android:paddingEnd="18dp"
-                        android:text="اكتشف الأفلام  ›"
+                        android:text="اكتشف المحتوى  ›"
                         android:textAllCaps="false"
                         android:textSize="11sp"
                         android:textStyle="bold"
@@ -166,8 +182,8 @@
                     android:orientation="horizontal">
                     <TextView
                         android:id="@+id/quickLiveButton"
-                        android:layout_width="112dp"
-                        android:layout_height="76dp"
+                        android:layout_width="126dp"
+                        android:layout_height="88dp"
                         android:layout_marginEnd="9dp"
                         android:gravity="center"
                         android:background="@drawable/rahmani_action_card"
@@ -180,8 +196,8 @@
                         android:focusable="true"/>
                     <TextView
                         android:id="@+id/quickSportsButton"
-                        android:layout_width="112dp"
-                        android:layout_height="76dp"
+                        android:layout_width="118dp"
+                        android:layout_height="88dp"
                         android:layout_marginEnd="9dp"
                         android:gravity="center"
                         android:background="@drawable/rahmani_action_card"
@@ -194,8 +210,8 @@
                         android:focusable="true"/>
                     <TextView
                         android:id="@+id/quickMoviesButton"
-                        android:layout_width="112dp"
-                        android:layout_height="76dp"
+                        android:layout_width="118dp"
+                        android:layout_height="88dp"
                         android:layout_marginEnd="9dp"
                         android:gravity="center"
                         android:background="@drawable/rahmani_action_card"
@@ -208,6 +224,7 @@
                         android:focusable="true"/>
                     <TextView
                         android:id="@+id/quickAdminButton"
+                        android:visibility="gone"
                         android:layout_width="112dp"
                         android:layout_height="76dp"
                         android:gravity="center"
@@ -228,9 +245,9 @@
                 android:layout_height="76dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginStart="18dp"
-                android:layout_marginEnd="18dp"
-                android:layout_marginTop="17dp"
+                android:layout_marginStart="6dp"
+                android:layout_marginEnd="6dp"
+                android:layout_marginTop="14dp"
                 android:paddingStart="15dp"
                 android:paddingEnd="12dp"
                 android:background="@drawable/rahmani_panel_bg"
@@ -252,8 +269,8 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="RAHMANI SPORTS"
-                        android:textColor="#FF91AA"
+                        android:text="FIRAS SPORTS"
+                        android:textColor="#E50914"
                         android:textStyle="bold"
                         android:textSize="9sp"
                         android:letterSpacing="0.08"/>
@@ -288,8 +305,8 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingStart="20dp"
-                android:paddingEnd="20dp"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
                 android:paddingTop="24dp"
                 android:paddingBottom="8dp">
                 <TextView
@@ -331,8 +348,8 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingStart="20dp"
-                android:paddingEnd="18dp"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
                 android:paddingTop="18dp"
                 android:paddingBottom="9dp">
                 <LinearLayout
@@ -352,32 +369,89 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="3dp"
                         android:text="اختر قناة وابدأ المشاهدة"
-                        android:textColor="#8F9CB1"
+                        android:textColor="#9BAFC5"
                         android:textSize="10sp"/>
                 </LinearLayout>
+                <Button
+                    android:id="@+id/countryPickerButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:minHeight="36dp"
+                    android:layout_marginEnd="8dp"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:text="الدول"
+                    android:textAllCaps="false"
+                    android:textSize="10sp"
+                    android:textColor="#FFFFFF"
+                    android:background="@drawable/rahmani_action_button"
+                    android:backgroundTint="@null"
+                    android:stateListAnimator="@null"/>
                 <TextView
                     android:id="@+id/channelCount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="8dp"
                     android:text="0 قناة"
-                    android:textColor="#FF91AA"
+                    android:textColor="#E50914"
                     android:textStyle="bold"
                     android:textSize="10sp"/>
                 <Button
                     android:id="@+id/restoreChannelsButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="34dp"
-                    android:minHeight="34dp"
+                    android:layout_height="40dp"
+                    android:minHeight="40dp"
                     android:paddingStart="10dp"
                     android:paddingEnd="10dp"
-                    android:text="تحديث"
+                    android:text="استعادة القنوات"
                     android:textAllCaps="false"
-                    android:textSize="9sp"
-                    android:textColor="#E5EAF3"
-                    android:background="@drawable/rahmani_action_button"
+                    android:textSize="11sp"
+                    android:textColor="#FFFFFF"
+                    android:background="@drawable/rahmani_primary_button"
                     android:backgroundTint="@null"
                     android:stateListAnimator="@null"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/restoreStatusPanel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                android:layout_marginBottom="12dp"
+                android:orientation="vertical"
+                android:padding="14dp"
+                android:background="@drawable/rahmani_panel_bg"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/restoreStatusTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="استعادة القنوات"
+                    android:textColor="#E50914"
+                    android:textSize="13sp"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:id="@+id/restoreStatusDetail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:text="سيظهر هنا تقدّم الاستعادة."
+                    android:textColor="#B7C9D9"
+                    android:textSize="11sp"/>
+
+                <ProgressBar
+                    android:id="@+id/restoreStatusProgress"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="4dp"
+                    android:layout_marginTop="12dp"
+                    android:indeterminate="true"
+                    android:indeterminateTint="#E50914"
+                    android:progressTint="#E50914"
+                    android:progressBackgroundTint="#303030"/>
             </LinearLayout>
 
             <FrameLayout
@@ -390,8 +464,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:nestedScrollingEnabled="false"
-                    android:paddingStart="10dp"
-                    android:paddingEnd="10dp"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
                     android:paddingTop="4dp"
                     android:paddingBottom="12dp"
                     android:clipToPadding="false"/>
@@ -401,7 +475,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:text="لا توجد قنوات في هذا القسم حالياً"
-                    android:textColor="#A7B1C2"
+                    android:textColor="#B8B8B8"
                     android:visibility="gone"/>
             </FrameLayout>
         </LinearLayout>
@@ -410,10 +484,10 @@
     <LinearLayout
         android:id="@+id/bottomNavigationBar"
         android:layout_width="match_parent"
-        android:layout_height="72dp"
-        android:layout_marginStart="14dp"
-        android:layout_marginEnd="14dp"
-        android:layout_marginBottom="9dp"
+        android:layout_height="76dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="4dp"
+        android:layout_marginBottom="4dp"
         android:orientation="horizontal"
         android:gravity="center"
         android:background="@drawable/rahmani_nav_capsule"
@@ -443,7 +517,7 @@
             android:gravity="center"
             android:background="@drawable/rahmani_nav_item_bg"
             android:text="▣&#10;القنوات"
-            android:textColor="#A9B5CA"
+            android:textColor="#A6A6A6"
             android:textSize="10sp"
             android:clickable="true"
             android:focusable="true"/>
@@ -455,7 +529,7 @@
             android:gravity="center"
             android:background="@drawable/rahmani_nav_item_bg"
             android:text="⌕&#10;اكتشف"
-            android:textColor="#A9B5CA"
+            android:textColor="#A6A6A6"
             android:textSize="10sp"
             android:clickable="true"
             android:focusable="true"/>
@@ -467,7 +541,7 @@
             android:gravity="center"
             android:background="@drawable/rahmani_nav_item_bg"
             android:text="★&#10;قائمتي"
-            android:textColor="#A9B5CA"
+            android:textColor="#A6A6A6"
             android:textSize="10sp"
             android:clickable="true"
             android:focusable="true"/>
@@ -479,7 +553,7 @@
             android:gravity="center"
             android:background="@drawable/rahmani_nav_item_bg"
             android:text="☰&#10;المزيد"
-            android:textColor="#A9B5CA"
+            android:textColor="#A6A6A6"
             android:textSize="10sp"
             android:clickable="true"
             android:focusable="true"/>

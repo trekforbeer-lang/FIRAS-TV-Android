@@ -243,30 +243,235 @@
       ]
     },
     {
-      "title": "ARABIC CHANNELS",
-      "items": [
-        {
-          "id": "egypt",
-          "name": "EGYPT",
-          "logo": "https://flagcdn.com/w320/eg.png",
-          "url": "",
-          "referer": ""
-        },
-        {
-          "id": "algeria",
-          "name": "ALGERIA",
-          "logo": "https://flagcdn.com/w320/dz.png",
-          "url": "",
-          "referer": ""
-        },
-        {
-          "id": "morocco",
-          "name": "MOROCCO",
-          "logo": "https://flagcdn.com/w320/ma.png",
-          "url": "",
-          "referer": ""
-        }
-      ]
+      "title": "الجزائر",
+      "countryCode": "DZ",
+      "region": "arab",
+      "flag": "https://flagcdn.com/w320/dz.png",
+      "items": []
+    },
+    {
+      "title": "مصر",
+      "countryCode": "EG",
+      "region": "arab",
+      "flag": "https://flagcdn.com/w320/eg.png",
+      "items": []
+    },
+    {
+      "title": "المغرب",
+      "countryCode": "MA",
+      "region": "arab",
+      "flag": "https://flagcdn.com/w320/ma.png",
+      "items": []
+    },
+    {
+      "title": "تونس",
+      "countryCode": "TN",
+      "region": "arab",
+      "flag": "https://flagcdn.com/w320/tn.png",
+      "items": []
+    },
+    {
+      "title": "ليبيا",
+      "countryCode": "LY",
+      "region": "arab",
+      "flag": "https://flagcdn.com/w320/ly.png",
+      "items": []
+    },
+    {
+      "title": "السودان",
+      "countryCode": "SD",
+      "region": "arab",
+      "flag": "https://flagcdn.com/w320/sd.png",
+      "items": []
+    },
+    {
+      "title": "موريتانيا",
+      "countryCode": "MR",
+      "region": "arab",
+      "flag": "https://flagcdn.com/w320/mr.png",
+      "items": []
+    },
+    {
+      "title": "السعودية",
+      "countryCode": "SA",
+      "region": "arab",
+      "flag": "https://flagcdn.com/w320/sa.png",
+      "items": []
+    },
+    {
+      "title": "الإمارات",
+      "countryCode": "AE",
+      "region": "arab",
+      "flag": "https://flagcdn.com/w320/ae.png",
+      "items": []
+    },
+    {
+      "title": "قطر",
+      "countryCode": "QA",
+      "region": "arab",
+      "flag": "https://flagcdn.com/w320/qa.png",
+      "items": []
+    },
+    {
+      "title": "الكويت",
+      "countryCode": "KW",
+      "region": "arab",
+      "flag": "https://flagcdn.com/w320/kw.png",
+      "items": []
+    },
+    {
+      "title": "البحرين",
+      "countryCode": "BH",
+      "region": "arab",
+      "flag": "https://flagcdn.com/w320/bh.png",
+      "items": []
+    },
+    {
+      "title": "عُمان",
+      "countryCode": "OM",
+      "region": "arab",
+      "flag": "https://flagcdn.com/w320/om.png",
+      "items": []
+    },
+    {
+      "title": "العراق",
+      "countryCode": "IQ",
+      "region": "arab",
+      "flag": "https://flagcdn.com/w320/iq.png",
+      "items": []
+    },
+    {
+      "title": "الأردن",
+      "countryCode": "JO",
+      "region": "arab",
+      "flag": "https://flagcdn.com/w320/jo.png",
+      "items": []
+    },
+    {
+      "title": "لبنان",
+      "countryCode": "LB",
+      "region": "arab",
+      "flag": "https://flagcdn.com/w320/lb.png",
+      "items": []
+    },
+    {
+      "title": "فلسطين",
+      "countryCode": "PS",
+      "region": "arab",
+      "flag": "https://flagcdn.com/w320/ps.png",
+      "items": []
+    },
+    {
+      "title": "سوريا",
+      "countryCode": "SY",
+      "region": "arab",
+      "flag": "https://flagcdn.com/w320/sy.png",
+      "items": []
+    },
+    {
+      "title": "اليمن",
+      "countryCode": "YE",
+      "region": "arab",
+      "flag": "https://flagcdn.com/w320/ye.png",
+      "items": []
+    },
+    {
+      "title": "الصومال",
+      "countryCode": "SO",
+      "region": "arab",
+      "flag": "https://flagcdn.com/w320/so.png",
+      "items": []
+    },
+    {
+      "title": "جيبوتي",
+      "countryCode": "DJ",
+      "region": "arab",
+      "flag": "https://flagcdn.com/w320/dj.png",
+      "items": []
+    },
+    {
+      "title": "جزر القمر",
+      "countryCode": "KM",
+      "region": "arab",
+      "flag": "https://flagcdn.com/w320/km.png",
+      "items": []
+    },
+    {
+      "title": "فرنسا",
+      "countryCode": "FR",
+      "region": "foreign",
+      "flag": "https://flagcdn.com/w320/fr.png",
+      "items": []
+    },
+    {
+      "title": "المملكة المتحدة",
+      "countryCode": "GB",
+      "region": "foreign",
+      "flag": "https://flagcdn.com/w320/gb.png",
+      "items": []
+    },
+    {
+      "title": "الولايات المتحدة",
+      "countryCode": "US",
+      "region": "foreign",
+      "flag": "https://flagcdn.com/w320/us.png",
+      "items": []
+    },
+    {
+      "title": "ألمانيا",
+      "countryCode": "DE",
+      "region": "foreign",
+      "flag": "https://flagcdn.com/w320/de.png",
+      "items": []
+    },
+    {
+      "title": "إسبانيا",
+      "countryCode": "ES",
+      "region": "foreign",
+      "flag": "https://flagcdn.com/w320/es.png",
+      "items": []
+    },
+    {
+      "title": "إيطاليا",
+      "countryCode": "IT",
+      "region": "foreign",
+      "flag": "https://flagcdn.com/w320/it.png",
+      "items": []
+    },
+    {
+      "title": "تركيا",
+      "countryCode": "TR",
+      "region": "foreign",
+      "flag": "https://flagcdn.com/w320/tr.png",
+      "items": []
+    },
+    {
+      "title": "الهند",
+      "countryCode": "IN",
+      "region": "foreign",
+      "flag": "https://flagcdn.com/w320/in.png",
+      "items": []
+    },
+    {
+      "title": "كندا",
+      "countryCode": "CA",
+      "region": "foreign",
+      "flag": "https://flagcdn.com/w320/ca.png",
+      "items": []
+    },
+    {
+      "title": "روسيا",
+      "countryCode": "RU",
+      "region": "foreign",
+      "flag": "https://flagcdn.com/w320/ru.png",
+      "items": []
+    },
+    {
+      "title": "الصين",
+      "countryCode": "CN",
+      "region": "foreign",
+      "flag": "https://flagcdn.com/w320/cn.png",
+      "items": []
     }
   ]
 }

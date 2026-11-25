@@ -21,6 +21,7 @@ import android.view.View
 import android.view.Gravity
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -55,7 +56,9 @@ private data class DisplayChannel(
     val legacyUrl: String,
     val legacyHeaders: Map<String, String>,
     val logo: String,
-    val advanced: StreamConfig?
+    val advanced: StreamConfig?,
+    val qualityUrls: Map<String, String> = emptyMap(),
+    val defaultUrl: String = legacyUrl
 )
 
 class PlayerActivity : AppCompatActivity() {
@@ -63,8 +66,8 @@ class PlayerActivity : AppCompatActivity() {
     private var mediaSession: MediaSession? = null
     private lateinit var playerView: PlayerView
     private lateinit var title: TextView
-    private lateinit var watermark: ImageView
     private lateinit var status: TextView
+    private lateinit var loadingIndicator: ProgressBar
     private lateinit var list: RecyclerView
     private lateinit var playPause: Button
     private lateinit var fullscreen: Button
@@ -81,17 +84,21 @@ class PlayerActivity : AppCompatActivity() {
     private var resolving = false
     private var currentUrls: List<String> = emptyList()
     private var currentUrlIndex = 0
-    private var isFullscreen = false
+    // Start video playback in immersive landscape, like a dedicated streaming app.
+    private var isFullscreen = true
     private var resumePlaybackOnResume = false
     private var recoveryAttempts = 0
-    private var zoomed = false
+    private var displayMode = 0
+    private val playerPrefs by lazy { getSharedPreferences("rahmani_player_preferences", MODE_PRIVATE) }
     private var recoveryTask: Runnable? = null
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private var networkWasLost = false
     private val worker = Executors.newSingleThreadExecutor()
     private val handler = Handler(Looper.getMainLooper())
     private val hideOverlayTask = Runnable {
-        if (player?.isPlaying == true && !controlsLocked) setOverlayVisible(false)
+        if (player?.isPlaying == true && !controlsLocked && findViewById<View>(R.id.channelPanel).visibility != View.VISIBLE) {
+            setOverlayVisible(false)
+        }
     }
     private val refreshTask = object : Runnable {
         override fun run() {
@@ -103,18 +110,28 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         setContentView(R.layout.activity_player)
+        applyFullscreenSystemUi()
         playerView = findViewById(R.id.playerView)
-        // Preserve the complete picture by default on phones; zoom remains user-selectable.
-        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+        // Initialize every view used by applyDisplayMode before calling it.
+        zoom = findViewById(R.id.zoomButton)
+        // Default to FIT so channel logos and the full frame remain visible.
+        // Viewers can switch to ZOOM or FILL at any time from the player controls.
+        displayMode = if (playerPrefs.contains("display_mode")) {
+            playerPrefs.getInt("display_mode", 1).coerceIn(0, 3)
+        } else {
+            0
+        }
+        applyDisplayMode()
         title = findViewById(R.id.channelTitle)
-        watermark = findViewById(R.id.channelWatermark)
         status = findViewById(R.id.statusText)
+        loadingIndicator = findViewById(R.id.loadingIndicator)
         list = findViewById(R.id.channelList)
         playPause = findViewById(R.id.playPauseButton)
         fullscreen = findViewById(R.id.fullscreenButton)
-        zoom = findViewById(R.id.zoomButton)
-        zoom.text = "زووم"
+        zoom.text = "تكبير"
+        fullscreen.text = "⤢"
         retry = findViewById(R.id.retryButton)
         server = findViewById(R.id.serverButton)
         quality = findViewById(R.id.qualityButton)
@@ -123,8 +140,16 @@ class PlayerActivity : AppCompatActivity() {
         findViewById<Button>(R.id.playerBackButton).setOnClickListener { handleBackAction() }
         lockButton.setOnClickListener { controlsLocked = !controlsLocked; setOverlayVisible(!controlsLocked); lockButton.text = if (controlsLocked) "🔒" else "♙" }
         findViewById<Button>(R.id.pictureInPictureButton).setOnClickListener { enterPictureInPictureIfSupported() }
-        findViewById<Button>(R.id.castButton).setOnClickListener { Toast.makeText(this, "ميزة Google Cast تحتاج ربط جهاز البث، ولم يتم تفعيلها بعد.", Toast.LENGTH_LONG).show() }
-        findViewById<Button>(R.id.channelListButton).setOnClickListener { list.visibility = if (list.visibility == View.VISIBLE) View.GONE else View.VISIBLE }
+        findViewById<Button>(R.id.channelListButton).setOnClickListener {
+            val opening = findViewById<View>(R.id.channelPanel).visibility != View.VISIBLE
+            findViewById<View>(R.id.channelPanel).visibility = if (opening) View.VISIBLE else View.GONE
+            if (opening) {
+                findViewById<View>(R.id.channelPanel).alpha = 1f
+                setOverlayVisible(true)
+            } else {
+                scheduleOverlayHide()
+            }
+        }
         findViewById<Button>(R.id.subtitleButton).setOnClickListener {
             val active = player
             if (active == null) {
@@ -149,13 +174,13 @@ class PlayerActivity : AppCompatActivity() {
         channels = UniversalStreamEngine.loadLegacy(this).map { legacy ->
             DisplayChannel(
                 legacy.id, legacy.name, legacy.stream, legacy.headers, legacy.logo,
-                UniversalStreamEngine.match(advanced, legacy.id, legacy.name)
+                UniversalStreamEngine.match(advanced, legacy.id, legacy.name), legacy.qualityUrls
             )
         }
-        list.layoutManager = LinearLayoutManager(this, RecyclerView.HORIZONTAL, false)
+        list.layoutManager = LinearLayoutManager(this, RecyclerView.VERTICAL, false)
         list.adapter = PlayerChannelAdapter(channels) {
             play(it)
-            list.visibility = View.GONE
+            findViewById<View>(R.id.channelPanel).visibility = View.GONE
             setOverlayVisible(true)
         }
 
@@ -163,21 +188,10 @@ class PlayerActivity : AppCompatActivity() {
             player?.let { p -> if (p.isPlaying) p.pause() else p.play() }
         }
         fullscreen.setOnClickListener { toggleFullscreen() }
-        zoom.setOnClickListener {
-            zoomed = !zoomed
-            playerView.resizeMode = if (zoomed) AspectRatioFrameLayout.RESIZE_MODE_ZOOM else AspectRatioFrameLayout.RESIZE_MODE_FIT
-            zoom.text = if (zoomed) "ملاءمة" else "زووم"
-        }
-        retry.setOnClickListener {
-            recoveryAttempts = 0
-            current?.let { play(it) }
-        }
+        zoom.setOnClickListener { showDisplayModePicker() }
+        retry.setOnClickListener { hardRefreshCurrentStream(resetRecoveryAttempts = true) }
         server.setOnClickListener { nextCandidateOrRetry() }
-        quality.setOnClickListener {
-            val active = player
-            if (active == null) Toast.makeText(this, "شغّل قناة أولاً", Toast.LENGTH_SHORT).show()
-            else TrackSelectionDialogBuilder(this, "اختيار الجودة", active, C.TRACK_TYPE_VIDEO).build().show()
-        }
+        quality.setOnClickListener { showQualityPicker() }
 
         val requestedId = intent.getStringExtra(EXTRA_CHANNEL_ID).orEmpty()
         val requestedUrl = intent.getStringExtra(EXTRA_URL).orEmpty().trim()
@@ -280,7 +294,7 @@ class PlayerActivity : AppCompatActivity() {
         val userAgent = userAgentKey?.let { headers.remove(it) } ?: "RAHMANI/1.0"
 
         val loadControl = DefaultLoadControl.Builder()
-            .setBufferDurationsMs(2500, 15000, 750, 1500)
+            .setBufferDurationsMs(2500, 30000, 750, 1500)
             .setPrioritizeTimeOverSizeThresholds(true)
             .build()
 
@@ -310,7 +324,7 @@ class PlayerActivity : AppCompatActivity() {
                 buildUponParameters()
                     .setMaxVideoSize(3840, 2160)
                     .setMaxVideoBitrate(Int.MAX_VALUE)
-                    .setForceHighestSupportedBitrate(false)
+                    // Keep adaptive bitrate selection enabled for variable mobile connections.
                     .build()
             )
         }
@@ -337,6 +351,7 @@ class PlayerActivity : AppCompatActivity() {
                             }
                             cause = cause.cause
                         }
+                        showLoading(true)
                         status.text = when (responseCode) {
                             401, 403 -> "رفض المصدر الوصول (HTTP $responseCode). تحقق من Cookie وبيانات القناة في لوحة الإدارة."
                             else -> "تعذر تشغيل البث، جارٍ إعادة الاتصال..."
@@ -346,15 +361,22 @@ class PlayerActivity : AppCompatActivity() {
 
                     override fun onPlaybackStateChanged(state: Int) {
                         status.text = when (state) {
-                            Player.STATE_BUFFERING -> "جارٍ تحميل البث..."
+                            Player.STATE_BUFFERING -> {
+                                showLoading(true)
+                                "جارٍ تحميل البث..."
+                            }
                             Player.STATE_READY -> {
+                                showLoading(false)
                                 recoveryAttempts = 0
                                 recoveryTask?.let(handler::removeCallbacks)
                                 recoveryTask = null
-                                "RAHMANI • البث جاهز"
+                                "FIRAS • البث جاهز"
                             }
-                            Player.STATE_ENDED -> "انتهى البث"
-                            else -> "RAHMANI • بث مباشر"
+                            Player.STATE_ENDED -> {
+                                showLoading(false)
+                                "انتهى البث"
+                            }
+                            else -> "FIRAS • بث مباشر"
                         }
                         playPause.text = if (exo.isPlaying) "Ⅱ" else "▶"
                     }
@@ -373,29 +395,66 @@ class PlayerActivity : AppCompatActivity() {
             }
     }
 
+    private fun showQualityPicker() {
+        val channel = current ?: run {
+            Toast.makeText(this, "شغّل قناة أولاً", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val entries = mutableListOf<Pair<String, String>>()
+        if (isHttpUrl(channel.defaultUrl)) entries += "الرابط الأساسي" to channel.defaultUrl
+        channel.qualityUrls.forEach { (label, url) -> if (isHttpUrl(url)) entries += label to url }
+        if (entries.isEmpty()) {
+            val active = player
+            if (active != null) TrackSelectionDialogBuilder(this, "مسارات الجودة داخل البث", active, C.TRACK_TYPE_VIDEO).build().show()
+            else Toast.makeText(this, "لا توجد روابط جودة لهذه القناة", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val labels = entries.map { (label, _) -> if (label == "الرابط الأساسي") label else "جودة $label" }.toTypedArray()
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("اختر جودة المشاهدة")
+            .setItems(labels) { _, which ->
+                val selected = channel.copy(
+                    legacyUrl = entries[which].second,
+                    advanced = if (entries[which].first == "الرابط الأساسي") channel.advanced else null
+                )
+                playerPrefs.edit().putString("quality_${channel.id}", entries[which].first).apply()
+                current = selected
+                currentAdvanced = null
+                recoveryAttempts = 0
+                play(selected)
+            }
+            .setNegativeButton("إلغاء", null)
+            .show()
+    }
+
     private fun play(channel: DisplayChannel) {
+        val preferred = playerPrefs.getString("quality_${channel.id}", "الرابط الأساسي").orEmpty()
+        val preferredUrl = if (preferred == "الرابط الأساسي") channel.defaultUrl else channel.qualityUrls[preferred].orEmpty()
+        val playbackChannel = if (isHttpUrl(preferredUrl) && preferredUrl != channel.legacyUrl) {
+            channel.copy(legacyUrl = preferredUrl, advanced = if (preferred == "الرابط الأساسي") channel.advanced else null)
+        } else channel
         recoveryTask?.let(handler::removeCallbacks)
         recoveryTask = null
-        current = channel
-        currentAdvanced = channel.advanced
+        current = playbackChannel
+        currentAdvanced = playbackChannel.advanced
         resolving = false
         recoveryAttempts = 0
         currentUrlIndex = 0
         currentUrls = emptyList()
-        title.text = channel.name
-        loadWatermark(channel.logo)
-        ensurePlayer(channel)
+        showLoading(true)
+        title.text = playbackChannel.name
+        ensurePlayer(playbackChannel)
 
         if (currentAdvanced == null) {
-            if (!isHttpUrl(channel.legacyUrl)) {
+            if (!isHttpUrl(playbackChannel.legacyUrl)) {
                 status.text = "رابط القناة غير صالح. تحقق من لوحة الإدارة."
                 return
             }
-            currentUrls = listOf(channel.legacyUrl)
-            playUrl(channel.legacyUrl)
+            currentUrls = listOf(playbackChannel.legacyUrl)
+            playUrl(playbackChannel.legacyUrl)
         } else {
             status.text = "جارٍ تجهيز القناة..."
-            resolveAndPlay(channel, keepPosition = false)
+            resolveAndPlay(playbackChannel, keepPosition = false)
         }
     }
 
@@ -437,7 +496,7 @@ class PlayerActivity : AppCompatActivity() {
                 currentUrls = validUrls
                 currentUrlIndex = 0
                 if (keepPosition && previousUrl == validUrls.first()) {
-                    status.text = "RAHMANI • البث مستمر"
+                    status.text = "FIRAS • البث مستمر"
                     return@runOnUiThread
                 }
                 playUrl(validUrls.first(), oldPosition)
@@ -456,7 +515,7 @@ class PlayerActivity : AppCompatActivity() {
             .setMediaMetadata(
                 MediaMetadata.Builder()
                     .setTitle(current?.name ?: "بث مباشر")
-                    .setArtist("RAHMANI")
+                    .setArtist("FIRAS")
                     .build()
             )
         // Preserve HLS handling for extension-less and PHP resolver endpoints,
@@ -469,6 +528,7 @@ class PlayerActivity : AppCompatActivity() {
             itemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
         }
         val item = itemBuilder.build()
+        showLoading(true)
         player?.apply {
             stop()
             clearMediaItems()
@@ -478,6 +538,72 @@ class PlayerActivity : AppCompatActivity() {
             playWhenReady = true
         }
         status.text = "جارٍ الاتصال..."
+    }
+
+    private fun showLoading(visible: Boolean) {
+        loadingIndicator.visibility = if (visible) View.VISIBLE else View.GONE
+    }
+
+    private fun hardRefreshCurrentStream(resetRecoveryAttempts: Boolean) {
+        val channel = current ?: return
+        recoveryTask?.let(handler::removeCallbacks)
+        recoveryTask = null
+        if (resetRecoveryAttempts) recoveryAttempts = 0
+
+        // Stop and release the current player immediately. This clears its active
+        // network request and in-memory playback buffer before a new URL is resolved.
+        resolving = true
+        showLoading(true)
+        playerView.player = null
+        mediaSession?.release()
+        mediaSession = null
+        player?.run {
+            playWhenReady = false
+            stop()
+            clearMediaItems()
+            release()
+        }
+        player = null
+
+        worker.execute {
+            val latestConfigs = UniversalStreamEngine.load(this@PlayerActivity)
+            val latestLegacy = UniversalStreamEngine.loadLegacy(this@PlayerActivity)
+            val refreshedLegacy = latestLegacy.firstOrNull { it.id == channel.id }
+                ?: latestLegacy.firstOrNull { it.name.equals(channel.name, ignoreCase = true) }
+            val refreshedChannel = if (refreshedLegacy != null) {
+                channel.copy(
+                    legacyUrl = refreshedLegacy.stream,
+                    legacyHeaders = refreshedLegacy.headers,
+                    logo = refreshedLegacy.logo
+                )
+            } else channel
+            val refreshedConfig = UniversalStreamEngine.match(
+                latestConfigs, refreshedChannel.id, refreshedChannel.name
+            ) ?: channel.advanced
+
+            runOnUiThread {
+                if (isFinishing || isDestroyed || current?.id != channel.id) {
+                    resolving = false
+                    return@runOnUiThread
+                }
+                current = refreshedChannel
+                currentAdvanced = refreshedConfig
+                currentUrls = emptyList()
+                currentUrlIndex = 0
+                resolving = false
+                ensurePlayer(refreshedChannel)
+
+                if (refreshedConfig != null) {
+                    resolveAndPlay(refreshedChannel, keepPosition = false)
+                } else if (isHttpUrl(refreshedChannel.legacyUrl)) {
+                    currentUrls = listOf(refreshedChannel.legacyUrl)
+                    playUrl(refreshedChannel.legacyUrl)
+                } else {
+                    showLoading(false)
+                    status.text = "رابط القناة غير متوفر. تحقق من لوحة الإدارة."
+                }
+            }
+        }
     }
 
     private fun scheduleRecovery() {
@@ -492,47 +618,12 @@ class PlayerActivity : AppCompatActivity() {
         val task = Runnable {
             recoveryTask = null
             if (isFinishing || isDestroyed || current == null) return@Runnable
-            if (currentAdvanced != null) {
-                resolving = false
-                current?.let { resolveAndPlay(it, keepPosition = false) }
-            } else {
-                current?.let { playUrl(it.legacyUrl) }
-            }
+            hardRefreshCurrentStream(resetRecoveryAttempts = false)
         }
         recoveryTask = task
         handler.postDelayed(task, delay)
     }
 
-    private fun loadWatermark(url: String) {
-        watermark.setImageDrawable(null)
-        watermark.visibility = if (isHttpUrl(url)) View.VISIBLE else View.GONE
-        if (watermark.visibility == View.GONE) return
-        val expected = url
-        worker.execute {
-            var bitmap: android.graphics.Bitmap? = null
-            try {
-                val connection = URL(url).openConnection() as HttpURLConnection
-                connection.connectTimeout = 6000
-                connection.readTimeout = 6000
-                connection.setRequestProperty("User-Agent", "RAHMANI/1.0")
-                bitmap = try {
-                    connection.inputStream.use { BitmapFactory.decodeStream(it) }
-                } finally {
-                    connection.disconnect()
-                }
-            } catch (_: Exception) {
-            }
-            val result = bitmap
-            runOnUiThread {
-                if (!isFinishing && current?.logo == expected) {
-                    watermark.setImageBitmap(result ?: makeChannelLogo(current?.name.orEmpty()))
-                    watermark.visibility = View.VISIBLE
-                } else {
-                    result?.recycle()
-                }
-            }
-        }
-    }
 
     private fun nextCandidateOrRetry() {
         val channel = current ?: return
@@ -565,6 +656,19 @@ class PlayerActivity : AppCompatActivity() {
 
     @Suppress("DEPRECATION")
     private fun applyFullscreenSystemUi() {
+        // Use the complete physical display area on phones with different
+        // aspect ratios, status/navigation bars and camera cutouts.
+        window.statusBarColor = Color.BLACK
+        window.navigationBarColor = Color.BLACK
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val attributes = window.attributes
+            attributes.layoutInDisplayCutoutMode = if (isFullscreen) {
+                android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            } else {
+                android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
+            }
+            window.attributes = attributes
+        }
         window.decorView.systemUiVisibility = if (isFullscreen) {
             (View.SYSTEM_UI_FLAG_FULLSCREEN
                 or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
@@ -575,6 +679,46 @@ class PlayerActivity : AppCompatActivity() {
         } else {
             View.SYSTEM_UI_FLAG_VISIBLE
         }
+        window.decorView.post {
+            window.decorView.requestLayout()
+            findViewById<View>(R.id.playerView)?.requestLayout()
+        }
+    }
+
+    private fun applyDisplayMode() {
+        val modes = intArrayOf(
+            AspectRatioFrameLayout.RESIZE_MODE_FIT,
+            AspectRatioFrameLayout.RESIZE_MODE_ZOOM,
+            AspectRatioFrameLayout.RESIZE_MODE_FILL,
+            AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH
+        )
+        playerView.resizeMode = modes[displayMode.coerceIn(0, modes.lastIndex)]
+        zoom.text = when (displayMode) {
+            1 -> "تكبير"
+            2 -> "تمديد"
+            3 -> "تثبيت العرض"
+            else -> "ملاءمة"
+        }
+        playerView.requestLayout()
+    }
+
+    private fun showDisplayModePicker() {
+        val options = arrayOf(
+            "ملاءمة كاملة — إظهار الصورة والشعار بالكامل، وقد تظهر حواف سوداء",
+            "ملء الشاشة — تكبير الصورة مع اقتطاع الأطراف عند اختلاف الأبعاد",
+            "تمديد كامل — ملء الإطار وقد تتغير أبعاد الصورة",
+            "تثبيت العرض — الحفاظ على النسبة مع احتمال اقتطاع أعلى/أسفل"
+        )
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("اختر طريقة عرض الفيديو")
+            .setSingleChoiceItems(options, displayMode) { dialog, which ->
+                displayMode = which
+                playerPrefs.edit().putInt("display_mode", displayMode).apply()
+                applyDisplayMode()
+                dialog.dismiss()
+            }
+            .setNegativeButton("إغلاق", null)
+            .show()
     }
 
     private fun toggleFullscreen() {
@@ -582,14 +726,14 @@ class PlayerActivity : AppCompatActivity() {
         requestedOrientation = if (isFullscreen) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
             else ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         applyFullscreenSystemUi()
-        // Fill the entire landscape screen: no black bars.
-        // ZOOM preserves the source aspect ratio; a small part may be cropped
-        // when the source and phone screen have different aspect ratios.
-        zoomed = isFullscreen
-        playerView.resizeMode = if (isFullscreen) AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-            else AspectRatioFrameLayout.RESIZE_MODE_FIT
-        zoom.text = if (zoomed) "ملاءمة" else "زووم"
+        // Fullscreen changes the available display area, not the video crop.
+        // Keep the selected Fit/Zoom mode so channel logos and the full frame remain visible.
+        applyDisplayMode()
         fullscreen.text = if (isFullscreen) "⤡" else "⛶"
+        playerView.post {
+            playerView.requestLayout()
+            playerView.invalidate()
+        }
         if (isFullscreen) scheduleOverlayHide() else handler.removeCallbacks(hideOverlayTask)
     }
 
@@ -599,13 +743,19 @@ class PlayerActivity : AppCompatActivity() {
             // Return to the normal phone portrait screen after leaving fullscreen.
             requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             applyFullscreenSystemUi()
-            zoomed = false
-            playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-            zoom.text = "زووم"
+            applyDisplayMode()
             fullscreen.text = "⛶"
             handler.removeCallbacks(hideOverlayTask)
         } else {
             finish()
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        playerView.post {
+            playerView.requestLayout()
+            playerView.invalidate()
         }
     }
 
@@ -632,6 +782,12 @@ class PlayerActivity : AppCompatActivity() {
             findViewById<View>(R.id.bottomPanel),
             centerControls
         )
+        if (!visible && findViewById<View>(R.id.channelPanel).visibility == View.VISIBLE) {
+            findViewById<View>(R.id.channelPanel).animate().cancel()
+            findViewById<View>(R.id.channelPanel).animate().alpha(0f).setDuration(200L).withEndAction {
+                if (findViewById<View>(R.id.channelPanel).alpha == 0f) findViewById<View>(R.id.channelPanel).visibility = View.GONE
+            }.start()
+        }
         overlays.forEach { view ->
             view.animate().cancel()
             if (visible) {
@@ -719,6 +875,7 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (isFullscreen) applyFullscreenSystemUi()
         // Resume only if playback was active before the Activity was paused.
         if (resumePlaybackOnResume) player?.playWhenReady = true
         resumePlaybackOnResume = false
@@ -790,49 +947,27 @@ class PlayerActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
-    // Draw a compact local brand mark so every channel has a visible logo,
-    // even when its remote image is SVG, unavailable, or blocked by the host.
+    // Use neutral initials when the official channel logo is unavailable.
+    // This avoids drawing imitation broadcaster trademarks.
     private fun makeChannelLogo(name: String): Bitmap {
         val size = 128
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        val lower = name.lowercase()
-        val isBein = lower.contains("bein")
-        val isMbc = lower.contains("mbc")
-        val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = if (isMbc) Color.WHITE else if (isBein) Color.rgb(24, 28, 58) else Color.rgb(45, 43, 66)
-        }
+        val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(18, 34, 54) }
         canvas.drawRoundRect(0f, 0f, size.toFloat(), size.toFloat(), 18f, 18f, bg)
-        val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        val words = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+        val initials = when {
+            words.isEmpty() -> "TV"
+            words.size > 1 -> words.take(2).joinToString("") { it.first().uppercase() }
+            else -> words.first().take(2).uppercase()
+        }
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.rgb(126, 235, 255)
             textAlign = Paint.Align.CENTER
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            color = if (isMbc) Color.DKGRAY else Color.WHITE
+            textSize = if (initials.length > 1) 48f else 58f
         }
-        if (isBein) {
-            p.textSize = 39f
-            canvas.drawText("beIN", 64f, 61f, p)
-            p.textSize = 17f
-            canvas.drawText("SPORTS", 64f, 86f, p)
-            Regex("\\d+").find(name)?.value?.let {
-                p.textSize = 14f
-                canvas.drawText(it, 64f, 111f, p)
-            }
-        } else if (isMbc) {
-            val letters = listOf("M", "B", "C")
-            val colors = listOf(Color.rgb(0, 145, 205), Color.rgb(224, 62, 105), Color.rgb(238, 148, 38))
-            val xs = listOf(37f, 64f, 91f)
-            p.textSize = 43f
-            letters.forEachIndexed { i, letter ->
-                p.color = colors[i]
-                canvas.drawText(letter, xs[i], 65f, p)
-            }
-            p.color = Color.DKGRAY
-            p.textSize = 13f
-            canvas.drawText(name.substringAfter("MBC").trim().uppercase().take(13), 64f, 94f, p)
-        } else {
-            p.textSize = 24f
-            canvas.drawText(name.take(10).uppercase(), 64f, 72f, p)
-        }
+        canvas.drawText(initials, 64f, 78f, paint)
         return bitmap
     }
 
@@ -845,11 +980,15 @@ class PlayerActivity : AppCompatActivity() {
             val card = LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(10, 4, 12, 4)
-                setBackgroundColor(Color.rgb(31, 32, 40))
-                layoutParams = RecyclerView.LayoutParams(-2, dp(context, 46)).apply {
-                    marginStart = dp(context, 4)
-                    marginEnd = dp(context, 4)
+                setPadding(dp(context, 9), dp(context, 6), dp(context, 10), dp(context, 6))
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(Color.rgb(12, 20, 34))
+                    cornerRadius = dp(context, 10).toFloat()
+                    setStroke(dp(context, 1), Color.rgb(39, 69, 100))
+                }
+                layoutParams = RecyclerView.LayoutParams(-1, dp(context, 58)).apply {
+                    topMargin = dp(context, 3)
+                    bottomMargin = dp(context, 3)
                 }
             }
             val logo = ImageView(context).apply {
@@ -858,13 +997,14 @@ class PlayerActivity : AppCompatActivity() {
             }
             card.addView(logo, LinearLayout.LayoutParams(dp(context, 36), dp(context, 36)))
             val label = TextView(context).apply {
-                setTextColor(Color.WHITE)
+                setTextColor(Color.rgb(126, 235, 255))
                 textSize = 12f
                 typeface = Typeface.DEFAULT_BOLD
-                maxLines = 1
-                setPadding(dp(context, 7), 0, 0, 0)
+                maxLines = 2
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                setPadding(dp(context, 8), 0, 0, 0)
             }
-            card.addView(label, LinearLayout.LayoutParams(-2, -2))
+            card.addView(label, LinearLayout.LayoutParams(0, -2, 1f))
             return ChannelHolder(card, logo, label)
         }
 
@@ -881,34 +1021,21 @@ class PlayerActivity : AppCompatActivity() {
             val size = 128
             val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
-            val lower = name.lowercase()
-            val isBein = lower.contains("bein")
-            val isMbc = lower.contains("mbc")
-            val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = if (isMbc) Color.WHITE else if (isBein) Color.rgb(24, 28, 58) else Color.rgb(45, 43, 66)
+            val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(18, 34, 54) }
+            canvas.drawRoundRect(0f, 0f, size.toFloat(), size.toFloat(), 18f, 18f, bg)
+            val words = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+            val initials = when {
+                words.isEmpty() -> "TV"
+                words.size > 1 -> words.take(2).joinToString("") { it.first().uppercase() }
+                else -> words.first().take(2).uppercase()
             }
-            canvas.drawRoundRect(0f, 0f, 128f, 128f, 18f, 18f, bg)
-            val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.rgb(126, 235, 255)
                 textAlign = Paint.Align.CENTER
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                color = if (isMbc) Color.DKGRAY else Color.WHITE
+                textSize = if (initials.length > 1) 48f else 58f
             }
-            if (isBein) {
-                p.textSize = 38f
-                canvas.drawText("beIN", 64f, 61f, p)
-                p.textSize = 16f
-                canvas.drawText("SPORTS", 64f, 86f, p)
-                Regex("\\d+").find(name)?.value?.let { p.textSize = 13f; canvas.drawText(it, 64f, 110f, p) }
-            } else if (isMbc) {
-                val colors = listOf(Color.rgb(0,145,205), Color.rgb(224,62,105), Color.rgb(238,148,38))
-                listOf("M","B","C").forEachIndexed { i, ch -> p.color = colors[i]; p.textSize = 43f; canvas.drawText(ch, 37f + i*27f, 65f, p) }
-                p.color = Color.DKGRAY
-                p.textSize = 13f
-                canvas.drawText(name.substringAfter("MBC").trim().uppercase().take(13), 64f, 94f, p)
-            } else {
-                p.textSize = 24f
-                canvas.drawText(name.take(10).uppercase(), 64f, 72f, p)
-            }
+            canvas.drawText(initials, 64f, 78f, paint)
             return bitmap
         }
 
