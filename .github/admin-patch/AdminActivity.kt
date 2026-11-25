@@ -1065,8 +1065,8 @@ class AdminActivity : Activity() {
     private fun countryFlagEmoji(code: String): String {
         if (code.length != 2) return ""
         val upper = code.uppercase(Locale.ROOT)
-        return String(Character.toChars(0x1F1E6 + upper[0] - 'A')) +
-            String(Character.toChars(0x1F1E6 + upper[1] - 'A'))
+        return String(Character.toChars(0x1F1E6 + upper[0].code - 'A'.code)) +
+            String(Character.toChars(0x1F1E6 + upper[1].code - 'A'.code))
     }
 
     private fun parseM3u(raw: String): List<JSONObject> {
