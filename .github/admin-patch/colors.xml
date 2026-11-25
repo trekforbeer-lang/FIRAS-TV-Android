@@ -3,11 +3,11 @@
     <color name="bg_primary">#080B12</color>
     <color name="surface">#171C29</color>
     <color name="surface_elevated">#222A3A</color>
-    <color name="surface_selected">#123B55</color>
+    <color name="surface_selected">#3B2E20</color>
     <color name="text_primary">#F7F8FC</color>
     <color name="text_secondary">#A8B1C2</color>
     <color name="text_tertiary">#7F8AA0</color>
-    <color name="brand_red">#35D6F2</color>
+    <color name="brand_red">#D6B36A</color>
     <color name="red">#F04468</color>
     <color name="surface_high">#273044</color>
     <color name="live_red">#E83E62</color>
@@ -17,7 +17,7 @@
     <color name="hero_list_button">#66404040</color>
     <color name="nav_unselected">#A8B1C2</color>
     <color name="nav_selected">#123B55</color>
-    <color name="success">#36D399</color>
-    <color name="warning">#9C8BFF</color>
+    <color name="success">#55D6A2</color>
+    <color name="warning">#D6B36A</color>
     <color name="error">#D97979</color>
 </resources>
