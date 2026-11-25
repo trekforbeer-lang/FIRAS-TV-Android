@@ -1021,7 +1021,7 @@ $('#nx').onclick=function(e){e.stopPropagation();step(1)};
 $('#fs').onclick=function(e){e.stopPropagation();fs()};
 $('#bk').onclick=function(e){
   e.stopPropagation();
-  if(plFs()){exitFs();return}
+  if(plFs()||v.webkitDisplayingFullscreen){exitFs();return}
   if(ovOpen)return closeOv();
   stopPlay();setPage('home');
 };
