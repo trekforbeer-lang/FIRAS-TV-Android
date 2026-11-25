@@ -2,7 +2,7 @@ name: FIRAS TV APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, FIRAS-TV-Android]
   workflow_dispatch:
 
 permissions:
@@ -21,13 +21,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-
-      - name: Locate Android SDK
-        run: |
-          echo "ANDROID_HOME=${ANDROID_HOME:-unset}"
-          ls -la /usr/local/lib/android/sdk 2>/dev/null || true
-          ls -la /usr/local/lib/android/sdk/cmdline-tools 2>/dev/null || true
-          find /usr/local/lib/android/sdk -maxdepth 5 -name sdkmanager -type f 2>/dev/null || true
 
       - name: Set up Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
