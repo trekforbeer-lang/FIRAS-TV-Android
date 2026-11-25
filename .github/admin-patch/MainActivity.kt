@@ -235,7 +235,7 @@ class MainActivity : AppCompatActivity() {
                 intArrayOf(Color.rgb(24, 28, 40), Color.rgb(9, 13, 22), Color.rgb(8, 10, 16))
             ).apply {
                 setCornerRadii(floatArrayOf(dp(24).toFloat(), dp(24).toFloat(), 0f, 0f, 0f, 0f, dp(24).toFloat(), dp(24).toFloat()))
-                setStroke(dp(1), Color.rgb(65, 91, 133))
+                setStroke(dp(1), Color.rgb(74, 74, 74))
             }
             elevation = dp(18).toFloat()
         }
@@ -261,7 +261,7 @@ class MainActivity : AppCompatActivity() {
             text = "RAHMANI TV"
             textSize = 23f
             setTypeface(typeface, Typeface.BOLD)
-            setTextColor(Color.rgb(126, 235, 255))
+            setTextColor(Color.rgb(217, 180, 91))
             gravity = Gravity.CENTER_VERTICAL
             letterSpacing = 0.05f
         }
@@ -512,13 +512,13 @@ class MainActivity : AppCompatActivity() {
             setHintTextColor(Color.rgb(155, 181, 200))
             setPadding(dp(12), dp(8), dp(12), dp(8))
             background = GradientDrawable().apply {
-                setColor(Color.rgb(16, 34, 51))
+                setColor(Color.rgb(24, 24, 24))
                 cornerRadius = dp(12).toFloat()
-                setStroke(dp(1), Color.rgb(45, 105, 133))
+                setStroke(dp(1), Color.rgb(71, 201, 139))
             }
         }
         val listView = android.widget.ListView(this).apply {
-            divider = android.graphics.drawable.ColorDrawable(Color.rgb(35, 55, 73))
+            divider = android.graphics.drawable.ColorDrawable(Color.rgb(55, 55, 55))
             dividerHeight = dp(1)
         }
         container.addView(searchBox, LinearLayout.LayoutParams(-1, dp(48)))
