@@ -884,28 +884,46 @@ class AdminActivity : Activity() {
                                 if (url.isNotBlank()) existing.add(url)
                             }
                         }
-                        val sectionName = "قنوات مستوردة"
-                        var section: JSONObject? = null
-                        for (i in 0 until groups.length()) {
-                            val candidate = groups.optJSONObject(i)
-                            if (candidate?.optString("title") == sectionName) { section = candidate; break }
-                        }
-                        val destinationSection = section ?: JSONObject().put("title", sectionName).put("items", JSONArray()).also { groups.put(it) }
-                        val destination = destinationSection.optJSONArray("items")
-                            ?: JSONArray().also { destinationSection.put("items", it) }
                         val unique = parsed.filter { channel ->
                             val url = channel.optString("url")
                             url.isNotBlank() && existing.add(url)
                         }
+                        // Imported channels are stored directly in their country sections.
+                        // Country metadata wins; recognizable broadcaster/channel names are a fallback.
+                        val grouped = unique.groupBy { channel ->
+                            val code = detectImportedCountry(channel)
+                            channel.put("cc", code)
+                            code
+                        }
                         var added = 0
-                        val batches = unique.chunked(100)
-                        batches.forEach { batch ->
-                            batch.forEach { channel -> destination.put(channel); added++ }
-                            val done = added
-                            val total = unique.size
-                            runOnUiThread {
-                                if (!isFinishing && !isDestroyed && progress.isShowing) {
-                                    progress.setMessage("تم تجهيز $done من $total قناة...")
+                        var processed = 0
+                        grouped.forEach { (code, batch) ->
+                            val country = importedCountryInfo(code)
+                            var destinationSection: JSONObject? = null
+                            for (i in 0 until groups.length()) {
+                                val candidate = groups.optJSONObject(i) ?: continue
+                                if (candidate.optString("countryCode").equals(code, true) &&
+                                    candidate.optString("region") == country.second) {
+                                    destinationSection = candidate
+                                    break
+                                }
+                            }
+                            val targetSection = destinationSection ?: JSONObject()
+                                .put("title", country.first)
+                                .put("countryCode", code)
+                                .put("region", country.second)
+                                .put("flag", if (code.length == 2) countryFlagEmoji(code) else "")
+                                .put("items", JSONArray()).also { groups.put(it) }
+                            val destination = targetSection.optJSONArray("items")
+                                ?: JSONArray().also { targetSection.put("items", it) }
+                            batch.chunked(100).forEach { chunk ->
+                                chunk.forEach { channel -> destination.put(channel); added++; processed++ }
+                                val done = processed
+                                val total = unique.size
+                                runOnUiThread {
+                                    if (!isFinishing && !isDestroyed && progress.isShowing) {
+                                        progress.setMessage("جارٍ تصنيف $done من $total قناة حسب الدولة...")
+                                    }
                                 }
                             }
                         }
@@ -946,13 +964,108 @@ class AdminActivity : Activity() {
         dialog.show()
     }
 
+    private fun detectImportedCountry(channel: JSONObject): String {
+        val explicit = listOf("cc", "countryCode", "tvg-country", "country")
+            .asSequence().map { channel.optString(it).trim() }.firstOrNull { it.isNotBlank() }.orEmpty()
+        val explicitCode = normalizeImportedCountry(explicit)
+        if (explicitCode.isNotBlank()) return explicitCode
+
+        val text = (channel.optString("group") + " " + channel.optString("name"))
+            .lowercase(Locale.ROOT)
+            .replace('_', ' ')
+        val aliases = listOf(
+            "DZ" to listOf("الجزائر", "جزائر", "algeria", "algerian", "entv", "canal algerie", "canal algérie", "echorouk", "الشروق", "النهار الجزائرية"),
+            "EG" to listOf("مصر", "مصري", "egypt", "egyptian", "mbc masr", "cbc", "dmc", "on tv", "الحياة", "النيل"),
+            "MA" to listOf("المغرب", "مغربي", "morocco", "moroccan", "2m", "medi1", "الرياضية المغربية"),
+            "TN" to listOf("تونس", "تونسي", "tunisia", "tunisian", "wataniya", "الحوار التونسي"),
+            "LY" to listOf("ليبيا", "ليبي", "libya", "libyan", "ليبيا الأحرار"),
+            "SA" to listOf("السعودية", "سعودي", "saudi", "ksa", "mbc", "روتانا", "العربية", "السعودية الأولى"),
+            "QA" to listOf("قطر", "قطري", "qatar", "qatari", "al jazeera", "الجزيرة", "bein", "بي ان"),
+            "AE" to listOf("الإمارات", "اماراتي", "uae", "emirati", "abu dhabi", "دبي", "الشارقة"),
+            "KW" to listOf("الكويت", "كويتي", "kuwait", "kuwaiti"),
+            "BH" to listOf("البحرين", "بحريني", "bahrain", "bahraini"),
+            "OM" to listOf("عمان", "عُمان", "oman", "omani"),
+            "IQ" to listOf("العراق", "عراقي", "iraq", "iraqi", "mbc iraq", "السومرية", "العراقية"),
+            "JO" to listOf("الأردن", "اردني", "jordan", "jordanian", "رؤيا"),
+            "LB" to listOf("لبنان", "لبناني", "lebanon", "lebanese", "lbc", "mtv lebanon", "الجديد"),
+            "PS" to listOf("فلسطين", "فلسطيني", "palestine", "palestinian", "فلسطين اليوم"),
+            "SY" to listOf("سوريا", "سوري", "syria", "syrian", "سما", "الإخبارية السورية"),
+            "YE" to listOf("اليمن", "يمني", "yemen", "yemeni"),
+            "SD" to listOf("السودان", "سوداني", "sudan", "sudanese"),
+            "FR" to listOf("فرنسا", "فرنسي", "france", "french", "france 24", "فرانس 24", "tf1", "m6"),
+            "GB" to listOf("بريطانيا", "المملكة المتحدة", "britain", "british", "united kingdom", "bbc", "itv", "sky news", "channel 4"),
+            "US" to listOf("أمريكا", "الولايات المتحدة", "american", "usa", "united states", "cnn", "fox news", "abc news", "nbc", "cbs"),
+            "DE" to listOf("ألمانيا", "الماني", "germany", "german", "dw ", "deutsche welle", "zdf", "ard"),
+            "ES" to listOf("إسبانيا", "اسبانيا", "spain", "spanish", "rtve", "antena 3"),
+            "IT" to listOf("إيطاليا", "ايطاليا", "italy", "italian", "rai "),
+            "TR" to listOf("تركيا", "تركي", "turkey", "turkish", "trt", "atv", "kanal d"),
+            "IN" to listOf("الهند", "هندي", "india", "indian", "star plus", "zee tv", "colors"),
+            "CA" to listOf("كندا", "canada", "canadian", "cbc canada"),
+            "RU" to listOf("روسيا", "روسي", "russia", "russian", "rt ", "rtr"),
+            "CN" to listOf("الصين", "صيني", "china", "chinese", "cctv"),
+            "NL" to listOf("هولندا", "netherlands", "dutch", "npo"),
+            "BE" to listOf("بلجيكا", "belgium", "belgian", "rtbf", "vtm"),
+            "CH" to listOf("سويسرا", "switzerland", "swiss", "srf"),
+            "PT" to listOf("البرتغال", "portugal", "portuguese", "rtp"),
+            "JP" to listOf("اليابان", "japan", "japanese", "nhk"),
+            "KR" to listOf("كوريا", "korea", "korean", "kbs", "sbs korea"),
+            "AU" to listOf("أستراليا", "استراليا", "australia", "australian", "abc australia")
+        )
+        return aliases.firstOrNull { (_, words) -> words.any { text.contains(it) } }?.first.orEmpty()
+    }
+
+    private fun normalizeImportedCountry(value: String): String {
+        val v = value.trim().uppercase(Locale.ROOT)
+        if (v.matches(Regex("[A-Z]{2}"))) return v
+        val names = mapOf(
+            "ALGERIA" to "DZ", "DZ" to "DZ", "EGYPT" to "EG", "MOROCCO" to "MA",
+            "TUNISIA" to "TN", "LIBYA" to "LY", "SAUDI ARABIA" to "SA", "QATAR" to "QA",
+            "UNITED ARAB EMIRATES" to "AE", "UAE" to "AE", "KUWAIT" to "KW", "BAHRAIN" to "BH",
+            "OMAN" to "OM", "IRAQ" to "IQ", "JORDAN" to "JO", "LEBANON" to "LB",
+            "PALESTINE" to "PS", "SYRIA" to "SY", "YEMEN" to "YE", "SUDAN" to "SD",
+            "FRANCE" to "FR", "UNITED KINGDOM" to "GB", "UK" to "GB", "GREAT BRITAIN" to "GB",
+            "UNITED STATES" to "US", "USA" to "US", "GERMANY" to "DE", "SPAIN" to "ES",
+            "ITALY" to "IT", "TURKEY" to "TR", "INDIA" to "IN", "CANADA" to "CA",
+            "RUSSIA" to "RU", "CHINA" to "CN", "NETHERLANDS" to "NL", "BELGIUM" to "BE",
+            "SWITZERLAND" to "CH", "PORTUGAL" to "PT", "JAPAN" to "JP", "SOUTH KOREA" to "KR",
+            "AUSTRALIA" to "AU"
+        )
+        return names[v].orEmpty()
+    }
+
+    private fun importedCountryInfo(code: String): Pair<String, String> {
+        val countries = mapOf(
+            "DZ" to "الجزائر", "EG" to "مصر", "MA" to "المغرب", "TN" to "تونس",
+            "LY" to "ليبيا", "SA" to "السعودية", "QA" to "قطر", "AE" to "الإمارات",
+            "KW" to "الكويت", "BH" to "البحرين", "OM" to "عُمان", "IQ" to "العراق",
+            "JO" to "الأردن", "LB" to "لبنان", "PS" to "فلسطين", "SY" to "سوريا",
+            "YE" to "اليمن", "SD" to "السودان", "FR" to "فرنسا", "GB" to "المملكة المتحدة",
+            "US" to "الولايات المتحدة", "DE" to "ألمانيا", "ES" to "إسبانيا", "IT" to "إيطاليا",
+            "TR" to "تركيا", "IN" to "الهند", "CA" to "كندا", "RU" to "روسيا", "CN" to "الصين",
+            "NL" to "هولندا", "BE" to "بلجيكا", "CH" to "سويسرا", "PT" to "البرتغال",
+            "JP" to "اليابان", "KR" to "كوريا الجنوبية", "AU" to "أستراليا"
+        )
+        if (code.isBlank()) return "غير محدد" to "unknown"
+        val arab = setOf("DZ","EG","MA","TN","LY","SA","QA","AE","KW","BH","OM","IQ","JO","LB","PS","SY","YE","SD","MR","SO","DJ","KM")
+        return (countries[code] ?: code) to if (code in arab) "arab" else "foreign"
+    }
+
+    private fun countryFlagEmoji(code: String): String {
+        if (code.length != 2) return ""
+        val upper = code.uppercase(Locale.ROOT)
+        return String(Character.toChars(0x1F1E6 + upper[0] - 'A')) +
+            String(Character.toChars(0x1F1E6 + upper[1] - 'A'))
+    }
+
     private fun parseM3u(raw: String): List<JSONObject> {
         val out = mutableListOf<JSONObject>()
         var name = ""
         var logo = ""
         var group = ""
+        var country = ""
         val logoPattern = Regex("tvg-logo=\"([^\"]*)\"")
         val groupPattern = Regex("group-title=\"([^\"]*)\"")
+        val countryPattern = Regex("(?:tvg-country|country|countryCode)=\"([^\"]*)\"", RegexOption.IGNORE_CASE)
         for (line0 in raw.lineSequence()) {
             if (out.size >= 15000) break
             val line = line0.trim()
@@ -961,14 +1074,15 @@ class AdminActivity : Activity() {
                 name = line.substringAfterLast(',').trim().ifBlank { "قناة مستوردة" }
                 logo = logoPattern.find(line)?.groupValues?.getOrNull(1).orEmpty()
                 group = groupPattern.find(line)?.groupValues?.getOrNull(1).orEmpty()
+                country = countryPattern.find(line)?.groupValues?.getOrNull(1).orEmpty()
             } else if (!line.startsWith("#") && safe(line)) {
                 val parts = if (line.contains('|')) line.split('|', limit = 2) else emptyList()
                 val channelName = if (parts.isNotEmpty()) parts[0].trim() else name.ifBlank { "قناة مستوردة" }
                 val stream = if (parts.isNotEmpty()) parts[1].trim() else line
                 if (safe(stream)) out += JSONObject().put("id", "import-${System.currentTimeMillis()}-${out.size}")
                     .put("name", channelName).put("url", stream).put("logo", logo).put("referer", "")
-                    .put("cc", "").put("priv", false).put("group", group)
-                name = ""; logo = ""; group = ""
+                    .put("cc", country).put("priv", false).put("group", group)
+                name = ""; logo = ""; group = ""; country = ""
             }
         }
         return out
