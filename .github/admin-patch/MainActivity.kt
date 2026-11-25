@@ -194,10 +194,10 @@ class MainActivity : AppCompatActivity() {
             setPadding(dp(24), dp(34), dp(24), dp(28))
             background = GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
-                intArrayOf(Color.rgb(48, 39, 20), Color.rgb(22, 22, 20), Color.rgb(8, 9, 11))
+                intArrayOf(Color.rgb(12, 42, 68), Color.rgb(12, 24, 43), Color.rgb(7, 15, 29))
             ).apply {
                 cornerRadius = dp(26).toFloat()
-                setStroke(dp(1), Color.rgb(151, 119, 54))
+                setStroke(dp(1), Color.rgb(53, 214, 242))
             }
             elevation = dp(8).toFloat()
         }
@@ -209,11 +209,11 @@ class MainActivity : AppCompatActivity() {
             setTextColor(Color.WHITE)
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
-                setColor(Color.rgb(205, 164, 80))
-                setStroke(dp(3), Color.rgb(255, 226, 160))
+                setColor(Color.rgb(35, 174, 218))
+                setStroke(dp(3), Color.rgb(126, 235, 255))
             }
         }
-        panel.addView(mark, LinearLayout.LayoutParams(dp(82), dp(82)))
+        panel.addView(mark, LinearLayout.LayoutParams(dp(100), dp(100)))
 
         fun addWelcomeText(value: String, size: Float, color: Int, bold: Boolean, top: Int) {
             val label = TextView(this).apply {
@@ -228,7 +228,7 @@ class MainActivity : AppCompatActivity() {
             ).apply { topMargin = dp(top) })
         }
         addWelcomeText("RAHMANI", 29f, Color.WHITE, true, 17)
-        addWelcomeText("مرحباً بك في عالم الترفيه", 19f, Color.rgb(238, 207, 139), true, 9)
+        addWelcomeText("مرحباً بك في عالم الترفيه", 19f, Color.rgb(126, 235, 255), true, 9)
         addWelcomeText("قنوات مباشرة • أفلام • مسلسلات • رياضة", 13f, Color.rgb(218, 224, 238), false, 12)
         addWelcomeText("كل ما تحب مشاهدته، في مكان واحد", 12f, Color.rgb(169, 182, 204), false, 8)
 
@@ -256,7 +256,7 @@ class MainActivity : AppCompatActivity() {
             isAllCaps = false
             textSize = 15f
             setTextColor(Color.WHITE)
-            backgroundTintList = android.content.res.ColorStateList.valueOf(Color.rgb(205, 164, 80))
+            backgroundTintList = android.content.res.ColorStateList.valueOf(Color.rgb(35, 174, 218))
             setOnClickListener {
                 finishWelcome()
                 channelRecycler.smoothScrollToPosition(0)
@@ -270,7 +270,7 @@ class MainActivity : AppCompatActivity() {
             text = "استكشف التطبيق"
             textSize = 13f
             gravity = Gravity.CENTER
-            setTextColor(Color.rgb(238, 207, 139))
+            setTextColor(Color.rgb(126, 235, 255))
             setPadding(dp(12), dp(14), dp(12), dp(8))
             setOnClickListener { finishWelcome() }
         }
@@ -311,7 +311,7 @@ class MainActivity : AppCompatActivity() {
                 intArrayOf(Color.rgb(24, 28, 40), Color.rgb(9, 13, 22), Color.rgb(8, 10, 16))
             ).apply {
                 setCornerRadii(floatArrayOf(dp(24).toFloat(), dp(24).toFloat(), 0f, 0f, 0f, 0f, dp(24).toFloat(), dp(24).toFloat()))
-                setStroke(dp(1), Color.rgb(91, 77, 57))
+                setStroke(dp(1), Color.rgb(65, 91, 133))
             }
             elevation = dp(18).toFloat()
         }
@@ -337,7 +337,7 @@ class MainActivity : AppCompatActivity() {
             text = "RAHMANI TV"
             textSize = 23f
             setTypeface(typeface, Typeface.BOLD)
-            setTextColor(Color.rgb(224, 190, 126))
+            setTextColor(Color.rgb(126, 235, 255))
             gravity = Gravity.CENTER_VERTICAL
             letterSpacing = 0.05f
         }
