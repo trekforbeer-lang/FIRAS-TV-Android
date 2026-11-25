@@ -39,7 +39,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="RAHMANI TV"
-                android:textColor="#E50914"
+                android:textColor="#D9B45B"
                 android:textSize="25sp"
                 android:textStyle="bold|italic"
                 android:letterSpacing="0.06"
@@ -61,7 +61,7 @@
             android:padding="0dp"
             android:text="⚙"
             android:textSize="17sp"
-            android:textColor="#DDF7FF"
+            android:textColor="#FFFFFF"
             android:background="@drawable/rahmani_action_button"
             android:backgroundTint="@null"
             android:contentDescription="لوحة الإدارة"
@@ -120,7 +120,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="RAHMANI TV  /  PREMIUM STREAMING"
-                        android:textColor="#E50914"
+                        android:textColor="#D9B45B"
                         android:textStyle="bold"
                         android:textSize="9sp"
                         android:letterSpacing="0.12"
@@ -270,7 +270,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="RAHMANI SPORTS"
-                        android:textColor="#E50914"
+                        android:textColor="#D9B45B"
                         android:textStyle="bold"
                         android:textSize="9sp"
                         android:letterSpacing="0.08"/>
@@ -321,7 +321,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="كل الأقسام"
-                    android:textColor="#A0AEC2"
+                    android:textColor="#A7A7A7"
                     android:textSize="10sp"/>
             </LinearLayout>
 
@@ -351,7 +351,7 @@
                 android:paddingStart="14dp"
                 android:paddingEnd="14dp"
                 android:paddingTop="18dp"
-                android:paddingBottom="9dp">
+                android:paddingBottom="10dp">
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -362,52 +362,37 @@
                         android:layout_height="wrap_content"
                         android:text="القنوات المباشرة"
                         android:textColor="#FFFFFF"
-                        android:textSize="17sp"
+                        android:textSize="18sp"
                         android:textStyle="bold"/>
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="3dp"
-                        android:text="اختر قناة وابدأ المشاهدة"
-                        android:textColor="#9BAFC5"
+                        android:text="اختر التصنيف ثم القناة للمشاهدة"
+                        android:textColor="#A7A7A7"
                         android:textSize="10sp"/>
                 </LinearLayout>
-                <Button
-                    android:id="@+id/countryPickerButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:minHeight="36dp"
-                    android:layout_marginEnd="8dp"
-                    android:paddingStart="10dp"
-                    android:paddingEnd="10dp"
-                    android:text="الدول"
-                    android:textAllCaps="false"
-                    android:textSize="10sp"
-                    android:textColor="#FFFFFF"
-                    android:background="@drawable/rahmani_action_button"
-                    android:backgroundTint="@null"
-                    android:stateListAnimator="@null"/>
                 <TextView
                     android:id="@+id/channelCount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="8dp"
                     android:text="0 قناة"
-                    android:textColor="#E50914"
+                    android:textColor="#D9B45B"
                     android:textStyle="bold"
-                    android:textSize="10sp"/>
+                    android:textSize="11sp"/>
                 <Button
-                    android:id="@+id/restoreChannelsButton"
+                    android:id="@+id/countryPickerButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="40dp"
-                    android:minHeight="40dp"
-                    android:paddingStart="10dp"
-                    android:paddingEnd="10dp"
-                    android:text="استعادة القنوات"
+                    android:layout_height="38dp"
+                    android:minHeight="38dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="الدول"
                     android:textAllCaps="false"
-                    android:textSize="11sp"
+                    android:textSize="10sp"
                     android:textColor="#FFFFFF"
-                    android:background="@drawable/rahmani_primary_button"
+                    android:background="@drawable/rahmani_action_button"
                     android:backgroundTint="@null"
                     android:stateListAnimator="@null"/>
             </LinearLayout>
@@ -418,30 +403,27 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"
                 android:layout_marginEnd="12dp"
-                android:layout_marginBottom="12dp"
+                android:layout_marginBottom="10dp"
                 android:orientation="vertical"
                 android:padding="14dp"
                 android:background="@drawable/rahmani_panel_bg"
                 android:visibility="gone">
-
                 <TextView
                     android:id="@+id/restoreStatusTitle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="استعادة القنوات"
-                    android:textColor="#E50914"
+                    android:textColor="#D9B45B"
                     android:textSize="13sp"
                     android:textStyle="bold"/>
-
                 <TextView
                     android:id="@+id/restoreStatusDetail"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
                     android:text="سيظهر هنا تقدّم الاستعادة."
-                    android:textColor="#B7C9D9"
+                    android:textColor="#B8B8B8"
                     android:textSize="11sp"/>
-
                 <ProgressBar
                     android:id="@+id/restoreStatusProgress"
                     style="?android:attr/progressBarStyleHorizontal"
@@ -449,35 +431,97 @@
                     android:layout_height="4dp"
                     android:layout_marginTop="12dp"
                     android:indeterminate="true"
-                    android:indeterminateTint="#E50914"
-                    android:progressTint="#E50914"
+                    android:indeterminateTint="#D9B45B"
+                    android:progressTint="#D9B45B"
                     android:progressBackgroundTint="#303030"/>
+                <Button
+                    android:id="@+id/restoreChannelsButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:minHeight="40dp"
+                    android:layout_marginTop="8dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="استعادة القنوات"
+                    android:textAllCaps="false"
+                    android:textSize="11sp"
+                    android:textColor="#111111"
+                    android:background="@drawable/rahmani_primary_button"
+                    android:backgroundTint="@null"
+                    android:stateListAnimator="@null"/>
             </LinearLayout>
 
-            <FrameLayout
-                android:id="@+id/channelListContainer"
+            <LinearLayout
+                android:id="@+id/channelBrowseLayout"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="230dp">
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/list"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:nestedScrollingEnabled="false"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="8dp"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="12dp"
-                    android:clipToPadding="false"/>
-                <TextView
-                    android:id="@+id/empty"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:text="لا توجد قنوات في هذا القسم حالياً"
-                    android:textColor="#B8B8B8"
-                    android:visibility="gone"/>
-            </FrameLayout>
+                android:layout_height="360dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:orientation="horizontal"
+                android:gravity="top"
+                android:background="@drawable/rahmani_panel_bg"
+                android:padding="8dp">
+
+                <LinearLayout
+                    android:id="@+id/categoryRail"
+                    android:layout_width="112dp"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:padding="6dp"
+                    android:background="#151515">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="34dp"
+                        android:gravity="center"
+                        android:text="التصنيفات"
+                        android:textColor="#D9B45B"
+                        android:textStyle="bold"
+                        android:textSize="12sp"/>
+                    <ScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:scrollbars="none">
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/chips"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:paddingTop="4dp"
+                            android:paddingBottom="6dp"
+                            app:singleLine="false"
+                            app:singleSelection="true"
+                            app:selectionRequired="true"
+                            app:chipSpacingVertical="7dp"/>
+                    </ScrollView>
+                </LinearLayout>
+
+                <FrameLayout
+                    android:id="@+id/channelListContainer"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:minHeight="230dp">
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/list"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:nestedScrollingEnabled="true"
+                        android:paddingStart="6dp"
+                        android:paddingEnd="6dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="8dp"
+                        android:clipToPadding="false"/>
+                    <TextView
+                        android:id="@+id/empty"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="لا توجد قنوات في هذا القسم حالياً"
+                        android:textColor="#B8B8B8"
+                        android:visibility="gone"/>
+                </FrameLayout>
+            </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
