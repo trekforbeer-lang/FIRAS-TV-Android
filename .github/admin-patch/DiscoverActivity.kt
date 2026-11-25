@@ -194,6 +194,7 @@ class DiscoverActivity : AppCompatActivity() {
             .filter { selectedCategory == "الكل" || it.category == selectedCategory }
             .filter { query.isBlank() || it.channel.name.contains(query, true) || it.category.contains(query, true) }
             .map { it.channel }
+            .distinctBy { it.id }
             .toList()
         adapter.submitList(result)
         countView.text = "${result.size} قناة"
