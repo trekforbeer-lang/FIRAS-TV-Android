@@ -441,7 +441,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.homeHeroSection)?.visibility = if (showHero) View.VISIBLE else View.GONE
         findViewById<View>(R.id.homeSportsSection)?.visibility = if (showSports) View.VISIBLE else View.GONE
         findViewById<View>(R.id.homeChannelsSection)?.visibility = if (showChannels) View.VISIBLE else View.GONE
-        (findViewById<View>(R.id.chips)?.parent as? View)?.visibility = if (showChannels) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.categoryRail)?.visibility = if (showChannels) View.VISIBLE else View.GONE
         findViewById<View>(R.id.channelListSectionHeader)?.visibility = if (showChannels) View.VISIBLE else View.GONE
         findViewById<View>(R.id.channelListContainer)?.visibility = if (showChannels) View.VISIBLE else View.GONE
         findViewById<View>(R.id.search)?.visibility = if (showSearch) View.VISIBLE else View.GONE
