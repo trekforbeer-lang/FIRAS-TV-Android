@@ -56,6 +56,16 @@ class RestoreChannelsWorker(context: Context, params: WorkerParameters) : Worker
         }
     }
 
+    private fun extractM3uAttribute(line: String, name: String): String {
+        val pattern = Regex("""(?i)(?:^|[\\s,])${Regex.escape(name)}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s,]+))""")
+        val match = pattern.find(line) ?: return ""
+        return (1..3).map { match.groupValues[it] }
+            .firstOrNull { it.isNotBlank() }
+            ?.replace("&amp;", "&", ignoreCase = true)
+            ?.trim()
+            .orEmpty()
+    }
+
     override fun doWork(): Result {
         val prefs = applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val batch = inputData.getInt(KEY_BATCH, 0)
@@ -115,7 +125,7 @@ class RestoreChannelsWorker(context: Context, params: WorkerParameters) : Worker
                             val value = line.trim()
                             if (value.startsWith("#EXTINF", true)) {
                                 name = value.substringAfterLast(',').trim()
-                                logo = Regex("""tvg-logo="([^"]*)"""").find(value)?.groupValues?.getOrNull(1).orEmpty()
+                                logo = extractM3uAttribute(value, "tvg-logo").take(2048)
                             } else if (value.startsWith("http", true) && name.isNotBlank()) {
                                 if (value !in known && added < 100) {
                                     items.put(JSONObject()
