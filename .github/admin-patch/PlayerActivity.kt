@@ -57,7 +57,8 @@ private data class DisplayChannel(
     val legacyHeaders: Map<String, String>,
     val logo: String,
     val advanced: StreamConfig?,
-    val qualityUrls: Map<String, String> = emptyMap()
+    val qualityUrls: Map<String, String> = emptyMap(),
+    val defaultUrl: String = legacyUrl
 )
 
 class PlayerActivity : AppCompatActivity() {
@@ -400,7 +401,7 @@ class PlayerActivity : AppCompatActivity() {
             return
         }
         val entries = mutableListOf<Pair<String, String>>()
-        if (isHttpUrl(channel.legacyUrl)) entries += "الرابط الأساسي" to channel.legacyUrl
+        if (isHttpUrl(channel.defaultUrl)) entries += "الرابط الأساسي" to channel.defaultUrl
         channel.qualityUrls.forEach { (label, url) -> if (isHttpUrl(url)) entries += label to url }
         if (entries.isEmpty()) {
             val active = player
@@ -424,28 +425,33 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun play(channel: DisplayChannel) {
+        val preferred = playerPrefs.getString("quality_${channel.id}", "الرابط الأساسي").orEmpty()
+        val preferredUrl = if (preferred == "الرابط الأساسي") channel.defaultUrl else channel.qualityUrls[preferred].orEmpty()
+        val playbackChannel = if (isHttpUrl(preferredUrl) && preferredUrl != channel.legacyUrl) {
+            channel.copy(legacyUrl = preferredUrl, advanced = if (preferred == "الرابط الأساسي") channel.advanced else null)
+        } else channel
         recoveryTask?.let(handler::removeCallbacks)
         recoveryTask = null
-        current = channel
-        currentAdvanced = channel.advanced
+        current = playbackChannel
+        currentAdvanced = playbackChannel.advanced
         resolving = false
         recoveryAttempts = 0
         currentUrlIndex = 0
         currentUrls = emptyList()
         showLoading(true)
-        title.text = channel.name
-        ensurePlayer(channel)
+        title.text = playbackChannel.name
+        ensurePlayer(playbackChannel)
 
         if (currentAdvanced == null) {
-            if (!isHttpUrl(channel.legacyUrl)) {
+            if (!isHttpUrl(playbackChannel.legacyUrl)) {
                 status.text = "رابط القناة غير صالح. تحقق من لوحة الإدارة."
                 return
             }
-            currentUrls = listOf(channel.legacyUrl)
-            playUrl(channel.legacyUrl)
+            currentUrls = listOf(playbackChannel.legacyUrl)
+            playUrl(playbackChannel.legacyUrl)
         } else {
             status.text = "جارٍ تجهيز القناة..."
-            resolveAndPlay(channel, keepPosition = false)
+            resolveAndPlay(playbackChannel, keepPosition = false)
         }
     }
 
