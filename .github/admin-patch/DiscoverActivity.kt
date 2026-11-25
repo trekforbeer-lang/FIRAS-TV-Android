@@ -169,7 +169,7 @@ class DiscoverActivity : AppCompatActivity() {
                 setPadding(dp(15), 0, dp(15), 0)
                 background = GradientDrawable().apply {
                     cornerRadius = dp(18).toFloat()
-                    setColor(if (selected) Color.rgb(20, 105, 143) else Color.rgb(31, 32, 43))
+                    setColor(if (selected) Color.rgb(229, 9, 20) else Color.rgb(31, 32, 43))
                     if (selected) setStroke(dp(1), Color.rgb(229, 9, 20))
                 }
                 isClickable = true
