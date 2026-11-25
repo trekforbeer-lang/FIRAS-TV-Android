@@ -557,8 +557,14 @@ class MainActivity : AppCompatActivity() {
         group.setOnCheckedStateChangeListener { g, ids ->
             val tag = ids.firstOrNull()?.let { g.findViewById<Chip>(it)?.tag as? String }.orEmpty()
             when (tag) {
-                "__region_arab__" -> { selectedRegion = "arab"; selected = "" }
-                "__region_foreign__" -> { selectedRegion = "foreign"; selected = "" }
+                "__region_arab__" -> {
+                    selectedRegion = "arab"; selected = ""; selectedCountryCode = ""
+                    homePrefs.edit().putString("selected_country_code", "").apply()
+                }
+                "__region_foreign__" -> {
+                    selectedRegion = "foreign"; selected = ""; selectedCountryCode = ""
+                    homePrefs.edit().putString("selected_country_code", "").apply()
+                }
                 "" -> { selectedRegion = ""; selectedCountryCode = ""; homePrefs.edit().putString("selected_country_code", "").apply(); selected = "" }
                 else -> selected = tag
             }
