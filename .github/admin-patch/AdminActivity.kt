@@ -642,6 +642,13 @@ class AdminActivity : Activity() {
         val name = field("اسم القناة", old?.optString("name").orEmpty())
         val url = field("رابط البث (الصق رابط M3U8 أو MP4)", old?.optString("url").orEmpty())
         form.addView(action("لصق الرابط من الحافظة") { pasteInto(url) })
+        val qualityUrls = linkedMapOf(
+            "SD" to field("رابط جودة SD", old?.optJSONObject("qualityUrls")?.optString("SD").orEmpty()),
+            "HD" to field("رابط جودة HD", old?.optJSONObject("qualityUrls")?.optString("HD").orEmpty()),
+            "FHD" to field("رابط جودة FHD", old?.optJSONObject("qualityUrls")?.optString("FHD").orEmpty()),
+            "4K" to field("رابط جودة 4K", old?.optJSONObject("qualityUrls")?.optString("4K").orEmpty())
+        )
+        form.addView(TextView(this).apply { text = "روابط مستقلة لكل جودة — اترك غير المتوفر فارغاً" })
         val logo = field("رابط الشعار أو مسار صورة محفوظة", old?.optString("logo").orEmpty())
         val logoActions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         logoActions.addView(action("اختيار شعار من الهاتف") {
@@ -670,7 +677,7 @@ class AdminActivity : Activity() {
                 val channelName = name.text.toString().trim()
                 val stream = url.text.toString().trim()
                 val logoUrl = logo.text.toString().trim()
-                if (channelName.isBlank() || (stream.isNotBlank() && !safe(stream)) || (logoUrl.startsWith("http", true) && !safe(logoUrl))) {
+                if (channelName.isBlank() || (stream.isNotBlank() && !safe(stream)) || qualityUrls.values.any { it.text.toString().trim().let { value -> value.isNotBlank() && !safe(value) } } || (logoUrl.startsWith("http", true) && !safe(logoUrl))) {
                     Toast.makeText(this, "تحقق من الاسم والروابط", Toast.LENGTH_LONG).show(); return@setPositiveButton
                 }
                 val altValues = alts.text.toString().lineSequence().map { it.trim() }.filter { it.isNotBlank() }.toList()
@@ -685,7 +692,12 @@ class AdminActivity : Activity() {
                 val destinationIndex = targetIndex ?: return@setPositiveButton
                 val item = old ?: JSONObject().put("id", "admin-${System.currentTimeMillis()}")
                 if (item.optString("id").isBlank()) item.put("id", "channel-${System.currentTimeMillis()}")
+                val qualityObject = JSONObject()
+                qualityUrls.forEach { (label, edit) ->
+                    edit.text.toString().trim().takeIf { it.isNotBlank() }?.let { qualityObject.put(label, it) }
+                }
                 item.put("name", channelName).put("url", stream).put("logo", logoUrl)
+                    .put("qualityUrls", qualityObject)
                     .put("referer", referer.text.toString().trim())
                     .put("userAgent", userAgent.text.toString().trim())
                     .put("cc", country.text.toString().trim().uppercase())
