@@ -382,6 +382,21 @@
                     android:textStyle="bold"
                     android:textSize="11sp"/>
                 <Button
+                    android:id="@+id/restoreChannelsButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:minHeight="38dp"
+                    android:layout_marginEnd="7dp"
+                    android:paddingStart="9dp"
+                    android:paddingEnd="9dp"
+                    android:text="استعادة"
+                    android:textAllCaps="false"
+                    android:textSize="10sp"
+                    android:textColor="#111111"
+                    android:background="@drawable/rahmani_primary_button"
+                    android:backgroundTint="@null"
+                    android:stateListAnimator="@null"/>
+                <Button
                     android:id="@+id/countryPickerButton"
                     android:layout_width="wrap_content"
                     android:layout_height="38dp"
@@ -434,21 +449,6 @@
                     android:indeterminateTint="#D9B45B"
                     android:progressTint="#D9B45B"
                     android:progressBackgroundTint="#303030"/>
-                <Button
-                    android:id="@+id/restoreChannelsButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="40dp"
-                    android:minHeight="40dp"
-                    android:layout_marginTop="8dp"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp"
-                    android:text="استعادة القنوات"
-                    android:textAllCaps="false"
-                    android:textSize="11sp"
-                    android:textColor="#111111"
-                    android:background="@drawable/rahmani_primary_button"
-                    android:backgroundTint="@null"
-                    android:stateListAnimator="@null"/>
             </LinearLayout>
 
             <LinearLayout
