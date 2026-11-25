@@ -647,7 +647,14 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun countryDisplayName(code: String, fallback: String): String {\n        val normalized = code.trim().uppercase(Locale.ROOT)\n        if (normalized.length != 2) return fallback\n        val display = Locale("", normalized).getDisplayCountry(Locale("ar"))\n        return display.takeIf { it.isNotBlank() && it != normalized } ?: fallback\n    }\n\n    private fun countryFlag(code: String): String {
+    private fun countryDisplayName(code: String, fallback: String): String {
+        val normalized = code.trim().uppercase(Locale.ROOT)
+        if (normalized.length != 2) return fallback
+        val display = Locale("", normalized).getDisplayCountry(Locale("ar"))
+        return display.takeIf { it.isNotBlank() && it != normalized } ?: fallback
+    }
+
+    private fun countryFlag(code: String): String {
         val normalized = code.trim().uppercase()
         if (normalized.length != 2 || normalized.any { it !in 'A'..'Z' }) return "🌐"
         return String(Character.toChars(0x1F1E6 + (normalized[0] - 'A'))) +
