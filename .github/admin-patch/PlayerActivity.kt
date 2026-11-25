@@ -130,8 +130,8 @@ class PlayerActivity : AppCompatActivity() {
         list = findViewById(R.id.channelList)
         playPause = findViewById(R.id.playPauseButton)
         fullscreen = findViewById(R.id.fullscreenButton)
-        zoom.text = "تكبير"
-        fullscreen.text = "⤢"
+        zoom.text = if (displayMode == 1) "ملء الشاشة" else "ملاءمة"
+        fullscreen.text = "⤡"
         retry = findViewById(R.id.retryButton)
         server = findViewById(R.id.serverButton)
         quality = findViewById(R.id.qualityButton)
