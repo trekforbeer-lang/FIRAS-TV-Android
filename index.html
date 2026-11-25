@@ -574,7 +574,7 @@ function drawNav(){
     b.onclick=function(){go(it.v)};nav.appendChild(b);
   });
 }
-function go(v){view=v;$('#q').value='';drawNav();render()}
+function go(v){clearTimeout(searchTimer);view=v;$('#q').value='';drawNav();render()}
 function inCat(c,id){return c.grp===id||(!c.grp&&c.cat===id)}
 function baseList(){
   if(view.t==='fav')return favs.map(byId).filter(Boolean);
