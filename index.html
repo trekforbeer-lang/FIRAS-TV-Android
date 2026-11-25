@@ -471,13 +471,25 @@ function probe(url){
     }).catch(function(){fin(false)});
   });
 }
-var checking=false;
+var checking=false,pendingChecks=[];
 function checkChannels(list,quiet){
-  list=list.filter(function(c){return c.url});
-  if(!list.length||checking)return;
+  list=list.filter(function(c){return c&&c.url});
+  if(!list.length)return;
+  if(checking){
+    list.forEach(function(c){
+      if(!pendingChecks.some(function(x){return x.id===c.id}))pendingChecks.push(c);
+    });
+    return;
+  }
   checking=true;
   var i=0,ok=0,bad=0,act=0,tot=list.length;
-  function finish(){checking=false;save();toast('انتهى الفحص: ✔ تعمل '+ok+' · ✖ لا تعمل '+bad);renderPage(true);if(admin)drawAdm()}
+  function finish(){
+    checking=false;save();toast('انتهى الفحص: ✔ تعمل '+ok+' · ✖ لا تعمل '+bad);renderPage(true);if(admin)drawAdm();
+    if(pendingChecks.length){
+      var queued=pendingChecks.splice(0,pendingChecks.length);
+      setTimeout(function(){checkChannels(queued,quiet)},0);
+    }
+  }
   function next(){
     while(act<6&&i<tot){
       (function(c){
