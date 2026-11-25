@@ -570,8 +570,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refresh() {
-        val list = sections.filter { (selectedRegion.isEmpty() || it.region == selectedRegion) && (selectedCountryCode.isEmpty() || it.countryCode.equals(selectedCountryCode, true)) && (selected.isEmpty() || it.title == selected) }.flatMap { it.items }
-            .filter { query.isEmpty() || it.name.contains(query, ignoreCase = true) }
+        val normalizedQuery = query.trim()
+        val list = sections
+            .filter { section ->
+                (selectedRegion.isEmpty() || section.region == selectedRegion) &&
+                    (selectedCountryCode.isEmpty() || section.countryCode.equals(selectedCountryCode, true)) &&
+                    (selected.isEmpty() || section.title == selected)
+            }
+            .flatMap { section ->
+                section.items.filter { channel ->
+                    normalizedQuery.isEmpty() ||
+                        channel.name.contains(normalizedQuery, ignoreCase = true) ||
+                        section.title.contains(normalizedQuery, ignoreCase = true)
+                }
+            }
+            .distinctBy { it.id }
             .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name.trim() })
         adapter.submitList(list)
         findViewById<TextView>(R.id.channelCount)?.text = "${list.size} قناة"
