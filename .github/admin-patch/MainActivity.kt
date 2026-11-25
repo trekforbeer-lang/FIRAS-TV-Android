@@ -162,7 +162,7 @@ class MainActivity : AppCompatActivity() {
             findViewById<TextView>(id)?.let { item ->
                 val active = id == activeId
                 item.isSelected = active
-                item.setTextColor(if (active) Color.rgb(217, 180, 91) else Color.rgb(151, 151, 151))
+                item.setTextColor(if (active) Color.rgb(229, 9, 20) else Color.rgb(151, 151, 151))
                 item.alpha = if (active) 1f else 0.82f
             }
         }
