@@ -572,21 +572,72 @@ class MainActivity : AppCompatActivity() {
             .groupBy { it.countryCode.trim().uppercase() }
             .map { (code, groups) -> code to groups.first().title }
             .sortedBy { it.second.lowercase() }
-        val labels = arrayOf("كل الدول") + countries.map { (code, name) -> countryFlag(code) + "  " + name }
-        val selectedIndex = countries.indexOfFirst { it.first == selectedCountryCode } + 1
-        AlertDialog.Builder(this)
-            .setTitle("اختر الدولة")
-            .setSingleChoiceItems(labels, selectedIndex) { dialog, which ->
-                selectedCountryCode = if (which == 0) "" else countries[which - 1].first
-                homePrefs.edit().putString("selected_country_code", selectedCountryCode).apply()
-                selected = ""
-                selectedRegion = ""
-                rebuildChips(chips)
-                refresh()
-                dialog.dismiss()
+
+        val rows = (listOf("" to "كل الدول") + countries).toMutableList()
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(8), dp(20), dp(4))
+        }
+        val searchBox = EditText(this).apply {
+            hint = "ابحث عن دولة"
+            singleLine = true
+            setTextColor(Color.WHITE)
+            setHintTextColor(Color.rgb(155, 181, 200))
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+            background = GradientDrawable().apply {
+                setColor(Color.rgb(16, 34, 51))
+                cornerRadius = dp(12).toFloat()
+                setStroke(dp(1), Color.rgb(45, 105, 133))
             }
+        }
+        val listView = android.widget.ListView(this).apply {
+            divider = android.graphics.drawable.ColorDrawable(Color.rgb(35, 55, 73))
+            dividerHeight = dp(1)
+        }
+        container.addView(searchBox, LinearLayout.LayoutParams(-1, dp(48)))
+        container.addView(listView, LinearLayout.LayoutParams(-1, dp(360)))
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("اختر الدولة")
+            .setView(container)
             .setNegativeButton("إلغاء", null)
-            .show()
+            .create()
+
+        fun label(item: Pair<String, String>) =
+            if (item.first.isBlank()) item.second else countryFlag(item.first) + "  " + item.second
+
+        val countryAdapter = android.widget.ArrayAdapter(this, android.R.layout.simple_list_item_1, rows.map(::label))
+        listView.adapter = countryAdapter
+        listView.setOnItemClickListener { _, _, position, _ ->
+            val selectedRow = rows[position]
+            selectedCountryCode = selectedRow.first
+            homePrefs.edit().putString("selected_country_code", selectedCountryCode).apply()
+            selected = ""
+            selectedRegion = ""
+            rebuildChips(chips)
+            refresh()
+            dialog.dismiss()
+        }
+        searchBox.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                val needle = s?.toString()?.trim().orEmpty()
+                val filtered = rows.filter { it.second.contains(needle, true) || it.first.contains(needle, true) }
+                countryAdapter.clear()
+                countryAdapter.addAll(filtered.map(::label))
+                listView.setOnItemClickListener { _, _, position, _ ->
+                    val selectedRow = filtered[position]
+                    selectedCountryCode = selectedRow.first
+                    homePrefs.edit().putString("selected_country_code", selectedCountryCode).apply()
+                    selected = ""
+                    selectedRegion = ""
+                    rebuildChips(chips)
+                    refresh()
+                    dialog.dismiss()
+                }
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+        dialog.show()
     }
 
     private fun countryFlag(code: String): String {
