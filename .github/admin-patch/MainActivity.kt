@@ -141,9 +141,7 @@ class MainActivity : AppCompatActivity() {
             updateBottomNavigation(R.id.navAdmin)
             startActivity(Intent(this, MoreActivity::class.java))
         }
-        restoreButton.setOnClickListener { startManualChannelRestore() }
         findViewById<Button>(R.id.countryPickerButton).setOnClickListener { showCountryPicker() }
-        observeChannelRestore()
         refresh()
         CloudChannelSync.refreshPublic(applicationContext) { changed ->
             if (changed > 0 && !isFinishing && !isDestroyed) runOnUiThread {
