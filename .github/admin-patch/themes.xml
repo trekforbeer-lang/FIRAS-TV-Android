@@ -2,13 +2,13 @@
 <resources>
     <style name="Theme.Rahmani" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="materialButtonStyle">@style/RahmaniButton</item>
-        <item name="colorPrimary">@color/brand_red</item>
-        <item name="colorPrimaryVariant">@color/live_red</item>
+        <item name="colorPrimary">@color/brand_gold</item>
+        <item name="colorPrimaryVariant">@color/accent_green</item>
         <item name="colorOnPrimary">@color/text_primary</item>
-        <item name="colorSecondary">@color/brand_red</item>
-        <item name="colorSecondaryVariant">@color/live_red</item>
+        <item name="colorSecondary">@color/brand_gold</item>
+        <item name="colorSecondaryVariant">@color/accent_green</item>
         <item name="colorOnSecondary">@color/text_primary</item>
-        <item name="android:colorAccent">@color/brand_red</item>
+        <item name="android:colorAccent">@color/brand_gold</item>
         <item name="android:windowBackground">@color/bg_primary</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@color/bg_primary</item>
