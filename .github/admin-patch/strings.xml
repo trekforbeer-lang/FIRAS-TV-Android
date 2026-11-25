@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">RAHMANI TV</string>
-    <string name="app_tagline">عالم الترفيه</string>
+    <string name="app_tagline">RAHMANI TV · عالم الترفيه</string>
     <string name="nav_home">الرئيسية</string>
     <string name="nav_channels">القنوات</string>
     <string name="nav_discover">اكتشف</string>
