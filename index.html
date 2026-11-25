@@ -639,7 +639,7 @@ function row(c,list){
   r.appendChild(st);
   function activateRow(){if(list)curList=list;play(c)}
   r.onclick=activateRow;
-  r.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();activateRow()}};
+  r.onkeydown=function(e){if(e.target!==r)return;if(e.key==='Enter'||e.key===' '){e.preventDefault();activateRow()}};
   return r;
 }
 function toggleFav(c){var i=favs.indexOf(c.id);if(i>-1)favs.splice(i,1);else favs.push(c.id);sv('fr_fav',favs)}
