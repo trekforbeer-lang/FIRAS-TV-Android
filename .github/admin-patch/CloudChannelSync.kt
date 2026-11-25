@@ -55,6 +55,11 @@ object CloudChannelSync {
                             "updatedAt" to FieldValue.serverTimestamp()
                         )
                         putString(data, "logo", item.optString("logo"))
+                        item.optJSONObject("qualityUrls")?.let { quality ->
+                            val values = linkedMapOf<String, String>()
+                            listOf("SD", "HD", "FHD", "4K").forEach { label -> quality.optString(label).takeIf { it.isNotBlank() }?.let { values[label] = it } }
+                            if (values.isNotEmpty()) data["qualityUrls"] = values
+                        }
                         putString(data, "referer", item.optString("referer"))
                         putString(data, "userAgent", item.optString("userAgent"))
                         putString(data, "countryCode", item.optString("countryCode", item.optString("cc")))
@@ -200,6 +205,11 @@ object CloudChannelSync {
                         item.put("id", id).put("name", name).put("url", url).put("priv", false)
                         putJsonString(item, "region", data["region"])
                         putJsonString(item, "logo", data["logo"])
+                        (data["qualityUrls"] as? Map<*, *>)?.let { remote ->
+                            val quality = JSONObject()
+                            listOf("SD", "HD", "FHD", "4K").forEach { label -> (remote[label] as? String)?.takeIf { it.isNotBlank() }?.let { quality.put(label, it) } }
+                            if (quality.length() > 0) item.put("qualityUrls", quality)
+                        }
                         putJsonString(item, "referer", data["referer"])
                         putJsonString(item, "userAgent", data["userAgent"])
                         putJsonString(item, "cc", data["countryCode"])
