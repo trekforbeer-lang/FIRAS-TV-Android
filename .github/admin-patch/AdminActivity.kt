@@ -987,71 +987,77 @@ class AdminActivity : Activity() {
             .replace('_', ' ')
         val aliases = listOf(
             "DZ" to listOf("الجزائر", "جزائر", "algeria", "algerian", "entv", "canal algerie", "canal algérie", "echorouk", "الشروق", "النهار الجزائرية"),
-            "EG" to listOf("مصر", "مصري", "egypt", "egyptian", "mbc masr", "cbc", "dmc", "on tv", "الحياة", "النيل"),
-            "MA" to listOf("المغرب", "مغربي", "morocco", "moroccan", "2m", "medi1", "الرياضية المغربية"),
-            "TN" to listOf("تونس", "تونسي", "tunisia", "tunisian", "wataniya", "الحوار التونسي"),
+            "EG" to listOf("مصر", "مصري", "egypt", "egyptian", "الحياة", "النيل"),
+            "MA" to listOf("المغرب", "مغربي", "morocco", "moroccan", "الرياضية المغربية"),
+            "TN" to listOf("تونس", "تونسي", "tunisia", "tunisian", "الحوار التونسي"),
             "LY" to listOf("ليبيا", "ليبي", "libya", "libyan", "ليبيا الأحرار"),
-            "SA" to listOf("السعودية", "سعودي", "saudi", "ksa", "mbc", "روتانا", "العربية", "السعودية الأولى"),
+            "SA" to listOf("السعودية", "سعودي", "saudi", "السعودية الأولى"),
             "QA" to listOf("قطر", "قطري", "qatar", "qatari", "al jazeera", "الجزيرة", "bein", "بي ان"),
             "AE" to listOf("الإمارات", "اماراتي", "uae", "emirati", "abu dhabi", "دبي", "الشارقة"),
             "KW" to listOf("الكويت", "كويتي", "kuwait", "kuwaiti"),
             "BH" to listOf("البحرين", "بحريني", "bahrain", "bahraini"),
             "OM" to listOf("عمان", "عُمان", "oman", "omani"),
-            "IQ" to listOf("العراق", "عراقي", "iraq", "iraqi", "mbc iraq", "السومرية", "العراقية"),
+            "IQ" to listOf("العراق", "عراقي", "iraq", "iraqi", "السومرية", "العراقية"),
             "JO" to listOf("الأردن", "اردني", "jordan", "jordanian", "رؤيا"),
-            "LB" to listOf("لبنان", "لبناني", "lebanon", "lebanese", "lbc", "mtv lebanon", "الجديد"),
+            "LB" to listOf("لبنان", "لبناني", "lebanon", "lebanese", "الجديد"),
             "PS" to listOf("فلسطين", "فلسطيني", "palestine", "palestinian", "فلسطين اليوم"),
             "SY" to listOf("سوريا", "سوري", "syria", "syrian", "سما", "الإخبارية السورية"),
             "YE" to listOf("اليمن", "يمني", "yemen", "yemeni"),
             "SD" to listOf("السودان", "سوداني", "sudan", "sudanese"),
-            "FR" to listOf("فرنسا", "فرنسي", "france", "french", "france 24", "فرانس 24", "tf1", "m6"),
+            "FR" to listOf("فرنسا", "فرنسي", "france", "french", "france 24", "فرانس 24",),
             "GB" to listOf("بريطانيا", "المملكة المتحدة", "britain", "british", "united kingdom", "bbc", "itv", "sky news", "channel 4"),
             "US" to listOf("أمريكا", "الولايات المتحدة", "american", "usa", "united states", "cnn", "fox news", "abc news", "nbc", "cbs"),
-            "DE" to listOf("ألمانيا", "الماني", "germany", "german", "dw ", "deutsche welle", "zdf", "ard"),
-            "ES" to listOf("إسبانيا", "اسبانيا", "spain", "spanish", "rtve", "antena 3"),
-            "IT" to listOf("إيطاليا", "ايطاليا", "italy", "italian", "rai "),
-            "TR" to listOf("تركيا", "تركي", "turkey", "turkish", "trt", "atv", "kanal d"),
-            "IN" to listOf("الهند", "هندي", "india", "indian", "star plus", "zee tv", "colors"),
-            "CA" to listOf("كندا", "canada", "canadian", "cbc canada"),
-            "RU" to listOf("روسيا", "روسي", "russia", "russian", "rt ", "rtr"),
-            "CN" to listOf("الصين", "صيني", "china", "chinese", "cctv"),
-            "NL" to listOf("هولندا", "netherlands", "dutch", "npo"),
-            "BE" to listOf("بلجيكا", "belgium", "belgian", "rtbf", "vtm"),
-            "CH" to listOf("سويسرا", "switzerland", "swiss", "srf"),
-            "PT" to listOf("البرتغال", "portugal", "portuguese", "rtp"),
-            "JP" to listOf("اليابان", "japan", "japanese", "nhk"),
-            "KR" to listOf("كوريا", "korea", "korean", "kbs", "sbs korea"),
-            "AU" to listOf("أستراليا", "استراليا", "australia", "australian", "abc australia")
+            "DE" to listOf("ألمانيا", "الماني", "germany", "german",),
+            "ES" to listOf("إسبانيا", "اسبانيا", "spain", "spanish",),
+            "IT" to listOf("إيطاليا", "ايطاليا", "italy", "italian",),
+            "TR" to listOf("تركيا", "تركي", "turkey", "turkish",),
+            "IN" to listOf("الهند", "هندي", "india", "indian",),
+            "CA" to listOf("كندا", "canada", "canadian",),
+            "RU" to listOf("روسيا", "روسي", "russia", "russian",),
+            "CN" to listOf("الصين", "صيني", "china", "chinese",),
+            "NL" to listOf("هولندا", "netherlands", "dutch",),
+            "BE" to listOf("بلجيكا", "belgium", "belgian",),
+            "CH" to listOf("سويسرا", "switzerland", "swiss",),
+            "PT" to listOf("البرتغال", "portugal", "portuguese",),
+            "JP" to listOf("اليابان", "japan", "japanese",),
+            "KR" to listOf("كوريا", "korea", "korean",),
+            "AU" to listOf("أستراليا", "استراليا", "australia", "australian",)
         )
         return aliases.firstOrNull { (_, words) -> words.any { text.contains(it) } }?.first.orEmpty()
     }
 
     private fun normalizeImportedCountry(value: String): String {
-        val v = value.trim().uppercase(Locale.ROOT)
+        val v = value.trim()
+            .replace(Regex("[\\u064B-\\u065F\\u0670]"), "")
+            .replace("ـ", "")
+            .replace('أ', 'ا').replace('إ', 'ا').replace('آ', 'ا')
+            .replace('ى', 'ي')
+            .uppercase(Locale.ROOT)
+            .replace(Regex("\\s+"), " ")
         if (v.matches(Regex("[A-Z]{2}"))) return v
         val names = mapOf(
             "ALGERIA" to "DZ", "الجزائر" to "DZ", "DZ" to "DZ",
             "EGYPT" to "EG", "مصر" to "EG", "MOROCCO" to "MA", "المغرب" to "MA",
             "TUNISIA" to "TN", "تونس" to "TN", "LIBYA" to "LY", "ليبيا" to "LY",
             "SAUDI ARABIA" to "SA", "السعودية" to "SA", "QATAR" to "QA", "قطر" to "QA",
-            "UNITED ARAB EMIRATES" to "AE", "الإمارات" to "AE", "UAE" to "AE",
+            "UNITED ARAB EMIRATES" to "AE", "الامارات" to "AE", "UAE" to "AE",
             "KUWAIT" to "KW", "الكويت" to "KW", "BAHRAIN" to "BH", "البحرين" to "BH",
-            "OMAN" to "OM", "عمان" to "OM", "عُمان" to "OM", "IRAQ" to "IQ", "العراق" to "IQ",
-            "JORDAN" to "JO", "الأردن" to "JO", "LEBANON" to "LB", "لبنان" to "LB",
+            "OMAN" to "OM", "عمان" to "OM", "IRAQ" to "IQ", "العراق" to "IQ",
+            "JORDAN" to "JO", "الاردن" to "JO", "LEBANON" to "LB", "لبنان" to "LB",
             "PALESTINE" to "PS", "فلسطين" to "PS", "SYRIA" to "SY", "سوريا" to "SY",
             "YEMEN" to "YE", "اليمن" to "YE", "SUDAN" to "SD", "السودان" to "SD",
             "FRANCE" to "FR", "فرنسا" to "FR", "UNITED KINGDOM" to "GB", "UK" to "GB",
-            "GREAT BRITAIN" to "GB", "BRITAIN" to "GB", "بريطانيا" to "GB",
+            "GREAT BRITAIN" to "GB", "BRITAIN" to "GB", "بريطانيا" to "GB", "المملكة المتحدة" to "GB",
             "UNITED STATES" to "US", "UNITED STATES OF AMERICA" to "US", "USA" to "US",
-            "US" to "US", "أمريكا" to "US", "الولايات المتحدة" to "US",
-            "GERMANY" to "DE", "ألمانيا" to "DE", "SPAIN" to "ES", "إسبانيا" to "ES",
-            "ITALY" to "IT", "إيطاليا" to "IT", "TURKEY" to "TR", "تركيا" to "TR",
+            "US" to "US", "امريكا" to "US", "الولايات المتحدة" to "US",
+            "GERMANY" to "DE", "المانيا" to "DE", "SPAIN" to "ES", "اسبانيا" to "ES",
+            "ITALY" to "IT", "ايطاليا" to "IT", "TURKEY" to "TR", "تركيا" to "TR",
             "INDIA" to "IN", "الهند" to "IN", "CANADA" to "CA", "كندا" to "CA",
             "RUSSIA" to "RU", "روسيا" to "RU", "CHINA" to "CN", "الصين" to "CN",
             "NETHERLANDS" to "NL", "هولندا" to "NL", "BELGIUM" to "BE", "بلجيكا" to "BE",
             "SWITZERLAND" to "CH", "سويسرا" to "CH", "PORTUGAL" to "PT", "البرتغال" to "PT",
             "JAPAN" to "JP", "اليابان" to "JP", "SOUTH KOREA" to "KR", "كوريا الجنوبية" to "KR",
-            "AUSTRALIA" to "AU", "أستراليا" to "AU"
+            "AUSTRALIA" to "AU", "استراليا" to "AU"
         )
         return names[v].orEmpty()
     }
