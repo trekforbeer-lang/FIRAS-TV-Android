@@ -31,6 +31,7 @@ import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
     private var sections: List<Section> = emptyList()
@@ -550,7 +551,7 @@ class MainActivity : AppCompatActivity() {
         addChip("الكل", "", selected.isEmpty() && selectedRegion.isEmpty())
         addChip("الدول العربية", "__region_arab__", selectedRegion == "arab")
         addChip("الدول الأجنبية", "__region_foreign__", selectedRegion == "foreign")
-        sections.filter { selectedRegion.isEmpty() || it.region == selectedRegion }.forEach {
+        sections.filter { (selectedRegion.isEmpty() || it.region == selectedRegion) && (selectedCountryCode.isEmpty() || it.countryCode.equals(selectedCountryCode, true)) }.forEach {
             addChip(countryFlag(it.countryCode) + " " + it.title, it.title, selected == it.title)
         }
         group.setOnCheckedStateChangeListener { g, ids ->
@@ -558,7 +559,7 @@ class MainActivity : AppCompatActivity() {
             when (tag) {
                 "__region_arab__" -> { selectedRegion = "arab"; selected = "" }
                 "__region_foreign__" -> { selectedRegion = "foreign"; selected = "" }
-                "" -> { selectedRegion = ""; selected = "" }
+                "" -> { selectedRegion = ""; selectedCountryCode = ""; homePrefs.edit().putString("selected_country_code", "").apply(); selected = "" }
                 else -> selected = tag
             }
             rebuildChips(group)
@@ -570,8 +571,8 @@ class MainActivity : AppCompatActivity() {
         val countries = sections
             .filter { it.countryCode.isNotBlank() }
             .groupBy { it.countryCode.trim().uppercase() }
-            .map { (code, groups) -> code to groups.first().title }
-            .sortedBy { it.second.lowercase() }
+            .map { (code, groups) -> code to countryDisplayName(code, groups.first().title) }
+            .sortedBy { it.second.lowercase(Locale.ROOT) }
 
         val rows = (listOf("" to "كل الدول") + countries).toMutableList()
         val container = LinearLayout(this).apply {
@@ -640,7 +641,7 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun countryFlag(code: String): String {
+    private fun countryDisplayName(code: String, fallback: String): String {\n        val normalized = code.trim().uppercase(Locale.ROOT)\n        if (normalized.length != 2) return fallback\n        val display = Locale("", normalized).getDisplayCountry(Locale("ar"))\n        return display.takeIf { it.isNotBlank() && it != normalized } ?: fallback\n    }\n\n    private fun countryFlag(code: String): String {
         val normalized = code.trim().uppercase()
         if (normalized.length != 2 || normalized.any { it !in 'A'..'Z' }) return "🌐"
         return String(Character.toChars(0x1F1E6 + (normalized[0] - 'A'))) +
