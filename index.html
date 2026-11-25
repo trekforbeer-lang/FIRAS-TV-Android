@@ -663,7 +663,7 @@ function drawCountries(box,q,quiet){
     var r=el('div','ch');r.setAttribute('role','button');r.tabIndex=0;
     r.appendChild(el('div','lg fl',flag(k)));r.appendChild(el('div','nm',cname(k)));
     var n=el('span','st',cnt[k]?String(cnt[k]):'');n.style.fontSize='14px';r.appendChild(n);
-    r.onclick=function(){openCountry(k)};r.onkeydown=function(e){if(e.key==='Enter')openCountry(k)};
+    r.onclick=function(){openCountry(k)};r.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();openCountry(k)}};
     box.appendChild(r);
   });
 }
