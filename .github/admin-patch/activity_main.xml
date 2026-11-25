@@ -104,8 +104,8 @@
             <FrameLayout
                 android:id="@+id/homeHeroSection"
                 android:layout_width="match_parent"
-                android:layout_height="300dp"
-                android:layout_marginStart="6dp"
+                android:layout_height="316dp"
+                android:layout_marginStart="8dp"
                 android:layout_marginEnd="6dp"
                 android:background="@drawable/home_hero_bg"
                 android:foreground="@drawable/rahmani_card_stroke">
@@ -114,13 +114,13 @@
                     android:layout_height="match_parent"
                     android:orientation="vertical"
                     android:gravity="center_vertical"
-                    android:paddingStart="21dp"
-                    android:paddingEnd="18dp">
+                    android:paddingStart="23dp"
+                    android:paddingEnd="20dp">
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="RAHMANI  /  ENTERTAINMENT"
-                        android:textColor="#35D6F2"
+                        android:text="RAHMANI  /  PREMIUM STREAMING"
+                        android:textColor="#7CEBFF"
                         android:textStyle="bold"
                         android:textSize="9sp"
                         android:letterSpacing="0.12"
@@ -129,17 +129,17 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
-                        android:text="ليلتك تبدأ من هنا"
+                        android:text="كل الترفيه في مكان واحد"
                         android:textColor="#FFFFFF"
-                        android:textSize="29sp"
+                        android:textSize="27sp"
                         android:textStyle="bold"/>
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
-                        android:text="قنوات مباشرة، رياضة وأفلام بواجهة واحدة"
-                        android:textColor="#C5D9EA"
-                        android:textSize="11sp"/>
+                        android:text="قنوات مباشرة • مباريات • أفلام ومسلسلات"
+                        android:textColor="#D2E5F2"
+                        android:textSize="12sp"/>
                     <Button
                         android:id="@+id/featuredMoviesButton"
                         android:layout_width="wrap_content"
@@ -148,7 +148,7 @@
                         android:layout_marginTop="14dp"
                         android:paddingStart="18dp"
                         android:paddingEnd="18dp"
-                        android:text="اكتشف الأفلام  ›"
+                        android:text="اكتشف المحتوى  ›"
                         android:textAllCaps="false"
                         android:textSize="11sp"
                         android:textStyle="bold"
@@ -182,8 +182,8 @@
                     android:orientation="horizontal">
                     <TextView
                         android:id="@+id/quickLiveButton"
-                        android:layout_width="122dp"
-                        android:layout_height="82dp"
+                        android:layout_width="126dp"
+                        android:layout_height="88dp"
                         android:layout_marginEnd="9dp"
                         android:gravity="center"
                         android:background="@drawable/rahmani_action_card"
@@ -196,8 +196,8 @@
                         android:focusable="true"/>
                     <TextView
                         android:id="@+id/quickSportsButton"
-                        android:layout_width="112dp"
-                        android:layout_height="76dp"
+                        android:layout_width="118dp"
+                        android:layout_height="88dp"
                         android:layout_marginEnd="9dp"
                         android:gravity="center"
                         android:background="@drawable/rahmani_action_card"
@@ -210,8 +210,8 @@
                         android:focusable="true"/>
                     <TextView
                         android:id="@+id/quickMoviesButton"
-                        android:layout_width="112dp"
-                        android:layout_height="76dp"
+                        android:layout_width="118dp"
+                        android:layout_height="88dp"
                         android:layout_marginEnd="9dp"
                         android:gravity="center"
                         android:background="@drawable/rahmani_action_card"
