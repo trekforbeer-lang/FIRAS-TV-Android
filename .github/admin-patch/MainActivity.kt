@@ -90,6 +90,13 @@ class MainActivity : AppCompatActivity() {
         }, onFavoriteChanged = { refresh() })
         val rv = findViewById<RecyclerView>(R.id.list)
         channelRecycler = rv
+        // Give the browse area a responsive viewport instead of a fixed 420dp box.
+        findViewById<View>(R.id.channelBrowseLayout)?.let { browse ->
+            val screenHeightDp = (resources.displayMetrics.heightPixels / resources.displayMetrics.density).toInt()
+            browse.layoutParams = browse.layoutParams.apply {
+                height = (screenHeightDp * 0.56f).toInt().coerceIn(dp(360), dp(620))
+            }
+        }
         rv.layoutManager = GridLayoutManager(this, if (resources.configuration.screenWidthDp >= 600) 2 else 1)
         rv.adapter = adapter
         // This RecyclerView wraps its content inside a scrolling parent, so its size is not fixed.
