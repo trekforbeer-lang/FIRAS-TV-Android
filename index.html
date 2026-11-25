@@ -948,6 +948,8 @@ function loadHls(){
 var playTok=0;
 function play(c,keep,ai){
   ai=ai||0;
+  /* Invalidate callbacks from the previous channel before tearing it down. */
+  var tok=++playTok;
   if(!c.url){if(admin)editCh(c);else maint(c);return}
   if(page!=='ch')showOv();
   cur=c;retry=0;idle.style.display='none';showMsg('جارٍ التحميل...');$('#ttl').textContent=c.name;mark();
@@ -968,12 +970,19 @@ function play(c,keep,ai){
   startStream(u,fail);
 }
 function startStream(u,fail){
-  try{startStream2(u,fail)}catch(e){try{destroy()}catch(x){}v.src=u;v.play().catch(function(){})}
+  try{startStream2(u,fail)}catch(e){
+    try{destroy()}catch(x){}
+    showMsg('تعذّر تهيئة المشغّل لهذه القناة.');
+    if(typeof fail==='function')fail();
+  }
 }
 function startStream2(u,fail){
   if(/\.m3u8?(\?|$)/i.test(u)&&window.Hls&&Hls.isSupported()){
     hls=new Hls({enableWorker:true,manifestLoadingMaxRetry:2,levelLoadingMaxRetry:2,fragLoadingMaxRetry:3});
+    var activeHls=hls,activeToken=playTok;
     hls.on(Hls.Events.ERROR,function(_,d){
+      /* Ignore late errors emitted by a player that has already been replaced. */
+      if(activeHls!==hls||activeToken!==playTok)return;
       if(!d.fatal)return;
       if(d.type===Hls.ErrorTypes.NETWORK_ERROR&&retry<2){retry++;hls.startLoad();return}
       if(d.type===Hls.ErrorTypes.MEDIA_ERROR&&retry<3){retry++;hls.recoverMediaError();return}
