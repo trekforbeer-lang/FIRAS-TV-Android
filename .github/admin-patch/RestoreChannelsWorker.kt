@@ -57,7 +57,7 @@ class RestoreChannelsWorker(context: Context, params: WorkerParameters) : Worker
     }
 
     private fun extractM3uAttribute(line: String, name: String): String {
-        val pattern = Regex("""(?i)(?:^|[\\s,])${Regex.escape(name)}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s,]+))""")
+        val pattern = Regex("""(?i)(?:^|[\s,])${Regex.escape(name)}\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s,]+))""")
         val match = pattern.find(line) ?: return ""
         return (1..3).map { match.groupValues[it] }
             .firstOrNull { it.isNotBlank() }
