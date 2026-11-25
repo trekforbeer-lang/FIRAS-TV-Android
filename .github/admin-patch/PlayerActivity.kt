@@ -413,7 +413,10 @@ class PlayerActivity : AppCompatActivity() {
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("اختر جودة المشاهدة")
             .setItems(labels) { _, which ->
-                val selected = channel.copy(legacyUrl = entries[which].second, advanced = null)
+                val selected = channel.copy(
+                    legacyUrl = entries[which].second,
+                    advanced = if (entries[which].first == "الرابط الأساسي") channel.advanced else null
+                )
                 playerPrefs.edit().putString("quality_${channel.id}", entries[which].first).apply()
                 current = selected
                 currentAdvanced = null
