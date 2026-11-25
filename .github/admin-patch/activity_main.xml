@@ -6,11 +6,11 @@
     android:orientation="vertical"
     android:background="#000000"
     android:layoutDirection="rtl"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="false">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="70dp"
+        android:layout_height="64dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="12dp"
@@ -104,9 +104,9 @@
             <FrameLayout
                 android:id="@+id/homeHeroSection"
                 android:layout_width="match_parent"
-                android:layout_height="316dp"
-                android:layout_marginStart="8dp"
-                android:layout_marginEnd="6dp"
+                android:layout_height="250dp"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
                 android:background="@drawable/home_hero_bg"
                 android:foreground="@drawable/rahmani_card_stroke">
                 <LinearLayout
@@ -131,7 +131,7 @@
                         android:layout_marginTop="10dp"
                         android:text="كل الترفيه في مكان واحد"
                         android:textColor="#FFFFFF"
-                        android:textSize="27sp"
+                        android:textSize="24sp"
                         android:textStyle="bold"/>
                     <TextView
                         android:layout_width="wrap_content"
@@ -183,8 +183,8 @@
                     <TextView
                         android:id="@+id/quickLiveButton"
                         android:layout_width="126dp"
-                        android:layout_height="88dp"
-                        android:layout_marginEnd="9dp"
+                        android:layout_height="94dp"
+                        android:layout_marginEnd="10dp"
                         android:gravity="center"
                         android:background="@drawable/rahmani_action_card"
                         android:foreground="@drawable/rahmani_card_stroke"
@@ -386,9 +386,9 @@
             <LinearLayout
                 android:id="@+id/channelBrowseLayout"
                 android:layout_width="match_parent"
-                android:layout_height="360dp"
-                android:layout_marginStart="8dp"
-                android:layout_marginEnd="8dp"
+                android:layout_height="420dp"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
                 android:orientation="horizontal"
                 android:gravity="top"
                 android:background="@drawable/rahmani_panel_bg"
@@ -396,7 +396,7 @@
 
                 <LinearLayout
                     android:id="@+id/categoryRail"
-                    android:layout_width="112dp"
+                    android:layout_width="104dp"
                     android:layout_height="match_parent"
                     android:orientation="vertical"
                     android:padding="6dp"
@@ -460,8 +460,8 @@
     <LinearLayout
         android:id="@+id/bottomNavigationBar"
         android:layout_width="match_parent"
-        android:layout_height="76dp"
-        android:layout_marginStart="4dp"
+        android:layout_height="68dp"
+        android:layout_marginStart="8dp"
         android:layout_marginEnd="4dp"
         android:layout_marginBottom="4dp"
         android:orientation="horizontal"
