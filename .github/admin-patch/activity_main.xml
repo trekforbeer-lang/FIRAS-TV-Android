@@ -391,7 +391,7 @@
                     android:text="استعادة القنوات"
                     android:textAllCaps="false"
                     android:textSize="11sp"
-                    android:textColor="#17130B"
+                    android:textColor="#FFFFFF"
                     android:background="@drawable/rahmani_primary_button"
                     android:backgroundTint="@null"
                     android:stateListAnimator="@null"/>
