@@ -620,10 +620,10 @@ function render(keep){
 }
 function more(){
   var box=$('#list'),old=box.querySelector('.more');if(old)old.remove();
-  var batch=document.createDocumentFragment();
-  curList.slice(shown,shown+PAGE).forEach(function(c){batch.appendChild(row(c))});
+  var batch=document.createDocumentFragment(),end=Math.min(shown+PAGE,curList.length);
+  curList.slice(shown,end).forEach(function(c){batch.appendChild(row(c))});
   box.appendChild(batch);
-  shown+=PAGE;
+  shown=end;
   if(shown<curList.length){var m=el('button','more','عرض المزيد ('+(curList.length-shown)+')');m.onclick=more;box.appendChild(m)}
 }
 function row(c,list){
