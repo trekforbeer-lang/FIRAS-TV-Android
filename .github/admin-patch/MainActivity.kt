@@ -573,6 +573,7 @@ class MainActivity : AppCompatActivity() {
     private fun refresh() {
         val list = sections.filter { (selectedRegion.isEmpty() || it.region == selectedRegion) && (selected.isEmpty() || it.title == selected) }.flatMap { it.items }
             .filter { query.isEmpty() || it.name.contains(query, ignoreCase = true) }
+            .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name.trim() })
         adapter.submitList(list)
         findViewById<TextView>(R.id.channelCount)?.text = "${list.size} قناة"
         empty.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
