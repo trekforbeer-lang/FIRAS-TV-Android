@@ -677,7 +677,8 @@ class AdminActivity : Activity() {
                 val channelName = name.text.toString().trim()
                 val stream = url.text.toString().trim()
                 val logoUrl = logo.text.toString().trim()
-                if (channelName.isBlank() || (stream.isNotBlank() && !safe(stream)) || qualityUrls.values.any { it.text.toString().trim().let { value -> value.isNotBlank() && !safe(value) } } || (logoUrl.startsWith("http", true) && !safe(logoUrl))) {
+                val primaryStream = stream.ifBlank { qualityUrls.values.firstOrNull { it.text.toString().trim().isNotBlank() }?.text?.toString()?.trim().orEmpty() }
+                if (channelName.isBlank() || primaryStream.isBlank() || !safe(primaryStream) || qualityUrls.values.any { it.text.toString().trim().let { value -> value.isNotBlank() && !safe(value) } } || (logoUrl.startsWith("http", true) && !safe(logoUrl))) {
                     Toast.makeText(this, "تحقق من الاسم والروابط", Toast.LENGTH_LONG).show(); return@setPositiveButton
                 }
                 val altValues = alts.text.toString().lineSequence().map { it.trim() }.filter { it.isNotBlank() }.toList()
@@ -696,7 +697,7 @@ class AdminActivity : Activity() {
                 qualityUrls.forEach { (label, edit) ->
                     edit.text.toString().trim().takeIf { it.isNotBlank() }?.let { qualityObject.put(label, it) }
                 }
-                item.put("name", channelName).put("url", stream).put("logo", logoUrl)
+                item.put("name", channelName).put("url", primaryStream).put("logo", logoUrl)
                     .put("qualityUrls", qualityObject)
                     .put("referer", referer.text.toString().trim())
                     .put("userAgent", userAgent.text.toString().trim())
