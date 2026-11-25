@@ -1050,8 +1050,14 @@ function exitFs(){
   /* Safari/WebView may use native video fullscreen instead of the element API. */
   if(v.webkitDisplayingFullscreen&&v.webkitExitFullscreen)try{v.webkitExitFullscreen()}catch(e){}
 }
-document.addEventListener('fullscreenchange',function(){if(plFs())lockLandscape()});
-document.addEventListener('webkitfullscreenchange',function(){if(plFs())lockLandscape()});
+function syncFsOrientation(){
+  if(plFs()||v.webkitDisplayingFullscreen)lockLandscape();
+  else try{if(screen.orientation&&screen.orientation.unlock)screen.orientation.unlock()}catch(e){}
+}
+document.addEventListener('fullscreenchange',syncFsOrientation);
+document.addEventListener('webkitfullscreenchange',syncFsOrientation);
+v.addEventListener('webkitbeginfullscreen',syncFsOrientation);
+v.addEventListener('webkitendfullscreen',syncFsOrientation);
 function wake(){ctl.classList.remove('off');clearTimeout(hideT);hideT=setTimeout(function(){if(!v.paused)ctl.classList.add('off')},3500)}
 pl.addEventListener('click',function(){ctl.classList.contains('off')?wake():ctl.classList.add('off')});
 if('mediaSession' in navigator){try{navigator.mediaSession.setActionHandler('previoustrack',function(){step(-1)});navigator.mediaSession.setActionHandler('nexttrack',function(){step(1)})}catch(e){}}
