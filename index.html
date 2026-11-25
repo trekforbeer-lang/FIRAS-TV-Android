@@ -1039,7 +1039,7 @@ function lockLandscape(){
   try{if(screen.orientation&&screen.orientation.lock){var q=screen.orientation.lock('landscape');if(q&&q.catch)q.catch(function(){});}}catch(e){}
 }
 function fs(){
-  if(plFs())return exitFs();
+  if(plFs()||v.webkitDisplayingFullscreen)return exitFs();
   var r=pl.requestFullscreen||pl.webkitRequestFullscreen;
   if(r){
     try{
