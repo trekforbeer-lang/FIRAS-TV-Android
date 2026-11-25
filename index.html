@@ -946,11 +946,11 @@ function loadHls(){
   hlsP.then(function(ok){if(!ok)hlsP=null});
   return hlsP;
 }
-var playTok=0;
+var playTok=0,mediaToken=0;
 function play(c,keep,ai){
   ai=ai||0;
   /* Invalidate callbacks from the previous channel before tearing it down. */
-  var tok=++playTok;
+  var tok=++playTok;mediaToken=tok;
   if(!c.url){if(admin)editCh(c);else maint(c);return}
   if(page!=='ch')showOv();
   cur=c;retry=0;idle.style.display='none';showMsg('جارٍ التحميل...');$('#ttl').textContent=c.name;mark();
@@ -1008,7 +1008,7 @@ v.addEventListener('playing',function(){showMsg('');$('#pp').innerHTML=PAUSE;if(
 v.addEventListener('waiting',function(){if(cur)showMsg('جارٍ التحميل...')});
 v.addEventListener('canplay',function(){showMsg('')});
 v.addEventListener('pause',function(){$('#pp').innerHTML=PLAY});
-v.addEventListener('error',function(){if(cur&&!hls&&v.getAttribute('src'))failFn()});
+v.addEventListener('error',function(){if(mediaToken===playTok&&cur&&!hls&&v.getAttribute('src'))failFn()});
 v.addEventListener('timeupdate',function(){
   var live=!isFinite(v.duration);$('#lv').style.display=live?'block':'none';
   $('#sk').value=live?1000:(v.duration?Math.round(v.currentTime/v.duration*1000):0);
