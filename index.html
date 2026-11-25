@@ -572,7 +572,7 @@ function drawNav(){
   });
 }
 function go(v){view=v;$('#q').value='';drawNav();render()}
-function inCat(c,id){return c.grp===id||(!c.grp&&((id==='sports'&&c.cat==='sports')||(id==='kids'&&c.cat==='kids')||(id==='news'&&c.cat==='news')))}
+function inCat(c,id){return c.grp===id||(!c.grp&&c.cat===id)}
 function baseList(){
   if(view.t==='fav')return favs.map(byId).filter(Boolean);
   if(view.t==='hist')return hist.map(byId).filter(Boolean);
@@ -1219,18 +1219,7 @@ function drawAdm(){
     a.appendChild(btn('إلغاء',function(){aEdit=null;drawAdm()},'g'));
   }
 
-  /* import */
-  a.appendChild(el('h4','','استيراد قنوات'+(targetGrp()?' إلى «'+catName(aCat)+'»':' (تصنيف تلقائي)')));
-  var ta=el('textarea');ta.placeholder='#EXTM3U\nاسم القناة | https://...m3u8';a.appendChild(ta);
-  var lu=inp('أو رابط قائمة M3U https://...','','u');a.appendChild(lu);
-  function doAdd(arr){var n=addChannels(arr,targetGrp());toast(n?'تمت إضافة '+n+' قناة':'لا توجد قنوات جديدة');drawAdm()}
-  a.appendChild(btn('استيراد',function(){
-    var t=lu.value.trim();
-    if(t){if(!safe(t))return toast('الرابط غير صالح');toast('جارٍ التحميل...');fetchList(t).then(doAdd).catch(function(){toast('تعذّر تحميل القائمة')})}
-    else if(ta.value.trim())doAdd(parse(ta.value));else toast('الصق القنوات أو الرابط أولاً');
-  }));
-  a.appendChild(el('div','stat','قوائم جاهزة (مجانية):'));
-  PRESETS.forEach(function(p){a.appendChild(btn(p[0],function(){toast('جارٍ التحميل...');fetchList(p[1]).then(doAdd).catch(function(){toast('تعذّر تحميل القائمة')})},'g'))});
+  /* استيراد القنوات أزيل من لوحة الإدارة حسب طلب المستخدم. */
 
   /* health */
   a.appendChild(el('h4','','فحص القنوات'));
