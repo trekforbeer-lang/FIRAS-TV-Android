@@ -116,12 +116,12 @@ class PlayerActivity : AppCompatActivity() {
         playerView = findViewById(R.id.playerView)
         // Initialize every view used by applyDisplayMode before calling it.
         zoom = findViewById(R.id.zoomButton)
-        // Default to FIT so channel logos and the full frame remain visible.
-        // Viewers can switch to ZOOM or FILL at any time from the player controls.
+        // Default to FILL for an immersive full-frame presentation.
+        // FIT remains available when viewers want the entire image without cropping.
         displayMode = if (playerPrefs.contains("display_mode")) {
-            playerPrefs.getInt("display_mode", 1).coerceIn(0, 3)
+            playerPrefs.getInt("display_mode", 1).coerceIn(0, 1)
         } else {
-            0
+            1
         }
         applyDisplayMode()
         title = findViewById(R.id.channelTitle)
@@ -688,26 +688,17 @@ class PlayerActivity : AppCompatActivity() {
     private fun applyDisplayMode() {
         val modes = intArrayOf(
             AspectRatioFrameLayout.RESIZE_MODE_FIT,
-            AspectRatioFrameLayout.RESIZE_MODE_ZOOM,
-            AspectRatioFrameLayout.RESIZE_MODE_FILL,
-            AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH
+            AspectRatioFrameLayout.RESIZE_MODE_FILL
         )
         playerView.resizeMode = modes[displayMode.coerceIn(0, modes.lastIndex)]
-        zoom.text = when (displayMode) {
-            1 -> "تكبير"
-            2 -> "تمديد"
-            3 -> "تثبيت العرض"
-            else -> "ملاءمة"
-        }
+        zoom.text = if (displayMode == 1) "ملء الشاشة" else "ملاءمة"
         playerView.requestLayout()
     }
 
     private fun showDisplayModePicker() {
         val options = arrayOf(
-            "ملاءمة كاملة — إظهار الصورة والشعار بالكامل، وقد تظهر حواف سوداء",
-            "ملء الشاشة — تكبير الصورة مع اقتطاع الأطراف عند اختلاف الأبعاد",
-            "تمديد كامل — ملء الإطار وقد تتغير أبعاد الصورة",
-            "تثبيت العرض — الحفاظ على النسبة مع احتمال اقتطاع أعلى/أسفل"
+            "ملاءمة كاملة — إظهار الصورة بالكامل وقد تظهر حواف سوداء",
+            "ملء الشاشة — ملء الإطار مع الحفاظ على النسبة وقد تُقتطع الأطراف"
         )
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("اختر طريقة عرض الفيديو")
