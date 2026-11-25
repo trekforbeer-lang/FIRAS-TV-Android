@@ -588,7 +588,7 @@ function filtered(){
   var q=$('#q').value.trim().toLowerCase();
   var a=baseList().filter(function(c){
     if(c.priv&&!admin)return false;
-    if(!admin&&c.url&&c.ok===false)return false;            // إخفاء المعطلة
+    /* لا نخفي القنوات التي فشل فحصها تلقائياً؛ قد يمنع WebView فحص HLS بسبب CORS رغم أن المشغل يستطيع تشغيلها. */
     if(cfg.onlyOk&&c.ok!==true)return false;
     return !q||c.name.toLowerCase().indexOf(q)>-1;
   });
