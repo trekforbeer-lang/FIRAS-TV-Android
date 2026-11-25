@@ -140,7 +140,7 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
         holder.subtitle.text = stateLabel
         holder.subtitle.setTextColor(stateColor)
         holder.subtitle.background = GradientDrawable().apply {
-            setColor(Color.argb(28, stateColor.red(), stateColor.green(), stateColor.blue()))
+            setColor(Color.argb(28, Color.red(stateColor), Color.green(stateColor), Color.blue(stateColor)))
             cornerRadius = dp(9).toFloat()
         }
         holder.subtitle.setPadding(dp(7), dp(4), dp(7), dp(4))
