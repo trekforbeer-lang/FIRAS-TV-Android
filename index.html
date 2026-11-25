@@ -551,7 +551,7 @@ ensureDefaults();upgradeV2();save();
 /* =====================================================================
    4) BROWSER UI: categories, channel list, countries
    ===================================================================== */
-var view={t:'cat',id:'sports'},curList=[],shown=0,PAGE=40,loading='',admin=false;
+var view={t:'cat',id:'sports'},curList=[],shown=0,PAGE=40,loading={},admin=false;
 function navItems(){
   return cats.map(function(k){return{id:k.id,n:k.n,t:k.t,c:k.c,v:{t:'cat',id:k.id}}}).concat([
     {id:'fav',n:'المفضلة',t:'⭐',c:'#3a3a1a',v:{t:'fav'}},
@@ -611,7 +611,7 @@ function render(keep){
   if(!curList.length){
     var m=view.t==='fav'?'لا توجد قنوات مفضلة بعد.\nاضغط ☆ بجانب أي قناة.':
           view.t==='hist'?'لم تشاهد أي قناة بعد.':
-          (view.t==='country'&&loading===view.cc)?'جارٍ تحميل القنوات...':
+          (view.t==='country'&&loading[view.cc])?'جارٍ تحميل القنوات...':
           cfg.onlyOk?'لا توجد قنوات عاملة هنا حالياً.':'لا توجد قنوات في هذا القسم حالياً.';
     box.appendChild(el('div','emp',m));return;
   }
@@ -673,13 +673,13 @@ function openCountry(k){
   if(!ch.some(function(c){return c.cc===k}))loadCountry(k);
 }
 function loadCountry(k){
-  if(loading===k)return;
-  loading=k;toast('جارٍ تحميل قنوات '+cname(k)+'...');render();
+  if(loading[k])return;
+  loading[k]=true;toast('جارٍ تحميل قنوات '+cname(k)+'...');render();
   fetchList(B+'countries/'+k.toLowerCase()+'.m3u').then(function(a){
-    loading='';var n=addChannels(a,undefined,k);
+    delete loading[k];var n=addChannels(a,undefined,k);
     toast(n?'تمت إضافة '+n+' قناة، وجارٍ فحصها':'لا توجد قنوات جديدة');
     if(view.t==='country'&&view.cc===k)render();
-  }).catch(function(){loading='';toast('تعذّر التحميل، تحقق من الاتصال');if(view.t==='country'&&view.cc===k)render()});
+  }).catch(function(){delete loading[k];toast('تعذّر التحميل، تحقق من الاتصال');if(view.t==='country'&&view.cc===k)render()});
 }
 var searchTimer=0;
 $('#q').addEventListener('input',function(){
