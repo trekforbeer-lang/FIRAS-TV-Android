@@ -692,21 +692,21 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun applyDisplayMode() {
-        // FIT preserves the complete frame; ZOOM fills the view without stretching,
-        // cropping only the excess edges when the video's aspect ratio differs.
+        // FIT shows the whole frame; FILL stretches video to the entire view,
+        // allowing the image aspect ratio to change as requested.
         val modes = intArrayOf(
             AspectRatioFrameLayout.RESIZE_MODE_FIT,
-            AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+            AspectRatioFrameLayout.RESIZE_MODE_FILL
         )
         playerView.resizeMode = modes[displayMode.coerceIn(0, modes.lastIndex)]
-        zoom.text = if (displayMode == 1) "ملء الشاشة" else "ملاءمة"
+        zoom.text = if (displayMode == 1) "تمديد كامل" else "ملاءمة"
         playerView.requestLayout()
     }
 
     private fun showDisplayModePicker() {
         val options = arrayOf(
-            "ملاءمة كاملة — إظهار الصورة بالكامل وقد تظهر حواف سوداء",
-            "ملء الشاشة — ملء الإطار مع الحفاظ على النسبة وقد تُقتطع الأطراف"
+            "ملاءمة — إظهار الصورة بالكامل مع الحفاظ على أبعادها",
+            "تمديد كامل — ملء الإطار بالكامل وقد تتغير أبعاد الصورة"
         )
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("اختر طريقة عرض الفيديو")
