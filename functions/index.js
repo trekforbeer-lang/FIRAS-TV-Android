@@ -13,11 +13,18 @@ exports.footballFixtures = onRequest(
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return res.status(400).json({ error: "date must be YYYY-MM-DD" });
     }
+    const timezone = String(req.query.timezone || "UTC");
+    try {
+      // Validate the IANA timezone supplied by the Android device.
+      new Intl.DateTimeFormat("en-US", { timeZone: timezone });
+    } catch (_) {
+      return res.status(400).json({ error: "Invalid timezone" });
+    }
 
     try {
       const url = new URL("https://v3.football.api-sports.io/fixtures");
       url.searchParams.set("date", date);
-      url.searchParams.set("timezone", "Europe/Madrid");
+      url.searchParams.set("timezone", timezone);
       const upstream = await fetch(url, {
         method: "GET",
         headers: { "x-apisports-key": apiFootballKey.value(), "Accept": "application/json" },
