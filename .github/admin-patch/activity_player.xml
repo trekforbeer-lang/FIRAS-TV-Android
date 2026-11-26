@@ -115,19 +115,7 @@
             android:textColor="#FFFFFF"
             android:textSize="18sp" />
 
-        <Button
-            android:id="@+id/fullscreenButton"
-            android:layout_width="1dp"
-            android:layout_height="1dp"
-            android:visibility="gone"
-            android:minWidth="0dp"
-            android:minHeight="0dp"
-            android:background="@android:color/transparent"
-            android:backgroundTint="@null"
-            android:stateListAnimator="@null"
-            android:text="▣"
-            android:textColor="#FFFFFF"
-            android:textSize="20sp" />
+
     </LinearLayout>
 
     <LinearLayout
