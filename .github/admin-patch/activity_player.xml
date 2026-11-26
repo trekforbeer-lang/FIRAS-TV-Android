@@ -175,7 +175,7 @@
             android:backgroundTint="@null"
             android:stateListAnimator="@null"
             android:text="▶"
-            android:textColor="#17130A"
+            android:textColor="#FFFFFF"
             android:textSize="32sp" />
 
         <Button
