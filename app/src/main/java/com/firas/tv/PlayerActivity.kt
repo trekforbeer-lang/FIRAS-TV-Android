@@ -117,7 +117,7 @@ class PlayerActivity : AppCompatActivity() {
         applyFullscreenSystemUi()
         playerView = findViewById(R.id.playerView)
         // Restore the last selected scaling mode; default to Zoom to remove side bars.
-        resizeModeIndex = playerPrefs.getInt("resize_mode_index", 1).coerceIn(0, resizeModes.lastIndex)
+        resizeModeIndex = playerPrefs.getInt("resize_mode_index", 2).coerceIn(0, resizeModes.lastIndex)
         playerView.resizeMode = resizeModes[resizeModeIndex]
         title = findViewById(R.id.channelTitle)
         watermark = findViewById(R.id.channelWatermark)
