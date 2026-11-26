@@ -2,7 +2,7 @@ name: FIRAS TV APK
 
 on:
   push:
-    branches: [main, FIRAS-TV-Android]
+    branches: [main, FIRAS-TV-Android, rahmani-tv-maintenance-fix-2026-11-26]
   workflow_dispatch:
 
 permissions:
@@ -33,7 +33,7 @@ jobs:
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: FIRAS-TV-2.1.1-debug-apk
+          name: RAHMANI-TV-2.2.0-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
