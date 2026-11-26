@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#05070B"
+    android:background="@android:color/transparent"
     android:fitsSystemWindows="false"
     android:clipToPadding="false"
     android:clipChildren="false">
@@ -13,15 +13,32 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_gravity="fill"
-        android:background="#000000"
+        android:background="@android:color/transparent"
         android:fitsSystemWindows="false"
         app:use_controller="false"
         app:show_buffering="never"
         app:resize_mode="fill"
         app:keep_content_on_player_reset="true"
+        app:shutter_background_color="@android:color/transparent"
         app:surface_type="texture_view" />
 
+    <androidx.media3.ui.PlayerView
+        android:id="@+id/playerViewSurface"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="fill"
+        android:background="@android:color/transparent"
+        android:fitsSystemWindows="false"
+        android:visibility="gone"
+        app:use_controller="false"
+        app:show_buffering="never"
+        app:resize_mode="fill"
+        app:keep_content_on_player_reset="true"
+        app:shutter_background_color="@android:color/transparent"
+        app:surface_type="surface_view" />
+
     <View
+        android:id="@+id/playerTopScrim"
         android:layout_width="match_parent"
         android:layout_height="132dp"
         android:layout_gravity="top"
@@ -191,6 +208,13 @@
             android:textSize="18sp" />
     </LinearLayout>
 
+    <View
+        android:id="@+id/playerBottomScrim"
+        android:layout_width="match_parent"
+        android:layout_height="148dp"
+        android:layout_gravity="bottom"
+        android:background="@drawable/rahmani_player_bottom_scrim" />
+
     <LinearLayout
         android:id="@+id/bottomPanel"
         android:layout_width="match_parent"
@@ -260,7 +284,7 @@
                 android:minHeight="0dp"
                 android:text="▤  الترجمة والصوت"
                 android:textAllCaps="false"
-                android:textSize="15sp"
+                android:textSize="13sp"
                 android:background="@android:color/transparent"
                 android:backgroundTint="@null"
                 android:stateListAnimator="@null"
@@ -275,7 +299,22 @@
                 android:minHeight="0dp"
                 android:text="□  نسبة العرض"
                 android:textAllCaps="false"
-                android:textSize="15sp"
+                android:textSize="13sp"
+                android:background="@android:color/transparent"
+                android:backgroundTint="@null"
+                android:stateListAnimator="@null"
+                android:textColor="#FFFFFF" />
+
+            <Button
+                android:id="@+id/imageSettingsButton"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="0.75"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:text="الصورة"
+                android:textAllCaps="false"
+                android:textSize="13sp"
                 android:background="@android:color/transparent"
                 android:backgroundTint="@null"
                 android:stateListAnimator="@null"
@@ -290,7 +329,7 @@
                 android:minHeight="0dp"
                 android:text="♧  قائمتي"
                 android:textAllCaps="false"
-                android:textSize="15sp"
+                android:textSize="13sp"
                 android:background="@android:color/transparent"
                 android:backgroundTint="@null"
                 android:stateListAnimator="@null"
