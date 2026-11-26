@@ -39,7 +39,7 @@
         android:layout_height="54dp"
         android:layout_gravity="center"
         android:indeterminate="true"
-        android:indeterminateTint="#E8C779"
+        android:indeterminateTint="#E50914"
         android:visibility="gone" />
 
     <LinearLayout
@@ -81,7 +81,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="RAHMANI TV  /  LIVE"
-                android:textColor="#D8B86B"
+                android:textColor="#E50914"
                 android:textStyle="bold"
                 android:textSize="9sp"
                 android:letterSpacing="0.12" />
@@ -135,7 +135,7 @@
             android:backgroundTint="@null"
             android:stateListAnimator="@null"
             android:text="HD"
-            android:textColor="#F0D18A"
+            android:textColor="#FF5962"
             android:textStyle="bold"
             android:textSize="13sp" />
     </LinearLayout>
@@ -369,7 +369,7 @@
             android:layout_height="42dp"
             android:gravity="center_vertical|end"
             android:text="قائمة القنوات"
-            android:textColor="#E8C779"
+            android:textColor="#E50914"
             android:textStyle="bold"
             android:textSize="15sp"
             android:paddingEnd="8dp" />
