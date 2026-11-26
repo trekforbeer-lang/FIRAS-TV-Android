@@ -88,6 +88,7 @@ class PlayerActivity : AppCompatActivity() {
     private var isFullscreen = true
     private var resumePlaybackOnResume = false
     private var recoveryAttempts = 0
+    private var currentVideoResolution = ""
     private var displayMode = 0
     private val playerPrefs by lazy { getSharedPreferences("rahmani_player_preferences", MODE_PRIVATE) }
     private var recoveryTask: Runnable? = null
@@ -367,6 +368,17 @@ class PlayerActivity : AppCompatActivity() {
                         scheduleRecovery()
                     }
 
+                    override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
+                        currentVideoResolution = if (videoSize.width > 0 && videoSize.height > 0) {
+                            "${videoSize.width}×${videoSize.height}"
+                        } else ""
+                        if (exo.playbackState == Player.STATE_READY) {
+                            status.text = if (currentVideoResolution.isNotEmpty()) {
+                                "RAHMANI TV • ${currentVideoResolution}"
+                            } else "RAHMANI TV • البث جاهز"
+                        }
+                    }
+
                     override fun onPlaybackStateChanged(state: Int) {
                         status.text = when (state) {
                             Player.STATE_BUFFERING -> {
@@ -378,7 +390,7 @@ class PlayerActivity : AppCompatActivity() {
                                 recoveryAttempts = 0
                                 recoveryTask?.let(handler::removeCallbacks)
                                 recoveryTask = null
-                                "RAHMANI TV • البث جاهز"
+                                if (currentVideoResolution.isNotEmpty()) "RAHMANI TV • ${currentVideoResolution}" else "RAHMANI TV • البث جاهز"
                             }
                             Player.STATE_ENDED -> {
                                 showLoading(false)
@@ -450,6 +462,7 @@ class PlayerActivity : AppCompatActivity() {
         currentUrlIndex = 0
         currentUrls = emptyList()
         showLoading(true)
+        currentVideoResolution = ""
         title.text = playbackChannel.name
         ensurePlayer(playbackChannel)
 
