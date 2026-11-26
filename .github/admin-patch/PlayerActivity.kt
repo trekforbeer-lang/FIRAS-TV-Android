@@ -433,6 +433,7 @@ class PlayerActivity : AppCompatActivity() {
                 })
                 exo.addListener(object : Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {
+                        Log.e(TAG, "Player failure: ${error.message}", error)
                         var responseCode: Int? = null
                         var cause: Throwable? = error
                         while (cause != null) {
@@ -1124,9 +1125,14 @@ class PlayerActivity : AppCompatActivity() {
     ) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
         if (isInPictureInPictureMode) {
+            player?.let { active -> if (playerView.player !== active) playerView.player = active }
             setOverlayVisible(false)
             list.visibility = View.GONE
         } else {
+            player?.let { active ->
+                if (playerView.player !== active) playerView.player = active
+                playerView.requestLayout()
+            }
             setOverlayVisible(true)
         }
     }
