@@ -112,7 +112,8 @@ class PlayerActivity : AppCompatActivity() {
         playerView = findViewById(R.id.playerView)
         // Use the full landscape viewport; the viewer can switch to Fit when desired.
         zoomed = true
-        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+        // Stretch video to fill the complete player frame, even if aspect ratio changes.
+        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
         title = findViewById(R.id.channelTitle)
         watermark = findViewById(R.id.channelWatermark)
         status = findViewById(R.id.statusText)
@@ -172,9 +173,10 @@ class PlayerActivity : AppCompatActivity() {
         }
         fullscreen.setOnClickListener { toggleFullscreen() }
         zoom.setOnClickListener {
-            zoomed = !zoomed
-            playerView.resizeMode = if (zoomed) AspectRatioFrameLayout.RESIZE_MODE_ZOOM else AspectRatioFrameLayout.RESIZE_MODE_FIT
-            zoom.text = if (zoomed) "ملاءمة" else "تكبير"
+            // Keep the requested full-frame stretch mode; no crop or letterboxing.
+            zoomed = true
+            playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
+            zoom.text = "تمديد"
         }
         retry.setOnClickListener { hardRefreshCurrentStream(resetRecoveryAttempts = true) }
         server.setOnClickListener { nextCandidateOrRetry() }
@@ -677,13 +679,10 @@ class PlayerActivity : AppCompatActivity() {
         requestedOrientation = if (isFullscreen) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
             else ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         applyFullscreenSystemUi()
-        // Fill the entire landscape screen: no black bars.
-        // ZOOM preserves the source aspect ratio; a small part may be cropped
-        // when the source and phone screen have different aspect ratios.
-        zoomed = isFullscreen
-        playerView.resizeMode = if (isFullscreen) AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-            else AspectRatioFrameLayout.RESIZE_MODE_FIT
-        zoom.text = if (zoomed) "ملاءمة" else "تكبير"
+        // Keep full-frame stretch in either fullscreen state; source proportions may change.
+        zoomed = true
+        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
+        zoom.text = "تمديد"
         fullscreen.text = if (isFullscreen) "⤡" else "⛶"
         playerView.post {
             playerView.requestLayout()
@@ -698,9 +697,9 @@ class PlayerActivity : AppCompatActivity() {
             // Return to the normal phone portrait screen after leaving fullscreen.
             requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             applyFullscreenSystemUi()
-            zoomed = false
-            playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-            zoom.text = "زووم"
+            zoomed = true
+            playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
+            zoom.text = "تمديد"
             fullscreen.text = "⛶"
             handler.removeCallbacks(hideOverlayTask)
         } else {
