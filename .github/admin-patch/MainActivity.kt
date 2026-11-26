@@ -477,25 +477,11 @@ class MainActivity : AppCompatActivity() {
             group.addView(chip)
         }
 
-        addChip("كل الدول", "", selectedCountryCode.isEmpty() && selectedRegion.isEmpty())
+        // Country selection lives only in the dedicated country picker button.
+        // Keep this row for channel scope filters, not a second country list.
+        addChip("كل القنوات", "", selectedRegion.isEmpty() && selectedCountryCode.isEmpty())
         addChip("الدول العربية", "__region_arab__", selectedRegion == "arab")
         addChip("الدول الأجنبية", "__region_foreign__", selectedRegion == "foreign")
-
-        val countries = sections
-            .filter { it.countryCode.isNotBlank() }
-            .groupBy { it.countryCode.trim().uppercase(Locale.ROOT) }
-            .map { (code, groups) ->
-                val name = countryDisplayName(code, groups.first().title)
-                val count = groups.sumOf { it.items.size }
-                Triple(code, name, count)
-            }
-            .sortedBy { it.second.lowercase(Locale.ROOT) }
-
-        countries
-            .filter { selectedRegion.isEmpty() || countriesRegion(it.first) == selectedRegion }
-            .forEach { (code, name, count) ->
-                addChip("${countryFlag(code)}  $name  ·  $count", code, selectedCountryCode == code)
-            }
 
         group.setOnCheckedStateChangeListener { g, ids ->
             val tag = ids.firstOrNull()?.let { g.findViewById<Chip>(it)?.tag as? String }.orEmpty()
@@ -510,15 +496,10 @@ class MainActivity : AppCompatActivity() {
                     selected = ""
                     selectedCountryCode = ""
                 }
-                "" -> {
+                else -> {
                     selectedRegion = ""
                     selectedCountryCode = ""
                     selected = ""
-                }
-                else -> {
-                    selectedRegion = ""
-                    selected = ""
-                    selectedCountryCode = tag
                 }
             }
             homePrefs.edit().putString("selected_country_code", selectedCountryCode).apply()
