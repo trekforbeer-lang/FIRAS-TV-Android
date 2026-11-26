@@ -101,65 +101,75 @@ class SportsActivity : AppCompatActivity() {
 
     private fun loadMatches() {
         val generation = ++loadGeneration
-        loadFailures = 0
-        status.text = "جارٍ تحديث النتائج..."
+        status.text = "جارٍ تحميل نتائج API-Football..."
         content.removeAllViews()
         synchronized(matches) { matches.clear() }
-        val date = SimpleDateFormat("yyyyMMdd", Locale.US).format(Date())
-        var completed = 0
-        for ((code, leagueName) in leagues) {
-            io.execute {
-                try {
-                    val url = URL("https://site.api.espn.com/apis/site/v2/sports/soccer/$code/scoreboard?dates=$date")
-                    val conn = (url.openConnection() as HttpURLConnection).apply {
-                        connectTimeout = 12000; readTimeout = 15000
-                        setRequestProperty("User-Agent", "RAHMANI/1.0")
+        io.execute {
+            var failure: String? = null
+            val found = mutableListOf<MatchCard>()
+            try {
+                val date = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+                val url = URL("https://europe-west1-rahmani-tv.cloudfunctions.net/footballFixtures?date=$date")
+                val conn = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    connectTimeout = 15000
+                    readTimeout = 20000
+                    setRequestProperty("Accept", "application/json")
+                    setRequestProperty("User-Agent", "RAHMANI-TV-Android/4")
+                }
+                val body = try {
+                    val code = conn.responseCode
+                    val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+                    val text = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
+                    if (code !in 200..299) throw java.io.IOException("HTTP $code: $text")
+                    text
+                } finally { conn.disconnect() }
+                val root = JSONObject(body)
+                if (root.has("errors") && root.optJSONObject("errors")?.length() ?: 0 > 0) {
+                    throw java.io.IOException("API-Football returned errors")
+                }
+                val response = root.optJSONArray("response") ?: org.json.JSONArray()
+                for (i in 0 until response.length()) {
+                    val item = response.optJSONObject(i) ?: continue
+                    val fixture = item.optJSONObject("fixture") ?: JSONObject()
+                    val league = item.optJSONObject("league")?.optString("name").orEmpty().ifBlank { "بطولة غير محددة" }
+                    val teams = item.optJSONObject("teams") ?: JSONObject()
+                    val home = teams.optJSONObject("home")?.optString("name").orEmpty().ifBlank { "الفريق الأول" }
+                    val away = teams.optJSONObject("away")?.optString("name").orEmpty().ifBlank { "الفريق الثاني" }
+                    val goals = item.optJSONObject("goals") ?: JSONObject()
+                    val homeScore = if (goals.isNull("home")) "" else goals.optString("home")
+                    val awayScore = if (goals.isNull("away")) "" else goals.optString("away")
+                    val state = fixture.optJSONObject("status") ?: JSONObject()
+                    val short = state.optString("short")
+                    val elapsed = fixture.optInt("elapsed", -1)
+                    val isLive = short in setOf("1H", "HT", "2H", "ET", "BT", "P", "LIVE")
+                    val statusText = when (short) {
+                        "NS" -> "لم تبدأ"
+                        "1H", "2H", "ET", "P", "LIVE" -> if (elapsed >= 0) "مباشر • $elapsed′" else "مباشر"
+                        "HT" -> "استراحة"
+                        "FT", "AET", "PEN" -> "انتهت"
+                        " postponed" -> "مؤجلة"
+                        "CANC" -> "ألغيت"
+                        "SUSP" -> "متوقفة"
+                        else -> state.optString("long").ifBlank { "موعد المباراة" }
                     }
-                    val json = try {
-                        val code = conn.responseCode
-                        if (code !in 200..299) throw java.io.IOException("ESPN HTTP $code")
-                        conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-                    } finally { conn.disconnect() }
-                    val events = JSONObject(json).optJSONArray("events")
-                    val found = mutableListOf<MatchCard>()
-                    if (events != null) for (i in 0 until events.length()) {
-                        val event = events.optJSONObject(i) ?: continue
-                        val comp = event.optJSONArray("competitions")?.optJSONObject(0) ?: JSONObject()
-                        val competitors = comp.optJSONArray("competitors")
-                        var home = "الفريق الأول"; var away = "الفريق الثاني"
-                        var hs = ""; var ascore = ""
-                        if (competitors != null) for (j in 0 until competitors.length()) {
-                            val team = competitors.optJSONObject(j) ?: continue
-                            val name = team.optJSONObject("team")?.optString("displayName").orEmpty().ifBlank { "فريق" }
-                            if (team.optString("homeAway") == "home") { home = name; hs = team.optString("score") }
-                            else { away = name; ascore = team.optString("score") }
-                        }
-                        val state = comp.optJSONObject("status")?.optJSONObject("type")
-                        val statusText = state?.optString("shortDetail").orEmpty().ifBlank {
-                            state?.optString("description").orEmpty().ifBlank { "موعد المباراة" }
-                        }
-                        // ESPN exposes a machine-readable state: "in" means currently in progress.
-                        val isLive = state?.optString("state").equals("in", ignoreCase = true)
-                        val iso = event.optString("date")
-                        val time = try {
-                            val parsed = SimpleDateFormat("yyyy-MM-dd'T'HH:mmX", Locale.US).parse(iso)
-                            if (parsed != null) SimpleDateFormat("HH:mm", Locale.getDefault()).format(parsed) else "--:--"
-                        } catch (_: Exception) { "--:--" }
-                        val broadcasts = comp.optJSONArray("broadcasts")
-                        val channel = if (broadcasts != null && broadcasts.length() > 0) {
-                            val b = broadcasts.optJSONObject(0)
-                            ((b?.optJSONArray("names")?.optString(0))?.takeIf { !it.isNullOrBlank() }) ?: "متاحة في تفاصيل البث"
-                        } else "غير متاحة من المصدر"
-                        val commentator = comp.optJSONArray("commentators")?.optJSONObject(0)?.optString("name")
-                            ?.takeIf { !it.isNullOrBlank() } ?: "غير متاح من المصدر"
-                        found.add(MatchCard(leagueName, home, away, hs, ascore, time, statusText, isLive, channel, commentator))
-                    }
-                    if (generation == loadGeneration) synchronized(matches) { matches.addAll(found) }
-                } catch (_: Exception) { loadFailures++ }
-                runOnUiThread {
-                    if (isFinishing || isDestroyed || generation != loadGeneration) return@runOnUiThread
-                    completed++
-                    if (completed == leagues.size) renderMatches()
+                    val iso = fixture.optString("date")
+                    val time = try {
+                        val parsed = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US).parse(iso)
+                        if (parsed != null) SimpleDateFormat("HH:mm", Locale.getDefault()).format(parsed) else "--:--"
+                    } catch (_: Exception) { "--:--" }
+                    found.add(MatchCard(league, home, away, homeScore, awayScore, time, statusText, isLive, "", ""))
+                }
+            } catch (e: Exception) {
+                failure = e.message ?: "تعذّر الاتصال بخدمة النتائج"
+            }
+            if (generation == loadGeneration) synchronized(matches) { matches.addAll(found) }
+            runOnUiThread {
+                if (isFinishing || isDestroyed || generation != loadGeneration) return@runOnUiThread
+                if (failure != null) status.text = "تعذّر تحميل النتائج من API-Football • تحقق من إعداد الخادم والإنترنت"
+                renderMatches()
+                if (failure != null && found.isEmpty()) {
+                    Toast.makeText(this, "خدمة النتائج غير جاهزة بعد", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -168,8 +178,7 @@ class SportsActivity : AppCompatActivity() {
     private fun renderMatches() {
         content.removeAllViews()
         val ordered = synchronized(matches) { matches.sortedBy { if (it.isLive) 0 else 1 } }
-        status.text = if (ordered.isEmpty() && loadFailures == leagues.size) "تعذّر الاتصال بمصادر النتائج • تحقق من الإنترنت ثم اضغط تحديث" else if (ordered.isEmpty()) "لا توجد مباريات مسجلة اليوم حالياً • جرّب التحديث لاحقاً"
-            else "مباريات اليوم: ${ordered.size} • يتم تحديث البيانات عند الضغط على تحديث"
+        if (ordered.isNotEmpty()) status.text = "مباريات اليوم: ${ordered.size} • المصدر: API-Football" else if (status.text.isBlank()) status.text = "لا توجد مباريات مسجلة اليوم حالياً"
         if (ordered.isEmpty()) {
             val empty = label(if (loadFailures == leagues.size) "فشل تحميل النتائج من جميع المصادر. أعد المحاولة." else "لا توجد مباريات في تغذية النتائج لهذا اليوم", 14, 0xFF9BB5C8.toInt(), false)
             empty.gravity = Gravity.CENTER
@@ -199,8 +208,6 @@ class SportsActivity : AppCompatActivity() {
             teams.addView(label(m.away, 14, -1, true).apply { gravity = Gravity.CENTER; maxLines = 2 },
                 LinearLayout.LayoutParams(0, -2, 1f))
             card.addView(teams)
-            card.addView(label("القناة الناقلة: ${m.channel}", 11, 0xFFD2E0EC.toInt(), false))
-            card.addView(label("المعلّق: ${m.commentator}", 11, 0xFF91A9BF.toInt(), false).apply { setPadding(0, dp(5), 0, 0) })
             content.addView(card, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
         }
     }
