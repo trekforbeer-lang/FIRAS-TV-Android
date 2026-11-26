@@ -686,9 +686,11 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun applyDisplayMode() {
+        // FIT preserves the complete frame; ZOOM fills the view without stretching,
+        // cropping only the excess edges when the video's aspect ratio differs.
         val modes = intArrayOf(
             AspectRatioFrameLayout.RESIZE_MODE_FIT,
-            AspectRatioFrameLayout.RESIZE_MODE_FILL
+            AspectRatioFrameLayout.RESIZE_MODE_ZOOM
         )
         playerView.resizeMode = modes[displayMode.coerceIn(0, modes.lastIndex)]
         zoom.text = if (displayMode == 1) "ملء الشاشة" else "ملاءمة"
