@@ -8,6 +8,7 @@ import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.os.Bundle
 import android.os.SystemClock
 import android.text.Editable
@@ -21,6 +22,7 @@ import android.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.work.WorkManager
 import com.firas.tv.stream.StreamConfigStore
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
@@ -29,29 +31,60 @@ import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
     private var sections: List<Section> = emptyList()
     private var selected = ""
+    private var selectedRegion = ""
+    private var selectedCountryCode = ""
     private var query = ""
     private var lastLaunchAt = 0L
     private var returningFromAdmin = false
+    private var adminTapCount = 0
+    private var adminTapStarted = 0L
     private lateinit var adapter: ChannelAdapter
     private lateinit var empty: TextView
     private lateinit var chips: ChipGroup
-    private lateinit var restoreButton: Button
     private lateinit var channelRecycler: RecyclerView
+    private var drawerOverlay: View? = null
     private val homePrefs by lazy { getSharedPreferences("rahmani_home_preferences", MODE_PRIVATE) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        findViewById<TextView>(R.id.drawerMenuButton).setOnClickListener { openSideDrawer() }
+        // Hidden owner-only entry: seven quick taps on the RAHMANI wordmark.
+        findViewById<TextView>(R.id.adminSecretTrigger).setOnClickListener {
+            val now = SystemClock.elapsedRealtime()
+            if (now - adminTapStarted > 2500L) {
+                adminTapCount = 0
+                adminTapStarted = now
+            }
+            adminTapCount++
+            if (adminTapCount >= 7) {
+                adminTapCount = 0
+                returningFromAdmin = true
+                startActivity(Intent(this, AdminActivity::class.java))
+            }
+        }
         sections = ChannelRepository.load(this)
+        selectedCountryCode = homePrefs.getString("selected_country_code", "").orEmpty()
         val appCtx = applicationContext
         Thread { StreamConfigStore.ensureLoaded(appCtx) }.start()
         adapter = ChannelAdapter(onClick = { c ->
-            if (c.url.isBlank()) {
-                Toast.makeText(this, "هذه القناة قيد الصيانة حالياً، وسيتم إتاحتها عند تحديث البث.", Toast.LENGTH_LONG).show()
+            val channelState = c.status.trim().lowercase()
+            val unavailable = c.url.isBlank() || channelState in setOf(
+                "maintenance", "paused", "disabled", "offline", "صيانة", "قيد الصيانة", "متوقف",
+                "soon", "coming_soon", "قريباً", "قريبا", "updating", "pending", "تحديث", "قيد التحديث"
+            )
+            if (unavailable) {
+                val message = when (channelState) {
+                    "soon", "coming_soon", "قريباً", "قريبا" -> "هذه القناة ستتوفر قريباً."
+                    "updating", "pending", "تحديث", "قيد التحديث" -> "القناة قيد التحديث حالياً، حاول لاحقاً."
+                    else -> "القناة في وضع الصيانة حالياً، سنعيدها للخدمة قريباً."
+                }
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show()
                 return@ChannelAdapter
             }
             val now = SystemClock.elapsedRealtime()
@@ -67,13 +100,19 @@ class MainActivity : AppCompatActivity() {
         }, onFavoriteChanged = { refresh() })
         val rv = findViewById<RecyclerView>(R.id.list)
         channelRecycler = rv
-        rv.layoutManager = GridLayoutManager(this, if (resources.configuration.screenWidthDp >= 600) 4 else 2)
+        // Give the browse area a responsive viewport instead of a fixed 420dp box.
+        findViewById<View>(R.id.channelBrowseLayout)?.let { browse ->
+            val screenHeightDp = (resources.displayMetrics.heightPixels / resources.displayMetrics.density).toInt()
+            browse.layoutParams = browse.layoutParams.apply {
+                height = (screenHeightDp * 0.56f).toInt().coerceIn(dp(360), dp(620))
+            }
+        }
+        rv.layoutManager = GridLayoutManager(this, if (resources.configuration.screenWidthDp >= 600) 2 else 1)
         rv.adapter = adapter
         // This RecyclerView wraps its content inside a scrolling parent, so its size is not fixed.
         rv.setHasFixedSize(false)
         empty = findViewById(R.id.empty)
         chips = findViewById(R.id.chips)
-        restoreButton = findViewById(R.id.restoreChannelsButton)
         applyHomePreferences()
         findViewById<TextView>(R.id.customizeButton).setOnClickListener { showHomePreferences() }
         findViewById<TextView>(R.id.homeModeButton).setOnClickListener { showHomeModePicker() }
@@ -94,11 +133,6 @@ class MainActivity : AppCompatActivity() {
         }
         findViewById<View>(R.id.quickSportsButton).setOnClickListener { startActivity(Intent(this, SportsActivity::class.java)) }
         findViewById<View>(R.id.quickMoviesButton).setOnClickListener { startActivity(Intent(this, MoviesActivity::class.java)) }
-        findViewById<View>(R.id.quickAdminButton).setOnClickListener {
-            returningFromAdmin = true
-            startActivity(Intent(this, AdminActivity::class.java))
-        }
-        findViewById<Button>(R.id.adminButton).setOnClickListener { returningFromAdmin = true; startActivity(Intent(this, AdminActivity::class.java)) }
         findViewById<TextView>(R.id.homeTab).setOnClickListener { selected = ""; rebuildChips(chips); refresh(); rv.smoothScrollToPosition(0) }
         findViewById<TextView>(R.id.channelsTab).setOnClickListener { rv.smoothScrollToPosition(0) }
         findViewById<TextView>(R.id.sportsTab).setOnClickListener { startActivity(Intent(this, SportsActivity::class.java)) }
@@ -124,8 +158,16 @@ class MainActivity : AppCompatActivity() {
             updateBottomNavigation(R.id.navAdmin)
             startActivity(Intent(this, MoreActivity::class.java))
         }
-        restoreButton.setOnClickListener { restoreOriginalLists() }
+        findViewById<Button>(R.id.countryPickerButton).setOnClickListener { showCountryPicker() }
         refresh()
+        CloudChannelSync.refreshPublic(applicationContext) { changed ->
+            if (changed > 0 && !isFinishing && !isDestroyed) runOnUiThread {
+                sections = ChannelRepository.load(this)
+                selected = ""
+                rebuildChips(chips)
+                refresh()
+            }
+        }
         FanMatchWorker.schedule(this)
         findViewById<View>(R.id.fanPreferencesButton).setOnClickListener { startActivity(Intent(this, TeamPreferencesActivity::class.java)) }
         showWelcomeScreen()
@@ -137,119 +179,212 @@ class MainActivity : AppCompatActivity() {
             findViewById<TextView>(id)?.let { item ->
                 val active = id == activeId
                 item.isSelected = active
-                item.setTextColor(if (active) Color.WHITE else Color.rgb(151, 151, 157))
-                item.alpha = if (active) 1f else 0.88f
+                item.setTextColor(if (active) Color.rgb(229, 9, 20) else Color.rgb(151, 151, 151))
+                item.alpha = if (active) 1f else 0.82f
             }
         }
     }
 
     private fun showWelcomeScreen() {
-        if (homePrefs.getBoolean("welcome_seen", false)) return
         val root = findViewById<FrameLayout>(android.R.id.content)
-        val overlay = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(dp(26), dp(28), dp(26), dp(28))
-            setBackgroundColor(Color.rgb(7, 10, 20))
+        val overlay = FrameLayout(this).apply {
+            setBackgroundColor(Color.BLACK)
             isClickable = true
             isFocusable = true
         }
+        val name = TextView(this).apply {
+            text = "RAHMANI"
+            gravity = Gravity.CENTER
+            textSize = 48f
+            setTextColor(Color.rgb(217, 180, 91))
+            setTypeface(typeface, Typeface.BOLD)
+            letterSpacing = 0.04f
+        }
+        overlay.addView(name, FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        ))
+        root.addView(overlay, FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        ))
+        overlay.postDelayed({
+            if (!isFinishing && !isDestroyed && overlay.parent != null) {
+                root.removeView(overlay)
+            }
+        }, 2_000L)
+    }
 
+    private fun openSideDrawer() {
+        if (drawerOverlay != null) return
+        val root = findViewById<FrameLayout>(android.R.id.content)
+        val panelWidth = (resources.displayMetrics.widthPixels * 0.84f).toInt().coerceAtMost(dp(340))
+        val overlay = FrameLayout(this).apply {
+            setBackgroundColor(Color.TRANSPARENT)
+            isClickable = true
+            isFocusable = true
+        }
+        val scrim = View(this).apply {
+            setBackgroundColor(Color.argb(178, 0, 0, 0))
+            setOnClickListener { closeSideDrawer() }
+        }
+        overlay.addView(scrim, FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+        ))
         val panel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(dp(24), dp(34), dp(24), dp(28))
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            setPadding(dp(18), dp(22), dp(18), dp(18))
             background = GradientDrawable(
                 GradientDrawable.Orientation.TL_BR,
-                intArrayOf(Color.rgb(47, 40, 24), Color.rgb(32, 43, 48), Color.rgb(11, 31, 30))
+                intArrayOf(Color.rgb(24, 28, 40), Color.rgb(9, 13, 22), Color.rgb(8, 10, 16))
             ).apply {
-                cornerRadius = dp(26).toFloat()
-                setStroke(dp(1), Color.rgb(126, 98, 47))
+                setCornerRadii(floatArrayOf(dp(24).toFloat(), dp(24).toFloat(), 0f, 0f, 0f, 0f, dp(24).toFloat(), dp(24).toFloat()))
+                setStroke(dp(1), Color.rgb(74, 74, 74))
             }
-            elevation = dp(8).toFloat()
+            elevation = dp(18).toFloat()
         }
-        val mark = TextView(this).apply {
-            text = "R"
-            gravity = Gravity.CENTER
-            textSize = 38f
+        val panelParams = FrameLayout.LayoutParams(panelWidth, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT)
+        overlay.addView(panel, panelParams)
+        panel.isClickable = true
+        val menuScroll = android.widget.ScrollView(this).apply {
+            isFillViewport = true
+            clipToPadding = false
+            isVerticalScrollBarEnabled = false
+        }
+        val menuContent = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        menuScroll.addView(menuContent, FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ))
+        panel.addView(menuScroll, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f
+        ))
+
+        val brand = TextView(this).apply {
+            text = "RAHMANI TV"
+            textSize = 23f
             setTypeface(typeface, Typeface.BOLD)
-            setTextColor(Color.WHITE)
-            background = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                setColor(Color.rgb(222, 174, 67))
-                setStroke(dp(3), Color.rgb(255, 225, 154))
-            }
+            setTextColor(Color.rgb(217, 180, 91))
+            gravity = Gravity.CENTER_VERTICAL
+            letterSpacing = 0.05f
         }
-        panel.addView(mark, LinearLayout.LayoutParams(dp(82), dp(82)))
-
-        fun addWelcomeText(value: String, size: Float, color: Int, bold: Boolean, top: Int) {
-            val label = TextView(this).apply {
-                text = value
-                textSize = size
-                setTextColor(color)
-                gravity = Gravity.CENTER
-                if (bold) setTypeface(typeface, Typeface.BOLD)
-            }
-            panel.addView(label, LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply { topMargin = dp(top) })
-        }
-        addWelcomeText("RAHMANI", 29f, Color.WHITE, true, 17)
-        addWelcomeText("مرحباً بك في عالم الترفيه", 19f, Color.rgb(255, 214, 130), true, 9)
-        addWelcomeText("قنوات مباشرة • أفلام • مسلسلات • رياضة", 13f, Color.rgb(218, 224, 238), false, 12)
-        addWelcomeText("كل ما تحب مشاهدته، في مكان واحد", 12f, Color.rgb(169, 182, 204), false, 8)
-
-        val features = TextView(this).apply {
-            text = "● البث المباشر       ⚽ المباريات       ▶ الأفلام"
+        menuContent.addView(brand, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, dp(42)
+        ))
+        val subtitle = TextView(this).apply {
+            text = "عالمك الترفيهي في مكان واحد"
             textSize = 11f
-            gravity = Gravity.CENTER
-            setTextColor(Color.WHITE)
-            setPadding(dp(8), dp(13), dp(8), dp(13))
-            background = GradientDrawable().apply {
-                setColor(Color.argb(55, 255, 255, 255))
-                cornerRadius = dp(14).toFloat()
-            }
+            setTextColor(Color.rgb(158, 169, 188))
+            setPadding(0, 0, 0, dp(15))
         }
-        panel.addView(features, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-        ).apply { topMargin = dp(25) })
+        menuContent.addView(subtitle)
+        val line = View(this).apply { setBackgroundColor(Color.argb(90, 198, 166, 106)) }
+        menuContent.addView(line, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)))
 
-        fun finishWelcome() {
-            homePrefs.edit().putBoolean("welcome_seen", true).apply()
-            root.removeView(overlay)
-        }
-        val start = Button(this).apply {
-            text = "ابدأ المشاهدة"
-            isAllCaps = false
-            textSize = 15f
-            setTextColor(Color.WHITE)
-            backgroundTintList = android.content.res.ColorStateList.valueOf(Color.rgb(222, 174, 67))
-            setOnClickListener {
-                finishWelcome()
-                channelRecycler.smoothScrollToPosition(0)
+        fun entry(label: String, description: String, action: () -> Unit) {
+            val item = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(14), dp(8), dp(14), dp(8))
+                background = GradientDrawable().apply {
+                    setColor(Color.argb(24, 255, 255, 255))
+                    cornerRadius = dp(13).toFloat()
+                    setStroke(dp(1), Color.argb(30, 198, 166, 106))
+                }
+                isClickable = true
+                isFocusable = true
+                setOnClickListener { closeSideDrawer(); action() }
             }
+            val title = TextView(this).apply {
+                text = label
+                textSize = 14f
+                setTypeface(typeface, Typeface.BOLD)
+                setTextColor(Color.rgb(238, 241, 247))
+            }
+            val detail = TextView(this).apply {
+                text = description
+                textSize = 10f
+                setTextColor(Color.rgb(145, 157, 177))
+                setPadding(0, dp(3), 0, 0)
+            }
+            item.addView(title)
+            item.addView(detail)
+            menuContent.addView(item, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(58)
+            ).apply { topMargin = dp(8) })
         }
-        panel.addView(start, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, dp(50)
-        ).apply { topMargin = dp(24) })
-
-        val explore = TextView(this).apply {
-            text = "استكشف التطبيق"
-            textSize = 13f
+        entry("الرئيسية", "العودة إلى الصفحة الرئيسية") {
+            selected = ""; selectedRegion = ""; selectedCountryCode = ""; rebuildChips(chips); refresh()
+            updateBottomNavigation(R.id.navHome)
+            channelRecycler.smoothScrollToPosition(0)
+        }
+        entry("القنوات المباشرة", "تصفح القنوات المتاحة") {
+            selected = ""; selectedRegion = ""; rebuildChips(chips); refresh()
+            updateBottomNavigation(R.id.navChannels)
+            channelRecycler.smoothScrollToPosition(0)
+        }
+        entry("الدول العربية", "قنوات البلدان العربية") {
+            selected = ""; selectedRegion = "arab"; rebuildChips(chips); refresh()
+            updateBottomNavigation(R.id.navChannels)
+            channelRecycler.smoothScrollToPosition(0)
+        }
+        entry("الدول الأجنبية", "قنوات البلدان الأجنبية") {
+            selected = ""; selectedRegion = "foreign"; rebuildChips(chips); refresh()
+            updateBottomNavigation(R.id.navChannels)
+            channelRecycler.smoothScrollToPosition(0)
+        }
+        entry("الرياضة", "المباريات والأقسام الرياضية") {
+            startActivity(Intent(this, SportsActivity::class.java))
+        }
+        entry("الأفلام", "اكتشف مكتبة الأفلام") {
+            startActivity(Intent(this, MoviesActivity::class.java))
+        }
+        entry("قائمتي", "المفضلة والمحفوظات") {
+            startActivity(Intent(this, MyListActivity::class.java))
+        }
+        entry("اكتشف", "استكشف المزيد من المحتوى") {
+            startActivity(Intent(this, DiscoverActivity::class.java))
+        }
+        entry("المزيد والإعدادات", "خيارات التطبيق والمعلومات") {
+            startActivity(Intent(this, MoreActivity::class.java))
+        }
+        val footer = TextView(this).apply {
+            text = "RAHMANI  •  تجربة مشاهدة أنيقة"
+            textSize = 10f
             gravity = Gravity.CENTER
-            setTextColor(Color.rgb(255, 219, 145))
-            setPadding(dp(12), dp(14), dp(12), dp(8))
-            setOnClickListener { finishWelcome() }
+            setTextColor(Color.rgb(121, 132, 151))
         }
-        panel.addView(explore, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        menuContent.addView(footer, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, dp(36)
         ))
-        overlay.addView(panel, LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-        ))
+        drawerOverlay = overlay
         root.addView(overlay, FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
         ))
+        panel.translationX = panelWidth.toFloat()
+        panel.animate().translationX(0f).setDuration(220).start()
+    }
+
+    private fun closeSideDrawer() {
+        val overlay = drawerOverlay as? FrameLayout ?: return
+        val root = findViewById<FrameLayout>(android.R.id.content)
+        val panel = overlay.getChildAt(1)
+        val distance = panel.width.toFloat().takeIf { it > 0f } ?: dp(300).toFloat()
+        panel.animate().translationX(distance).setDuration(180).withEndAction {
+            root.removeView(overlay)
+            drawerOverlay = null
+        }.start()
+    }
+
+    @Deprecated("Use the OnBackPressedDispatcher for new back handling")
+    override fun onBackPressed() {
+        if (drawerOverlay != null) {
+            closeSideDrawer()
+            return
+        }
+        super.onBackPressed()
     }
 
     private fun dp(value: Int): Int =
@@ -279,7 +414,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showHomePreferences() {
-        val options = arrayOf("عرض بانر الأعمال المميزة", "عرض قسم المباريات الرياضية", "عرض القنوات المباشرة", "عرض شريط البحث", "عرض القنوات بثلاثة أعمدة على الهاتف")
+        val options = arrayOf("عرض بانر الأعمال المميزة", "عرض قسم المباريات الرياضية", "عرض القنوات المباشرة", "عرض شريط البحث", "عرض القنوات بعمودين صغيرين")
         val keys = arrayOf("hero", "sports", "channels", "search", "compact_grid")
         val checked = BooleanArray(keys.size) { i -> homePrefs.getBoolean(keys[i], true) }
         AlertDialog.Builder(this)
@@ -306,12 +441,12 @@ class MainActivity : AppCompatActivity() {
         val showChannels = homePrefs.getBoolean("channels", true) && mode != "sports" && mode != "movies"
         val showSearch = homePrefs.getBoolean("search", true)
         val compactGrid = homePrefs.getBoolean("compact_grid", false)
-        val columns = if (resources.configuration.screenWidthDp >= 600) 4 else if (compactGrid) 3 else 2
+        val columns = if (resources.configuration.screenWidthDp >= 600) 2 else if (compactGrid) 2 else 1
         (channelRecycler.layoutManager as? GridLayoutManager)?.spanCount = columns
         findViewById<View>(R.id.homeHeroSection)?.visibility = if (showHero) View.VISIBLE else View.GONE
         findViewById<View>(R.id.homeSportsSection)?.visibility = if (showSports) View.VISIBLE else View.GONE
         findViewById<View>(R.id.homeChannelsSection)?.visibility = if (showChannels) View.VISIBLE else View.GONE
-        (findViewById<View>(R.id.chips)?.parent as? View)?.visibility = if (showChannels) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.categoryRail)?.visibility = if (showChannels) View.VISIBLE else View.GONE
         findViewById<View>(R.id.channelListSectionHeader)?.visibility = if (showChannels) View.VISIBLE else View.GONE
         findViewById<View>(R.id.channelListContainer)?.visibility = if (showChannels) View.VISIBLE else View.GONE
         findViewById<View>(R.id.search)?.visibility = if (showSearch) View.VISIBLE else View.GONE
@@ -331,96 +466,180 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun rebuildChips(group: ChipGroup) {
+        group.setOnCheckedStateChangeListener(null)
         group.removeAllViews()
         fun addChip(label: String, tag: String, checked: Boolean) {
             val chip = layoutInflater.inflate(R.layout.item_chip, group, false) as Chip
-            chip.id = View.generateViewId(); chip.text = label; chip.tag = tag; chip.isChecked = checked
+            chip.id = View.generateViewId()
+            chip.text = label
+            chip.tag = tag
+            chip.isChecked = checked
             group.addView(chip)
         }
-        addChip("الكل", "", true)
-        sections.forEach { addChip(it.title, it.title, false) }
+
+        addChip("كل الدول", "", selectedCountryCode.isEmpty() && selectedRegion.isEmpty())
+        addChip("الدول العربية", "__region_arab__", selectedRegion == "arab")
+        addChip("الدول الأجنبية", "__region_foreign__", selectedRegion == "foreign")
+
+        val countries = sections
+            .filter { it.countryCode.isNotBlank() }
+            .groupBy { it.countryCode.trim().uppercase(Locale.ROOT) }
+            .map { (code, groups) ->
+                val name = countryDisplayName(code, groups.first().title)
+                val count = groups.sumOf { it.items.size }
+                Triple(code, name, count)
+            }
+            .sortedBy { it.second.lowercase(Locale.ROOT) }
+
+        countries
+            .filter { selectedRegion.isEmpty() || countriesRegion(it.first) == selectedRegion }
+            .forEach { (code, name, count) ->
+                addChip("${countryFlag(code)}  $name  ·  $count", code, selectedCountryCode == code)
+            }
+
         group.setOnCheckedStateChangeListener { g, ids ->
-            selected = ids.firstOrNull()?.let { g.findViewById<Chip>(it)?.tag as? String } ?: ""
+            val tag = ids.firstOrNull()?.let { g.findViewById<Chip>(it)?.tag as? String }.orEmpty()
+            when (tag) {
+                "__region_arab__" -> {
+                    selectedRegion = "arab"
+                    selected = ""
+                    selectedCountryCode = ""
+                }
+                "__region_foreign__" -> {
+                    selectedRegion = "foreign"
+                    selected = ""
+                    selectedCountryCode = ""
+                }
+                "" -> {
+                    selectedRegion = ""
+                    selectedCountryCode = ""
+                    selected = ""
+                }
+                else -> {
+                    selectedRegion = ""
+                    selected = ""
+                    selectedCountryCode = tag
+                }
+            }
+            homePrefs.edit().putString("selected_country_code", selectedCountryCode).apply()
+            rebuildChips(group)
             refresh()
         }
     }
 
+    private fun countriesRegion(code: String): String {
+        val arabCountries = setOf("DZ", "SA", "EG", "MA", "TN", "LY", "SD", "IQ", "SY", "JO", "LB", "PS", "YE", "OM", "AE", "QA", "BH", "KW", "MR", "SO", "DJ", "KM")
+        return if (code.uppercase(Locale.ROOT) in arabCountries) "arab" else "foreign"
+    }
+
+    private fun showCountryPicker() {
+        val countries = sections
+            .filter { it.countryCode.isNotBlank() }
+            .groupBy { it.countryCode.trim().uppercase() }
+            .map { (code, groups) -> code to countryDisplayName(code, groups.first().title) }
+            .sortedBy { it.second.lowercase(Locale.ROOT) }
+
+        val rows = (listOf("" to "كل الدول") + countries).toMutableList()
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(8), dp(20), dp(4))
+        }
+        val searchBox = EditText(this).apply {
+            hint = "ابحث عن دولة"
+            setSingleLine(true)
+            setTextColor(Color.WHITE)
+            setHintTextColor(Color.rgb(155, 181, 200))
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+            background = GradientDrawable().apply {
+                setColor(Color.rgb(24, 24, 24))
+                cornerRadius = dp(12).toFloat()
+                setStroke(dp(1), Color.rgb(71, 201, 139))
+            }
+        }
+        val listView = android.widget.ListView(this).apply {
+            divider = android.graphics.drawable.ColorDrawable(Color.rgb(55, 55, 55))
+            dividerHeight = dp(1)
+        }
+        container.addView(searchBox, LinearLayout.LayoutParams(-1, dp(48)))
+        container.addView(listView, LinearLayout.LayoutParams(-1, dp(360)))
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("اختر الدولة")
+            .setView(container)
+            .setNegativeButton("إلغاء", null)
+            .create()
+
+        fun label(item: Pair<String, String>) =
+            if (item.first.isBlank()) item.second else countryFlag(item.first) + "  " + item.second
+
+        val countryAdapter = android.widget.ArrayAdapter(this, android.R.layout.simple_list_item_1, rows.map(::label))
+        listView.adapter = countryAdapter
+        listView.setOnItemClickListener { _, _, position, _ ->
+            val selectedRow = rows[position]
+            selectedCountryCode = selectedRow.first
+            homePrefs.edit().putString("selected_country_code", selectedCountryCode).apply()
+            selected = ""
+            selectedRegion = ""
+            rebuildChips(chips)
+            refresh()
+            dialog.dismiss()
+        }
+        searchBox.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                val needle = s?.toString()?.trim().orEmpty()
+                val filtered = rows.filter { it.second.contains(needle, true) || it.first.contains(needle, true) }
+                countryAdapter.clear()
+                countryAdapter.addAll(filtered.map(::label))
+                listView.setOnItemClickListener { _, _, position, _ ->
+                    val selectedRow = filtered[position]
+                    selectedCountryCode = selectedRow.first
+                    homePrefs.edit().putString("selected_country_code", selectedCountryCode).apply()
+                    selected = ""
+                    selectedRegion = ""
+                    rebuildChips(chips)
+                    refresh()
+                    dialog.dismiss()
+                }
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+        dialog.show()
+    }
+
+    private fun countryDisplayName(code: String, fallback: String): String {
+        val normalized = code.trim().uppercase(Locale.ROOT)
+        if (normalized.length != 2) return fallback
+        val display = Locale("", normalized).getDisplayCountry(Locale("ar"))
+        return display.takeIf { it.isNotBlank() && it != normalized } ?: fallback
+    }
+
+    private fun countryFlag(code: String): String {
+        val normalized = code.trim().uppercase()
+        if (normalized.length != 2 || normalized.any { it !in 'A'..'Z' }) return "🌐"
+        return String(Character.toChars(0x1F1E6 + (normalized[0] - 'A'))) +
+            String(Character.toChars(0x1F1E6 + (normalized[1] - 'A')))
+    }
+
     private fun refresh() {
-        val list = sections.filter { selected.isEmpty() || it.title == selected }.flatMap { it.items }
-            .filter { query.isEmpty() || it.name.contains(query, ignoreCase = true) }
+        val normalizedQuery = query.trim()
+        val list = sections
+            .filter { section ->
+                (selectedRegion.isEmpty() || section.region == selectedRegion) &&
+                    (selectedCountryCode.isEmpty() || section.countryCode.equals(selectedCountryCode, true)) &&
+                    (selected.isEmpty() || section.title == selected)
+            }
+            .flatMap { section ->
+                section.items.filter { channel ->
+                    normalizedQuery.isEmpty() ||
+                        channel.name.contains(normalizedQuery, ignoreCase = true) ||
+                        section.title.contains(normalizedQuery, ignoreCase = true)
+                }
+            }
+            .distinctBy { it.id }
+            .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name.trim() })
         adapter.submitList(list)
         findViewById<TextView>(R.id.channelCount)?.text = "${list.size} قناة"
         empty.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
     }
 
-    private fun restoreOriginalLists() {
-        restoreButton.isEnabled = false
-        restoreButton.text = "جارٍ استعادة القنوات..."
-        Thread {
-            var added = 0
-            val sources = listOf(
-                Pair("قنوات عربية", "https://iptv-org.github.io/iptv/languages/ara.m3u"),
-                Pair("رياضة", "https://iptv-org.github.io/iptv/categories/sports.m3u"),
-                Pair("أخبار", "https://iptv-org.github.io/iptv/categories/news.m3u"),
-                Pair("أطفال", "https://iptv-org.github.io/iptv/categories/kids.m3u")
-            )
-            try {
-                val target = File(filesDir, "channels.json")
-                val raw = if (target.isFile) target.readText(Charsets.UTF_8)
-                    else assets.open("channels.json").bufferedReader(Charsets.UTF_8).use { it.readText() }
-                val root = JSONObject(raw)
-                val groups = root.optJSONArray("sections") ?: JSONArray().also { root.put("sections", it) }
-                for ((title, endpoint) in sources) {
-                    val connection = URL(endpoint).openConnection() as HttpURLConnection
-                    connection.connectTimeout = 15000; connection.readTimeout = 25000
-                    connection.setRequestProperty("User-Agent", "RAHMANI/1.0")
-                    val body = try {
-                        val code = connection.responseCode
-                        if (code !in 200..299) throw java.io.IOException("Playlist HTTP $code")
-                        connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-                    } finally { connection.disconnect() }
-                    var section: JSONObject? = null
-                    for (i in 0 until groups.length()) {
-                        val item = groups.optJSONObject(i)
-                        if (item?.optString("title") == title) { section = item; break }
-                    }
-                    if (section == null) {
-                        val created = JSONObject().put("title", title).put("items", JSONArray())
-                        groups.put(created)
-                        section = created
-                    }
-                    val actualSection = section ?: continue
-                    val items = actualSection.optJSONArray("items") ?: JSONArray().also { actualSection.put("items", it) }
-                    val known = HashSet<String>()
-                    for (i in 0 until items.length()) known.add(items.optJSONObject(i)?.optString("url").orEmpty())
-                    var name = ""; var logo = ""
-                    for (line in body.lineSequence()) {
-                        val value = line.trim()
-                        if (value.startsWith("#EXTINF", true)) {
-                            name = value.substringAfterLast(',').trim()
-                            logo = Regex("""tvg-logo="([^"]*)"""").find(value)?.groupValues?.getOrNull(1).orEmpty()
-                        } else if (value.startsWith("http", true) && name.isNotBlank() && value !in known) {
-                            items.put(JSONObject().put("id", "iptv-" + value.hashCode()).put("name", name)
-                                .put("logo", logo).put("url", value).put("referer", ""))
-                            known.add(value); added++; name = ""; logo = ""
-                        }
-                    }
-                }
-                val temp = File(filesDir, "channels.json.tmp")
-                temp.writeText(root.toString(2), Charsets.UTF_8)
-                if (!temp.renameTo(target)) { temp.copyTo(target, overwrite = true); temp.delete() }
-                runOnUiThread {
-                    sections = ChannelRepository.load(this); selected = ""
-                    rebuildChips(chips); refresh()
-                    restoreButton.isEnabled = true; restoreButton.text = "استعادة القنوات القديمة"
-                    Toast.makeText(this, "أضيفت " + added + " قناة. افحص الروابط من لوحة الإدارة لأن توفر البث يتغير.", Toast.LENGTH_LONG).show()
-                }
-            } catch (_: Exception) {
-                runOnUiThread {
-                    restoreButton.isEnabled = true; restoreButton.text = "إعادة محاولة استعادة القنوات"
-                    Toast.makeText(this, "تعذّر تحميل القوائم؛ تحقق من اتصال الإنترنت", Toast.LENGTH_LONG).show()
-                }
-            }
-        }.start()
-    }
 }
