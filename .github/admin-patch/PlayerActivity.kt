@@ -4,6 +4,7 @@ import android.content.pm.ActivityInfo
 import android.app.PictureInPictureParams
 import android.os.Build
 import android.util.Rational
+import android.util.Log
 import android.net.Uri
 import android.net.ConnectivityManager
 import android.net.Network
@@ -25,6 +26,7 @@ import android.widget.ProgressBar
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.C
 import androidx.media3.common.AudioAttributes
@@ -34,11 +36,15 @@ import androidx.media3.session.MediaSession
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.effect.Brightness
+import androidx.media3.effect.Contrast
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.HttpDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.AspectRatioFrameLayout
@@ -61,10 +67,13 @@ private data class DisplayChannel(
     val defaultUrl: String = legacyUrl
 )
 
+@OptIn(UnstableApi::class)
 class PlayerActivity : AppCompatActivity() {
     private var player: ExoPlayer? = null
     private var mediaSession: MediaSession? = null
     private lateinit var playerView: PlayerView
+    private lateinit var texturePlayerView: PlayerView
+    private lateinit var surfacePlayerView: PlayerView
     private lateinit var title: TextView
     private lateinit var status: TextView
     private lateinit var loadingIndicator: ProgressBar
@@ -90,11 +99,13 @@ class PlayerActivity : AppCompatActivity() {
     private var recoveryAttempts = 0
     private var currentVideoResolution = ""
     private var firstVideoFrameRendered = false
+    private var surfaceFallbackAttempted = false
     private val firstFrameTimeout = Runnable {
         val active = player
         if (!firstVideoFrameRendered && active?.playbackState == Player.STATE_READY && current != null) {
+            if (switchToSurfaceViewFallback()) return@Runnable
             showLoading(false)
-            status.text = "البث متصل لكن لم تظهر صورة الفيديو • تحقق من رابط القناة أو ترميزها"
+            status.text = "البث متصل لكن لم تظهر صورة الفيديو • راجع سجل Decoder والترميز"
         }
     }
     private var displayMode = 0
@@ -122,13 +133,16 @@ class PlayerActivity : AppCompatActivity() {
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         setContentView(R.layout.activity_player)
         applyFullscreenSystemUi()
-        playerView = findViewById(R.id.playerView)
+        texturePlayerView = findViewById(R.id.playerView)
+        surfacePlayerView = findViewById(R.id.playerViewSurface)
+        playerView = texturePlayerView
+        surfacePlayerView.visibility = View.GONE
         // Initialize every view used by applyDisplayMode before calling it.
         zoom = findViewById(R.id.zoomButton)
         // Default to FILL for an immersive full-frame presentation.
         // FIT remains available when viewers want the entire image without cropping.
         displayMode = if (playerPrefs.contains("display_mode")) {
-            playerPrefs.getInt("display_mode", 1).coerceIn(0, 1)
+            playerPrefs.getInt("display_mode", 1).coerceIn(0, 2)
         } else {
             1
         }
@@ -139,7 +153,6 @@ class PlayerActivity : AppCompatActivity() {
         list = findViewById(R.id.channelList)
         playPause = findViewById(R.id.playPauseButton)
         fullscreen = findViewById(R.id.fullscreenButton)
-        zoom.text = if (displayMode == 1) "ملء الشاشة" else "ملاءمة"
         fullscreen.text = "⤡"
         retry = findViewById(R.id.retryButton)
         server = findViewById(R.id.serverButton)
@@ -177,7 +190,8 @@ class PlayerActivity : AppCompatActivity() {
         }
         findViewById<Button>(R.id.previousChannelButton).setOnClickListener { changeChannel(-1) }
         findViewById<Button>(R.id.nextChannelButton).setOnClickListener { changeChannel(1) }
-        playerView.setOnClickListener { if (controlsLocked) { controlsLocked = false; lockButton.text = "♙"; setOverlayVisible(true) } else { setOverlayVisible(findViewById<View>(R.id.topBar).visibility != View.VISIBLE) } }
+        installPlayerSurfaceClickListener(texturePlayerView)
+        installPlayerSurfaceClickListener(surfacePlayerView)
 
         val advanced = UniversalStreamEngine.load(this)
         channels = UniversalStreamEngine.loadLegacy(this).map { legacy ->
@@ -201,6 +215,7 @@ class PlayerActivity : AppCompatActivity() {
         retry.setOnClickListener { hardRefreshCurrentStream(resetRecoveryAttempts = true) }
         server.setOnClickListener { nextCandidateOrRetry() }
         quality.setOnClickListener { showQualityPicker() }
+        findViewById<Button>(R.id.imageSettingsButton).setOnClickListener { showImageSettings() }
 
         val requestedId = intent.getStringExtra(EXTRA_CHANNEL_ID).orEmpty()
         val requestedUrl = intent.getStringExtra(EXTRA_URL).orEmpty().trim()
@@ -298,6 +313,13 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun ensurePlayer(channel: DisplayChannel) {
+        if (::texturePlayerView.isInitialized && playerView !== texturePlayerView) {
+            playerView.player = null
+            playerView.visibility = View.GONE
+            texturePlayerView.visibility = View.VISIBLE
+            playerView = texturePlayerView
+        }
+        surfaceFallbackAttempted = false
         playerView.player = null
         mediaSession?.release()
         mediaSession = null
@@ -349,12 +371,17 @@ class PlayerActivity : AppCompatActivity() {
             )
         }
 
+        val renderersFactory = DefaultRenderersFactory(this)
+            .setEnableDecoderFallback(true)
+
         player = ExoPlayer.Builder(this)
+            .setRenderersFactory(renderersFactory)
             .setTrackSelector(trackSelector)
             .setLoadControl(loadControl)
             .setMediaSourceFactory(sourceFactory)
             .build().also { exo ->
                 playerView.player = exo
+                applyVideoAdjustments(exo)
                 exo.setAudioAttributes(
                     AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(),
                     true
@@ -368,11 +395,40 @@ class PlayerActivity : AppCompatActivity() {
                     ) {
                         firstVideoFrameRendered = true
                         handler.removeCallbacks(firstFrameTimeout)
+                        showLoading(false)
+                        Log.i(TAG, "First video frame rendered; surface=${playerView.javaClass.simpleName}")
                         if (exo.playbackState == Player.STATE_READY) {
                             status.text = if (currentVideoResolution.isNotEmpty()) {
                                 "RAHMANI TV • ${currentVideoResolution}"
                             } else "RAHMANI TV • الصورة تعمل"
                         }
+                    }
+
+                    override fun onVideoDecoderInitialized(
+                        eventTime: androidx.media3.exoplayer.analytics.AnalyticsListener.EventTime,
+                        decoderName: String,
+                        initializedTimestampMs: Long,
+                        initializationDurationMs: Long
+                    ) {
+                        Log.i(TAG, "Video decoder=$decoderName init=${initializationDurationMs}ms")
+                    }
+
+                    override fun onVideoInputFormatChanged(
+                        eventTime: androidx.media3.exoplayer.analytics.AnalyticsListener.EventTime,
+                        format: androidx.media3.common.Format,
+                        decoderReuseEvaluation: androidx.media3.exoplayer.DecoderReuseEvaluation?
+                    ) {
+                        val color = format.colorInfo
+                        Log.i(TAG, "Video format mime=${format.sampleMimeType}, codecs=${format.codecs}, " +
+                            "size=${format.width}x${format.height}, fps=${format.frameRate}, " +
+                            "colorRange=${color?.colorRange}, colorSpace=${color?.colorSpace}, colorTransfer=${color?.colorTransfer}")
+                    }
+
+                    override fun onVideoCodecError(
+                        eventTime: androidx.media3.exoplayer.analytics.AnalyticsListener.EventTime,
+                        videoCodecError: Exception
+                    ) {
+                        Log.e(TAG, "Video codec error", videoCodecError)
                     }
                 })
                 exo.addListener(object : Player.Listener {
@@ -398,6 +454,8 @@ class PlayerActivity : AppCompatActivity() {
                         currentVideoResolution = if (videoSize.width > 0 && videoSize.height > 0) {
                             "${videoSize.width}×${videoSize.height}"
                         } else ""
+                        val ratio = if (videoSize.height > 0) videoSize.width * videoSize.pixelWidthHeightRatio / videoSize.height else 0f
+                        Log.i(TAG, "Video size=${videoSize.width}x${videoSize.height}, ratio=$ratio, rotation=${videoSize.unappliedRotationDegrees}")
                         if (exo.playbackState == Player.STATE_READY) {
                             status.text = if (currentVideoResolution.isNotEmpty()) {
                                 "RAHMANI TV • ${currentVideoResolution}"
@@ -593,6 +651,85 @@ class PlayerActivity : AppCompatActivity() {
         status.text = "جارٍ الاتصال..."
     }
 
+    private fun installPlayerSurfaceClickListener(view: PlayerView) {
+        view.setOnClickListener {
+            if (controlsLocked) {
+                controlsLocked = false
+                lockButton.text = "♙"
+                setOverlayVisible(true)
+            } else {
+                setOverlayVisible(findViewById<View>(R.id.topBar).visibility != View.VISIBLE)
+            }
+        }
+    }
+
+    private fun switchToSurfaceViewFallback(): Boolean {
+        if (surfaceFallbackAttempted || playerView !== texturePlayerView) return false
+        val active = player ?: return false
+        surfaceFallbackAttempted = true
+        playerView.player = null
+        texturePlayerView.visibility = View.GONE
+        surfacePlayerView.visibility = View.VISIBLE
+        playerView = surfacePlayerView
+        playerView.player = active
+        playerView.requestLayout()
+        showLoading(true)
+        status.text = "لم تظهر الصورة، نجرب سطح عرض بديل..."
+        handler.postDelayed(firstFrameTimeout, 8000L)
+        return true
+    }
+
+    private fun applyVideoAdjustments(target: ExoPlayer) {
+        val brightness = playerPrefs.getFloat("video_brightness", 0f).coerceIn(-1f, 1f)
+        val contrast = playerPrefs.getFloat("video_contrast", 0f).coerceIn(-1f, 1f)
+        val effects = mutableListOf<androidx.media3.common.Effect>()
+        if (brightness != 0f) effects += Brightness(brightness)
+        if (contrast != 0f) effects += Contrast(contrast)
+        target.setVideoEffects(effects)
+    }
+
+    private fun showImageSettings() {
+        val density = resources.displayMetrics.density
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding((20 * density).toInt(), (12 * density).toInt(), (20 * density).toInt(), 0)
+        }
+        fun addAdjustment(labelText: String, key: String) {
+            val label = TextView(this).apply { textSize = 14f; setTextColor(Color.WHITE) }
+            val seek = SeekBar(this).apply {
+                max = 200
+                progress = ((playerPrefs.getFloat(key, 0f).coerceIn(-1f, 1f) + 1f) * 100f).toInt()
+            }
+            fun update(progress: Int) {
+                val value = (progress - 100) / 100f
+                label.text = "$labelText: ${"%.2f".format(value)}"
+                playerPrefs.edit().putFloat(key, value).apply()
+                player?.let(::applyVideoAdjustments)
+            }
+            seek.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                    if (fromUser) update(progress)
+                }
+                override fun onStartTrackingTouch(seekBar: SeekBar?) = Unit
+                override fun onStopTrackingTouch(seekBar: SeekBar?) = Unit
+            })
+            content.addView(label)
+            content.addView(seek)
+            update(seek.progress)
+        }
+        addAdjustment("السطوع", "video_brightness")
+        addAdjustment("التباين", "video_contrast")
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("ضبط الصورة")
+            .setView(content)
+            .setPositiveButton("إغلاق", null)
+            .setNeutralButton("إعادة الضبط") { _, _ ->
+                playerPrefs.edit().putFloat("video_brightness", 0f).putFloat("video_contrast", 0f).apply()
+                player?.let(::applyVideoAdjustments)
+            }
+            .show()
+    }
+
     private fun showLoading(visible: Boolean) {
         loadingIndicator.visibility = if (visible) View.VISIBLE else View.GONE
     }
@@ -743,17 +880,23 @@ class PlayerActivity : AppCompatActivity() {
         // allowing the image aspect ratio to change as requested.
         val modes = intArrayOf(
             AspectRatioFrameLayout.RESIZE_MODE_FIT,
-            AspectRatioFrameLayout.RESIZE_MODE_FILL
+            AspectRatioFrameLayout.RESIZE_MODE_FILL,
+            AspectRatioFrameLayout.RESIZE_MODE_ZOOM
         )
         playerView.resizeMode = modes[displayMode.coerceIn(0, modes.lastIndex)]
-        zoom.text = if (displayMode == 1) "تمديد كامل" else "ملاءمة"
+        zoom.text = when (displayMode) {
+            1 -> "تمديد"
+            2 -> "ملء"
+            else -> "ملاءمة"
+        }
         playerView.requestLayout()
     }
 
     private fun showDisplayModePicker() {
         val options = arrayOf(
-            "ملاءمة — إظهار الصورة بالكامل مع الحفاظ على أبعادها",
-            "تمديد كامل — ملء الإطار بالكامل وقد تتغير أبعاد الصورة"
+            "ملاءمة — إظهار الصورة كاملة مع الحفاظ على النسبة",
+            "تمديد كامل — ملء الإطار حتى لو تغيرت الأبعاد",
+            "ملء الشاشة — تكبير الصورة وقص الأطراف عند الحاجة"
         )
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("اختر طريقة عرض الفيديو")
@@ -800,6 +943,7 @@ class PlayerActivity : AppCompatActivity() {
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
         playerView.post {
+            player?.let { active -> if (playerView.player !== active) playerView.player = active }
             playerView.requestLayout()
             playerView.invalidate()
         }
@@ -824,6 +968,8 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun setOverlayVisible(visible: Boolean) {
         val overlays = listOf(
+            findViewById<View>(R.id.playerTopScrim),
+            findViewById<View>(R.id.playerBottomScrim),
             findViewById<View>(R.id.topBar),
             findViewById<View>(R.id.bottomPanel),
             centerControls
@@ -922,6 +1068,10 @@ class PlayerActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         if (isFullscreen) applyFullscreenSystemUi()
+        player?.let { active ->
+            if (playerView.player !== active) playerView.player = active
+            playerView.post { playerView.requestLayout(); playerView.invalidate() }
+        }
         // Resume only if playback was active before the Activity was paused.
         if (resumePlaybackOnResume) player?.playWhenReady = true
         resumePlaybackOnResume = false
@@ -985,6 +1135,8 @@ class PlayerActivity : AppCompatActivity() {
         handler.removeCallbacksAndMessages(null)
         recoveryTask = null
         playerView.player = null
+        if (::texturePlayerView.isInitialized) texturePlayerView.player = null
+        if (::surfacePlayerView.isInitialized) surfacePlayerView.player = null
         mediaSession?.release()
         mediaSession = null
         player?.release()
@@ -1096,6 +1248,7 @@ class PlayerActivity : AppCompatActivity() {
     ) : RecyclerView.ViewHolder(view)
 
     companion object {
+        private const val TAG = "RahmaniPlayer"
         const val EXTRA_NAME = "channel_name"
         const val EXTRA_URL = "channel_url"
         const val EXTRA_REFERER = "channel_referer"
