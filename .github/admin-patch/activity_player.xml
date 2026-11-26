@@ -18,7 +18,8 @@
         app:use_controller="false"
         app:show_buffering="never"
         app:resize_mode="fill"
-        app:keep_content_on_player_reset="true" />
+        app:keep_content_on_player_reset="true"
+        app:surface_type="texture_view" />
 
     <View
         android:layout_width="match_parent"
