@@ -316,22 +316,22 @@ class MainActivity : AppCompatActivity() {
             ).apply { topMargin = dp(8) })
         }
         entry("الرئيسية", "العودة إلى الصفحة الرئيسية") {
-            selected = ""; selectedRegion = ""; selectedCountryCode = ""; rebuildChips(chips); refresh()
+            selected = ""; selectedRegion = ""; selectedCountryCode = ""; homePrefs.edit().putString("selected_country_code", "").apply(); rebuildChips(chips); refresh()
             updateBottomNavigation(R.id.navHome)
             channelRecycler.smoothScrollToPosition(0)
         }
         entry("القنوات المباشرة", "تصفح القنوات المتاحة") {
-            selected = ""; selectedRegion = ""; rebuildChips(chips); refresh()
+            selected = ""; selectedRegion = ""; selectedCountryCode = ""; homePrefs.edit().putString("selected_country_code", "").apply(); rebuildChips(chips); refresh()
             updateBottomNavigation(R.id.navChannels)
             channelRecycler.smoothScrollToPosition(0)
         }
         entry("الدول العربية", "قنوات البلدان العربية") {
-            selected = ""; selectedRegion = "arab"; rebuildChips(chips); refresh()
+            selected = ""; selectedRegion = "arab"; selectedCountryCode = ""; homePrefs.edit().putString("selected_country_code", "").apply(); rebuildChips(chips); refresh()
             updateBottomNavigation(R.id.navChannels)
             channelRecycler.smoothScrollToPosition(0)
         }
         entry("الدول الأجنبية", "قنوات البلدان الأجنبية") {
-            selected = ""; selectedRegion = "foreign"; rebuildChips(chips); refresh()
+            selected = ""; selectedRegion = "foreign"; selectedCountryCode = ""; homePrefs.edit().putString("selected_country_code", "").apply(); rebuildChips(chips); refresh()
             updateBottomNavigation(R.id.navChannels)
             channelRecycler.smoothScrollToPosition(0)
         }
