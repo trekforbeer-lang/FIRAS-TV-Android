@@ -266,7 +266,13 @@ class PlayerActivity : AppCompatActivity() {
             )
         }
 
-        return existing ?: channels.firstOrNull()
+        // Do not silently start an unrelated channel when an explicit channel request is invalid.
+        // Only use the first available channel when the player was opened without a selection.
+        return existing ?: if (requestedId.isBlank() && requestedName.isBlank() && requestedUrl.isBlank()) {
+            channels.firstOrNull()
+        } else {
+            null
+        }
     }
 
     private fun requestHeaders(channel: DisplayChannel): Map<String, String> {
