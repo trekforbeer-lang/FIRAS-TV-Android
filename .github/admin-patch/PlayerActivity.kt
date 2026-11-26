@@ -139,13 +139,10 @@ class PlayerActivity : AppCompatActivity() {
         surfacePlayerView.visibility = View.GONE
         // Initialize every view used by applyDisplayMode before calling it.
         zoom = findViewById(R.id.zoomButton)
-        // Default to FILL for an immersive full-frame presentation.
-        // FIT remains available when viewers want the entire image without cropping.
-        displayMode = if (playerPrefs.contains("display_mode")) {
-            playerPrefs.getInt("display_mode", 1).coerceIn(0, 2)
-        } else {
-            1
-        }
+        // Always open live playback in full-frame stretch, including upgrades
+        // from installs that previously saved FIT or ZOOM.
+        displayMode = 1
+        playerPrefs.edit().putInt("display_mode", displayMode).apply()
         applyDisplayMode()
         title = findViewById(R.id.channelTitle)
         status = findViewById(R.id.statusText)
@@ -457,6 +454,9 @@ class PlayerActivity : AppCompatActivity() {
                         } else ""
                         val ratio = if (videoSize.height > 0) videoSize.width * videoSize.pixelWidthHeightRatio / videoSize.height else 0f
                         Log.i(TAG, "Video size=${videoSize.width}x${videoSize.height}, ratio=$ratio, rotation=${videoSize.unappliedRotationDegrees}")
+                        // Re-measure the active texture/surface after the stream reports
+                        // its real dimensions; keep the requested full-frame stretch.
+                        playerView.post { applyDisplayMode() }
                         if (exo.playbackState == Player.STATE_READY) {
                             status.text = if (currentVideoResolution.isNotEmpty()) {
                                 "RAHMANI TV • ${currentVideoResolution}"
@@ -673,6 +673,7 @@ class PlayerActivity : AppCompatActivity() {
         surfacePlayerView.visibility = View.VISIBLE
         playerView = surfacePlayerView
         playerView.player = active
+        applyDisplayMode()
         playerView.requestLayout()
         showLoading(true)
         status.text = "لم تظهر الصورة، نجرب سطح عرض بديل..."
@@ -884,7 +885,12 @@ class PlayerActivity : AppCompatActivity() {
             AspectRatioFrameLayout.RESIZE_MODE_FILL,
             AspectRatioFrameLayout.RESIZE_MODE_ZOOM
         )
-        playerView.resizeMode = modes[displayMode.coerceIn(0, modes.lastIndex)]
+        val selectedMode = modes[displayMode.coerceIn(0, modes.lastIndex)]
+        // Keep both render targets in sync so TextureView -> SurfaceView fallback
+        // cannot unexpectedly restore a different aspect-ratio policy.
+        texturePlayerView.resizeMode = selectedMode
+        surfacePlayerView.resizeMode = selectedMode
+        playerView.resizeMode = selectedMode
         zoom.text = when (displayMode) {
             1 -> "تمديد"
             2 -> "ملء"
@@ -945,6 +951,7 @@ class PlayerActivity : AppCompatActivity() {
         super.onConfigurationChanged(newConfig)
         playerView.post {
             player?.let { active -> if (playerView.player !== active) playerView.player = active }
+            applyDisplayMode()
             playerView.requestLayout()
             playerView.invalidate()
         }
