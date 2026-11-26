@@ -130,10 +130,21 @@ public class MainActivity extends Activity {
         getWindow().getDecorView().setSystemUiVisibility(oldSystemUi);
     }
 
+    private boolean backPending = false;
+
     @Override public void onBackPressed() {
         if (customView != null) { hideCustomView(); return; }
-        if (webView != null && webView.canGoBack()) { webView.goBack(); return; }
-        super.onBackPressed();
+        if (webView == null) { super.onBackPressed(); return; }
+        if (backPending) return;
+        backPending = true;
+        webView.evaluateJavascript(
+            "(function(){return window.handleAndroidBack ? window.handleAndroidBack() : false;})()",
+            value -> {
+                backPending = false;
+                if ("true".equals(value)) return;
+                if (webView != null && webView.canGoBack()) webView.goBack();
+                else finish();
+            });
     }
 
     @Override protected void onSaveInstanceState(Bundle outState) {
