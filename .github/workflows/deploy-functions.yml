@@ -31,3 +31,18 @@ jobs:
 
       - name: Deploy footballFixtures
         run: firebase deploy --only functions:footballFixtures --project rahmani-tv --non-interactive
+
+      - name: Verify deployed footballFixtures endpoint
+        env:
+          FOOTBALL_TEST_DATE: ${{ github.event.repository.updated_at }}
+        run: |
+          DATE="$(date -u +%F)"
+          URL="https://europe-west1-rahmani-tv.cloudfunctions.net/footballFixtures?date=$DATE&timezone=Europe%2FMadrid"
+          CODE="$(curl --silent --show-error --output response.json --write-out '%{http_code}' "$URL")"
+          echo "footballFixtures HTTP status: $CODE"
+          if [ "$CODE" != "200" ]; then
+            echo "Endpoint verification failed:"
+            cat response.json
+            exit 1
+          fi
+          node -e "const d=require('./response.json'); if (!Array.isArray(d.response)) process.exit(1); console.log('Valid API-Football response; fixtures:', d.response.length)"
