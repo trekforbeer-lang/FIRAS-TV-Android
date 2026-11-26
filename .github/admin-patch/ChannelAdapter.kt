@@ -33,11 +33,6 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
     private val cache = object : LinkedHashMap<String, Bitmap>(48, .75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Bitmap>?): Boolean = size > 48
     }
-    // Reuse fallback artwork during RecyclerView rebinding instead of allocating
-    // a new 160x160 bitmap on every scroll pass.
-    private val fallbackCache = object : LinkedHashMap<String, Bitmap>(32, .75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Bitmap>?): Boolean = size > 64
-    }
 
     object Diff : DiffUtil.ItemCallback<Channel>() {
         override fun areItemsTheSame(oldItem: Channel, newItem: Channel) =
@@ -52,18 +47,18 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
         val context = parent.context
         val card = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
-            setPadding(dp(7), dp(10), dp(7), dp(9))
-            minimumHeight = dp(162)
+            setPadding(dp(11), dp(11), dp(11), dp(11))
+            minimumHeight = dp(112)
             elevation = dp(2).toFloat()
             background = android.graphics.drawable.RippleDrawable(
-                android.content.res.ColorStateList.valueOf(Color.rgb(104, 82, 39)),
+                android.content.res.ColorStateList.valueOf(Color.rgb(229, 9, 20)),
                 GradientDrawable().apply {
-                    setColor(Color.rgb(24, 25, 21))
-                    cornerRadius = dp(16).toFloat()
-                    setStroke(dp(1), Color.rgb(79, 70, 43))
+                    setColor(Color.rgb(14, 14, 14))
+                    cornerRadius = dp(18).toFloat()
+                    setStroke(dp(1), Color.rgb(76, 28, 32))
                 },
                 null
             )
@@ -73,7 +68,7 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
             background = GradientDrawable().apply {
                 setColor(Color.WHITE)
                 cornerRadius = dp(13).toFloat()
-                setStroke(dp(1), Color.rgb(111, 94, 51))
+                setStroke(dp(1), Color.rgb(229, 9, 20))
             }
         }
         val logo = ImageView(context).apply {
@@ -81,37 +76,44 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
             setPadding(dp(5), dp(5), dp(5), dp(5))
             contentDescription = "شعار القناة"
         }
-        logoFrame.addView(logo, LinearLayout.LayoutParams(dp(76), dp(76)))
-        card.addView(logoFrame, LinearLayout.LayoutParams(dp(88), dp(88)))
+        logoFrame.addView(logo, LinearLayout.LayoutParams(dp(72), dp(72)))
+        card.addView(logoFrame, LinearLayout.LayoutParams(dp(82), dp(82)))
+        val details = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), 0, dp(8), 0)
+        }
         val title = TextView(context).apply {
             setTextColor(Color.WHITE)
-            textSize = 12.5f
+            textSize = 14f
             typeface = Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
+            gravity = Gravity.RIGHT or Gravity.CENTER_VERTICAL
             maxLines = 2
             ellipsize = android.text.TextUtils.TruncateAt.END
-            setPadding(dp(2), dp(7), dp(2), 0)
+            setPadding(0, 0, 0, dp(4))
         }
-        card.addView(title, LinearLayout.LayoutParams(-1, -2))
+        details.addView(title, LinearLayout.LayoutParams(-1, -2))
         val subtitle = TextView(context).apply {
-            setTextColor(Color.rgb(157, 160, 172))
-            textSize = 9f
-            gravity = Gravity.CENTER
+            setTextColor(Color.rgb(170, 170, 170))
+            textSize = 10f
+            gravity = Gravity.RIGHT
             text = "مباشر"
-            setPadding(0, dp(3), 0, 0)
+            setPadding(0, dp(2), 0, 0)
         }
-        card.addView(subtitle, LinearLayout.LayoutParams(-1, -2))
+        details.addView(subtitle, LinearLayout.LayoutParams(-1, -2))
         val favorite = TextView(context).apply {
             textSize = 10f
             gravity = Gravity.CENTER
-            setPadding(dp(10), dp(6), dp(10), dp(6))
-            setTextColor(Color.rgb(255, 202, 98))
+            setPadding(dp(9), dp(8), dp(9), dp(8))
+            setTextColor(Color.rgb(229, 9, 20))
             background = GradientDrawable().apply {
-                setColor(Color.rgb(46, 39, 24))
+                setColor(Color.rgb(35, 18, 20))
                 cornerRadius = dp(10).toFloat()
+                setStroke(dp(1), Color.rgb(90, 23, 29))
             }
         }
-        card.addView(favorite, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(7) })
+        details.addView(favorite, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(8) })
+        card.addView(details, LinearLayout.LayoutParams(0, -2, 1f))
         card.setOnClickListener { }
         return Holder(card, logo, title, subtitle, favorite)
     }
@@ -119,19 +121,35 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
     override fun onBindViewHolder(holder: Holder, position: Int) {
         val channel = getItem(position)
         holder.title.text = channel.name
-        holder.subtitle.text = if (channel.url.isBlank()) "لا يوجد رابط" else "رابط مضاف"
-        holder.subtitle.setTextColor(if (channel.url.isBlank()) Color.rgb(255, 202, 98) else Color.rgb(95, 211, 148))
+        val state = channel.status.trim().lowercase()
+        val maintenance = channel.url.isBlank() || state in setOf("maintenance", "paused", "disabled", "offline", "صيانة", "قيد الصيانة", "متوقف")
+        val comingSoon = state in setOf("soon", "coming_soon", "قريباً", "قريبا")
+        val updating = state in setOf("updating", "pending", "تحديث", "قيد التحديث")
+        val stateLabel = when {
+            maintenance -> "●  القناة في وضع الصيانة"
+            comingSoon -> "◷  قريباً"
+            updating -> "↻  قيد التحديث"
+            else -> "●  متاحة للمشاهدة"
+        }
+        val stateColor = when {
+            maintenance -> Color.rgb(242, 174, 76)
+            comingSoon -> Color.rgb(151, 171, 205)
+            updating -> Color.rgb(115, 190, 220)
+            else -> Color.rgb(92, 205, 145)
+        }
+        holder.subtitle.text = stateLabel
+        holder.subtitle.setTextColor(stateColor)
         holder.subtitle.background = GradientDrawable().apply {
-            setColor(if (channel.url.isBlank()) Color.rgb(54, 45, 27) else Color.rgb(29, 55, 42))
+            setColor(Color.argb(28, Color.red(stateColor), Color.green(stateColor), Color.blue(stateColor)))
             cornerRadius = dp(9).toFloat()
         }
-        holder.subtitle.setPadding(dp(7), dp(3), dp(7), dp(3))
-        holder.card.contentDescription = if (channel.url.isBlank()) "${channel.name}، الرابط غير مضاف" else "${channel.name}، جاهزة للتشغيل"
+        holder.subtitle.setPadding(dp(7), dp(4), dp(7), dp(4))
+        holder.card.contentDescription = "${channel.name}، ${stateLabel}"
         holder.card.setOnClickListener { onClick(channel) }
         fun updateFavoriteLabel() {
             val saved = FavoriteChannels.contains(holder.itemView.context, channel)
             holder.favorite.text = if (saved) "★  محفوظ في قائمتي" else "☆  أضف إلى قائمتي"
-            holder.favorite.setTextColor(if (saved) Color.rgb(255, 205, 92) else Color.rgb(255, 202, 98))
+            holder.favorite.setTextColor(if (saved) Color.rgb(229, 9, 20) else Color.rgb(190, 190, 190))
             holder.favorite.contentDescription = if (saved) "إزالة من قائمتي" else "إضافة إلى قائمتي"
         }
         updateFavoriteLabel()
@@ -150,11 +168,7 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
             try { BitmapFactory.decodeFile(localPath) } catch (_: Exception) { null }
         } else null
         if (localBitmap != null) synchronized(cache) { cache[channel.logo] = localBitmap }
-        val placeholder = synchronized(fallbackCache) { fallbackCache[channel.name] }
-            ?: fallbackLogo(channel.name).also { bitmap ->
-                synchronized(fallbackCache) { fallbackCache[channel.name] = bitmap }
-            }
-        holder.logo.setImageBitmap(cached ?: localBitmap ?: placeholder)
+        holder.logo.setImageBitmap(cached ?: localBitmap ?: fallbackLogo(channel.name))
         val retryAt = failedUntil[channel.logo] ?: 0L
         if (cached == null && localBitmap == null && channel.logo.startsWith("http", true) &&
             System.currentTimeMillis() >= retryAt && inFlight.add(channel.logo)) {
@@ -234,7 +248,7 @@ class ChannelAdapter(private val onClick: (Channel) -> Unit, private val onFavor
         val size = 160
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        val background = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(35, 34, 28) }
+        val background = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(22, 37, 57) }
         canvas.drawRoundRect(0f, 0f, size.toFloat(), size.toFloat(), 24f, 24f, background)
 
         val normalized = name.trim().replace(Regex("\\s+"), " ")
