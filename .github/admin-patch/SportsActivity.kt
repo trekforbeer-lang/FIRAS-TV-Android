@@ -16,6 +16,7 @@ import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 import java.util.concurrent.Executors
 
 private data class MatchCard(
@@ -108,7 +109,8 @@ class SportsActivity : AppCompatActivity() {
             var failure: String? = null
             val found = mutableListOf<MatchCard>()
             try {
-                val date = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply { timeZone = TimeZone.getTimeZone("Europe/Madrid") }
+                val date = dateFormat.format(Date())
                 val url = URL("https://europe-west1-rahmani-tv.cloudfunctions.net/footballFixtures?date=$date")
                 val conn = (url.openConnection() as HttpURLConnection).apply {
                     requestMethod = "GET"
@@ -148,8 +150,8 @@ class SportsActivity : AppCompatActivity() {
                         "1H", "2H", "ET", "P", "LIVE" -> if (elapsed >= 0) "مباشر • $elapsed′" else "مباشر"
                         "HT" -> "استراحة"
                         "FT", "AET", "PEN" -> "انتهت"
-                        " postponed" -> "مؤجلة"
-                        "CANC" -> "ألغيت"
+                        "PST" -> "مؤجلة"
+                        "CANC", "ABD" -> "ألغيت"
                         "SUSP" -> "متوقفة"
                         else -> state.optString("long").ifBlank { "موعد المباراة" }
                     }
@@ -163,10 +165,14 @@ class SportsActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 failure = e.message ?: "تعذّر الاتصال بخدمة النتائج"
             }
-            if (generation == loadGeneration) synchronized(matches) { matches.addAll(found) }
+            if (generation == loadGeneration) {
+                if (failure == null) loadFailures = 0 else loadFailures++
+                synchronized(matches) { matches.addAll(found) }
+            }
             runOnUiThread {
                 if (isFinishing || isDestroyed || generation != loadGeneration) return@runOnUiThread
                 if (failure != null) status.text = "تعذّر تحميل النتائج من API-Football • تحقق من إعداد الخادم والإنترنت"
+                else status.text = if (found.isEmpty()) "لا توجد مباريات في تغذية النتائج لهذا اليوم" else "مباريات اليوم: ${found.size} • المصدر: API-Football"
                 renderMatches()
                 if (failure != null && found.isEmpty()) {
                     Toast.makeText(this, "خدمة النتائج غير جاهزة بعد", Toast.LENGTH_LONG).show()
@@ -178,7 +184,7 @@ class SportsActivity : AppCompatActivity() {
     private fun renderMatches() {
         content.removeAllViews()
         val ordered = synchronized(matches) { matches.sortedBy { if (it.isLive) 0 else 1 } }
-        if (ordered.isNotEmpty()) status.text = "مباريات اليوم: ${ordered.size} • المصدر: API-Football" else if (status.text.isBlank()) status.text = "لا توجد مباريات مسجلة اليوم حالياً"
+        if (ordered.isNotEmpty()) status.text = "مباريات اليوم: ${ordered.size} • المصدر: API-Football"
         if (ordered.isEmpty()) {
             val empty = label(if (loadFailures == leagues.size) "فشل تحميل النتائج من جميع المصادر. أعد المحاولة." else "لا توجد مباريات في تغذية النتائج لهذا اليوم", 14, 0xFF9BB5C8.toInt(), false)
             empty.gravity = Gravity.CENTER
