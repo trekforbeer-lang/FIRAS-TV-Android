@@ -17,7 +17,7 @@
         android:fitsSystemWindows="false"
         app:use_controller="false"
         app:show_buffering="never"
-        app:resize_mode="zoom"
+        app:resize_mode="fill"
         app:keep_content_on_player_reset="true" />
 
     <View
