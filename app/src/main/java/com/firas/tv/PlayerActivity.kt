@@ -92,7 +92,7 @@ class PlayerActivity : AppCompatActivity() {
     private var zoomed = true
     private val resizeModes = intArrayOf(AspectRatioFrameLayout.RESIZE_MODE_FIT, AspectRatioFrameLayout.RESIZE_MODE_ZOOM, AspectRatioFrameLayout.RESIZE_MODE_FILL)
     private val resizeLabels = arrayOf("ملاءمة", "ملء", "تمديد")
-    private var resizeModeIndex = 1
+    private var resizeModeIndex = 2
     private val playerPrefs by lazy { getSharedPreferences("rahmani_player_settings", MODE_PRIVATE) }
     private var recoveryTask: Runnable? = null
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
@@ -116,19 +116,15 @@ class PlayerActivity : AppCompatActivity() {
         setContentView(R.layout.activity_player)
         applyFullscreenSystemUi()
         playerView = findViewById(R.id.playerView)
-        // One-time migration: make full-frame stretch the initial mode for existing installs too.
-        // After migration, preserve the viewer's later manual selection.
-        val fillModeMigrated = playerPrefs.getBoolean("fill_mode_default_migrated", false)
-        if (!fillModeMigrated) {
-            resizeModeIndex = 2
-            playerPrefs.edit()
-                .putInt("resize_mode_index", resizeModeIndex)
-                .putBoolean("fill_mode_default_migrated", true)
-                .apply()
-        } else {
-            resizeModeIndex = playerPrefs.getInt("resize_mode_index", 2).coerceIn(0, resizeModes.lastIndex)
-        }
-        playerView.resizeMode = resizeModes[resizeModeIndex]
+        // Always start in full-frame stretch. Older saved FIT/ZOOM preferences must
+        // not silently restore side bars when the viewer opens a channel.
+        resizeModeIndex = 2
+        playerPrefs.edit()
+            .putInt("resize_mode_index", resizeModeIndex)
+            .putBoolean("fill_mode_default_migrated", true)
+            .apply()
+        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
+        playerView.requestLayout()
         title = findViewById(R.id.channelTitle)
         watermark = findViewById(R.id.channelWatermark)
         status = findViewById(R.id.statusText)
@@ -344,6 +340,9 @@ class PlayerActivity : AppCompatActivity() {
             .setMediaSourceFactory(sourceFactory)
             .build().also { exo ->
                 playerView.player = exo
+                // Re-apply the selected frame mode whenever a new ExoPlayer is attached.
+                playerView.resizeMode = resizeModes[resizeModeIndex]
+                playerView.requestLayout()
                 exo.setAudioAttributes(
                     AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(),
                     true
@@ -356,6 +355,13 @@ class PlayerActivity : AppCompatActivity() {
                         val videoRatio = if (videoSize.height == 0) 0f else
                             videoSize.width * videoSize.pixelWidthHeightRatio / videoSize.height
                         val frameRatio = if (viewHeight == 0) 0f else viewWidth.toFloat() / viewHeight
+                        // Video dimensions can arrive after the first layout pass.
+                        // Re-measure the surface using the current frame mode.
+                        playerView.post {
+                            playerView.resizeMode = resizeModes[resizeModeIndex]
+                            playerView.requestLayout()
+                            playerView.invalidate()
+                        }
                         android.util.Log.d("RAHMANI_PLAYER", "video=${videoSize.width}x${videoSize.height} ratio=$videoRatio frame=${viewWidth}x${viewHeight} ratio=$frameRatio mode=${resizeLabels[resizeModeIndex]}")
                     }
 
