@@ -28,7 +28,7 @@
 
     <View
         android:layout_width="match_parent"
-        android:layout_height="176dp"
+        android:layout_height="108dp"
         android:layout_gravity="bottom"
         android:background="@drawable/rahmani_player_bottom_scrim" />
 
