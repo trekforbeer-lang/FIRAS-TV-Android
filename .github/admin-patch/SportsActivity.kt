@@ -30,6 +30,7 @@ class SportsActivity : AppCompatActivity() {
     private lateinit var status: TextView
     private val matches = mutableListOf<MatchCard>()
     @Volatile private var loadGeneration = 0
+    @Volatile private var loadFailures = 0
     private val leagues = listOf(
         "eng.1" to "الدوري الإنجليزي",
         "esp.1" to "الدوري الإسباني",
@@ -100,6 +101,7 @@ class SportsActivity : AppCompatActivity() {
 
     private fun loadMatches() {
         val generation = ++loadGeneration
+        loadFailures = 0
         status.text = "جارٍ تحديث النتائج..."
         content.removeAllViews()
         synchronized(matches) { matches.clear() }
@@ -153,7 +155,7 @@ class SportsActivity : AppCompatActivity() {
                         found.add(MatchCard(leagueName, home, away, hs, ascore, time, statusText, isLive, channel, commentator))
                     }
                     if (generation == loadGeneration) synchronized(matches) { matches.addAll(found) }
-                } catch (_: Exception) { }
+                } catch (_: Exception) { loadFailures++ }
                 runOnUiThread {
                     if (isFinishing || isDestroyed || generation != loadGeneration) return@runOnUiThread
                     completed++
@@ -166,10 +168,10 @@ class SportsActivity : AppCompatActivity() {
     private fun renderMatches() {
         content.removeAllViews()
         val ordered = synchronized(matches) { matches.sortedBy { if (it.isLive) 0 else 1 } }
-        status.text = if (ordered.isEmpty()) "لا توجد مباريات مسجلة اليوم حالياً • جرّب التحديث لاحقاً"
+        status.text = if (ordered.isEmpty() && loadFailures == leagues.size) "تعذّر الاتصال بمصادر النتائج • تحقق من الإنترنت ثم اضغط تحديث" else if (ordered.isEmpty()) "لا توجد مباريات مسجلة اليوم حالياً • جرّب التحديث لاحقاً"
             else "مباريات اليوم: ${ordered.size} • يتم تحديث البيانات عند الضغط على تحديث"
         if (ordered.isEmpty()) {
-            val empty = label("لا توجد مباريات في تغذية النتائج لهذا اليوم", 14, 0xFF9BB5C8.toInt(), false)
+            val empty = label(if (loadFailures == leagues.size) "فشل تحميل النتائج من جميع المصادر. أعد المحاولة." else "لا توجد مباريات في تغذية النتائج لهذا اليوم", 14, 0xFF9BB5C8.toInt(), false)
             empty.gravity = Gravity.CENTER
             content.addView(empty, LinearLayout.LayoutParams(-1, dp(130)))
             return
