@@ -196,7 +196,7 @@ class MainActivity : AppCompatActivity() {
             text = "RAHMANI"
             gravity = Gravity.CENTER
             textSize = 48f
-            setTextColor(Color.rgb(217, 180, 91))
+            setTextColor(Color.WHITE)
             setTypeface(typeface, Typeface.BOLD)
             letterSpacing = 0.04f
         }
