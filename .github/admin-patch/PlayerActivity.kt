@@ -89,6 +89,14 @@ class PlayerActivity : AppCompatActivity() {
     private var resumePlaybackOnResume = false
     private var recoveryAttempts = 0
     private var currentVideoResolution = ""
+    private var firstVideoFrameRendered = false
+    private val firstFrameTimeout = Runnable {
+        val active = player
+        if (!firstVideoFrameRendered && active?.playbackState == Player.STATE_READY && current != null) {
+            showLoading(false)
+            status.text = "البث متصل لكن لم تظهر صورة الفيديو • تحقق من رابط القناة أو ترميزها"
+        }
+    }
     private var displayMode = 0
     private val playerPrefs by lazy { getSharedPreferences("rahmani_player_preferences", MODE_PRIVATE) }
     private var recoveryTask: Runnable? = null
@@ -334,6 +342,9 @@ class PlayerActivity : AppCompatActivity() {
                     // Prefer the highest quality actually exposed by the stream; this cannot
                     // create HD detail if the channel source itself is low resolution.
                     .setForceHighestSupportedBitrate(true)
+                    // Keep subtitles off by default for a clean live-view screen.
+                    // Viewers can enable a subtitle track from the player menu.
+                    .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
                     .build()
             )
         }
@@ -349,6 +360,21 @@ class PlayerActivity : AppCompatActivity() {
                     true
                 )
                 mediaSession = MediaSession.Builder(this, exo).build()
+                exo.addAnalyticsListener(object : androidx.media3.exoplayer.analytics.AnalyticsListener {
+                    override fun onRenderedFirstFrame(
+                        eventTime: androidx.media3.exoplayer.analytics.AnalyticsListener.EventTime,
+                        output: Any,
+                        renderTimeMs: Long
+                    ) {
+                        firstVideoFrameRendered = true
+                        handler.removeCallbacks(firstFrameTimeout)
+                        if (exo.playbackState == Player.STATE_READY) {
+                            status.text = if (currentVideoResolution.isNotEmpty()) {
+                                "RAHMANI TV • ${currentVideoResolution}"
+                            } else "RAHMANI TV • الصورة تعمل"
+                        }
+                    }
+                })
                 exo.addListener(object : Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {
                         var responseCode: Int? = null
@@ -390,6 +416,8 @@ class PlayerActivity : AppCompatActivity() {
                                 recoveryAttempts = 0
                                 recoveryTask?.let(handler::removeCallbacks)
                                 recoveryTask = null
+                                handler.removeCallbacks(firstFrameTimeout)
+                                if (!firstVideoFrameRendered) handler.postDelayed(firstFrameTimeout, 12000L)
                                 if (currentVideoResolution.isNotEmpty()) "RAHMANI TV • ${currentVideoResolution}" else "RAHMANI TV • البث جاهز"
                             }
                             Player.STATE_ENDED -> {
@@ -463,6 +491,8 @@ class PlayerActivity : AppCompatActivity() {
         currentUrls = emptyList()
         showLoading(true)
         currentVideoResolution = ""
+        firstVideoFrameRendered = false
+        handler.removeCallbacks(firstFrameTimeout)
         title.text = playbackChannel.name
         ensurePlayer(playbackChannel)
 
@@ -550,6 +580,8 @@ class PlayerActivity : AppCompatActivity() {
         }
         val item = itemBuilder.build()
         showLoading(true)
+        firstVideoFrameRendered = false
+        handler.removeCallbacks(firstFrameTimeout)
         player?.apply {
             stop()
             clearMediaItems()
