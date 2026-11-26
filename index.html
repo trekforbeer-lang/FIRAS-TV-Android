@@ -476,6 +476,37 @@ body{background:#070a08}
 }
 @media(prefers-reduced-motion:reduce){.ctl{transition:none}}
 
+
+/* ===== Match centre ===== */
+#pgScores{padding:12px 14px 120px;direction:rtl;background:linear-gradient(180deg,#0d130e,#080b08)}
+#pgScores .score-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 2px 14px}
+#pgScores .pgt{color:#f5c542;font-size:25px;font-weight:900}
+#pgScores .score-actions{display:flex;gap:8px}
+#pgScores .score-btn{padding:9px 13px;border:1px solid #354638;border-radius:12px;background:#172219;color:#fff;font-weight:750}
+#pgScores .score-btn.primary{background:#e2b83e;color:#17170f;border-color:#e2b83e}
+#pgScores .score-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0 12px;scrollbar-width:none}
+#pgScores .score-tabs button{white-space:nowrap;padding:9px 14px;border:1px solid #304032;border-radius:22px;color:#c5d0c3;background:#121b14;font-weight:700}
+#pgScores .score-tabs button.on{background:#e2b83e;color:#16170f;border-color:#e2b83e}
+#pgScores .score-tools{display:flex;gap:8px;margin-bottom:12px}
+#pgScores input,#pgScores select{min-width:0;flex:1;padding:12px;border:1px solid #304032;border-radius:12px;background:#101710;color:#fff;outline:none}
+#pgScores .score-note{color:#aab8a8;font-size:12px;line-height:1.7;margin:8px 2px}
+#pgScores .score-league{margin:18px 2px 9px;color:#f5c542;font-size:14px;font-weight:850;display:flex;align-items:center;gap:8px}
+#pgScores .score-card{padding:13px;margin-bottom:9px;border:1px solid #29392c;border-radius:16px;background:linear-gradient(145deg,#172119,#101610)}
+#pgScores .score-teams{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
+#pgScores .score-team{display:flex;align-items:center;gap:7px;min-width:0;font-size:13px;font-weight:800}
+#pgScores .score-team.away{flex-direction:row-reverse;text-align:right}
+#pgScores .score-team img{width:27px;height:27px;object-fit:contain;flex:0 0 27px}
+#pgScores .score-team span{overflow:hidden;text-overflow:ellipsis}
+#pgScores .score-value{min-width:65px;text-align:center;font-size:18px;font-weight:900;white-space:nowrap}
+#pgScores .score-meta{display:flex;justify-content:space-between;gap:8px;margin-top:9px;color:#aab8a8;font-size:11px}
+#pgScores .score-live{color:#ff6258;font-weight:900}
+#pgScores .score-events{border-top:1px dashed #344235;margin-top:10px;padding-top:8px;font-size:12px;line-height:1.9;color:#dce5d9}
+#pgScores .score-empty{padding:32px 16px;text-align:center;color:#aab8a8;line-height:1.9;border:1px dashed #344235;border-radius:16px}
+#pgScores .score-config{margin-top:20px;padding:13px;border:1px solid #354638;border-radius:15px;background:#111a12}
+#pgScores .score-config summary{font-weight:800;color:#f5c542;cursor:pointer}
+#pgScores .score-config input{width:100%;margin-top:12px}
+@media(min-width:700px){#pgScores{max-width:1000px;margin:auto}#pgScores .score-card{padding:16px}}
+
 </style>
 </head>
 <body>
@@ -512,6 +543,7 @@ body{background:#070a08}
     <section class="pg" id="pgDisc"></section>
     <section class="pg" id="pgMy"></section>
     <section class="pg" id="pgMore"></section>
+    <section class="pg" id="pgScores"></section>
   </main>
   <nav id="bn"></nav>
 </div>
@@ -880,13 +912,14 @@ $('#wk').addEventListener('click',function(){cfg.onlyOk=!cfg.onlyOk;sv('fr_cfg',
    5) PAGES: home (tabs) · channels · discover · my list · more
    ===================================================================== */
 var page='home',tab='home',ovOpen=false,fGrid=null,myF=ld('fr_mf',[]);
-var PG={home:'pgHome',ch:'pgCh',disc:'pgDisc',my:'pgMy',more:'pgMore'};
+var PG={home:'pgHome',ch:'pgCh',disc:'pgDisc',my:'pgMy',more:'pgMore',scores:'pgScores'};
 var TABS=[['home','الرئيسية'],['films','الأفلام'],['progs','البرامج'],['sports','رياضة']];
 var BNI=[['home','الرئيسية','<path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/>'],
  ['ch','القنوات','<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 3l4 4 4-4"/>'],
  ['disc','اكتشف','<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>'],
  ['my','قائمتي','<path d="M6 3h12v18l-6-4-6 4z"/>'],
- ['more','المزيد','<path d="M4 7h16M4 12h16M4 17h16"/>']];
+ ['more','المزيد','<path d="M4 7h16M4 12h16M4 17h16"/>'],
+ ['scores','المباريات','<path d="M4 5h16v14H4zM4 10h16M9 5v5m6-5v5M9 14h2m2 0h2"/>']];
 function ico(p){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>'}
 function drawBn(){
   var n=$('#bn');n.textContent='';
@@ -907,7 +940,7 @@ function setPage(p){
   Object.keys(PG).forEach(function(k){$('#'+PG[k]).classList.toggle('on',k===p)});
   $('#tabs').style.display=p==='home'?'flex':'none';
   drawBn();
-  if(p==='ch'){drawNav();render()}else renderPage();
+  if(p==='ch'){drawNav();render()}else renderPage();if(p==='scores')scoreLoad(false);
 }
 function setTab(t){
   if(tab==='films'&&t!=='films'&&films.q){films.q='';films.items=[];films.done=false}
@@ -1067,6 +1100,38 @@ function sportsTab(box){
   heading(box,'قنوات رياضية');
   gridCh(box,sportsList(),'لا توجد قنوات رياضية عاملة حالياً.\nأضف روابط القنوات من الإدارة.');
 }
+
+/* =====================================================================
+   5B) LIVE FOOTBALL SCORES — API-FOOTBALL
+   API key is entered by the user and kept in this WebView's local storage.
+   Never commit a private API key into the app source.
+   ===================================================================== */
+var scoreState={day:'live',items:[],busy:false,stale:false,updated:0,league:'',query:'',events:{},timer:0};
+function scoreKey(){return String(ld('fr_football_api_key','')||'').trim()}
+function scoreDate(offset){var d=new Date();d.setDate(d.getDate()+offset);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function scoreStatus(m){var st=m.fixture.status.short;if(['1H','2H','HT','ET','P','BT','LIVE'].indexOf(st)>=0)return 'مباشر'+(m.fixture.status.elapsed?' · '+m.fixture.status.elapsed+"'":'');if(['FT','AET','PEN'].indexOf(st)>=0)return 'انتهت';if(st==='PST')return 'مؤجلة';if(st==='CANC')return 'ملغاة';if(st==='ABD')return 'متوقفة';return new Date(m.fixture.date).toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'})+' · لم تبدأ'}
+function scoreLive(m){return ['1H','2H','HT','ET','P','BT','LIVE'].indexOf(m.fixture.status.short)>=0}
+function scoreErr(e){var m=String(e&&e.message||e);if(/401|403/.test(m))return 'مفتاح API غير صحيح أو لا يملك صلاحية الوصول.';if(/429/.test(m))return 'تم بلوغ حد الطلبات المسموح. انتظر تجدد الحصة.';if(/Failed to fetch|NetworkError|Load failed/i.test(m))return 'تعذر الاتصال بخدمة النتائج من داخل WebView. قد تحتاج الخدمة إلى وسيط آمن يدعم CORS.';return 'تعذر تحميل النتائج: '+m}
+function scoreLoad(force){
+  var key=scoreKey();if(!key){renderScores();return}
+  if(scoreState.busy)return;scoreState.busy=true;
+  var day=scoreState.day, path=day==='live'?'/fixtures?live=all':'/fixtures?date='+scoreDate(Number(day))+'&timezone='+encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC');
+  var cacheId='fr_scores_'+day, cached=ld(cacheId,null);
+  if(!force&&cached&&Date.now()-cached.t<(day==='live'?60000:900000)){scoreState.items=cached.items||[];scoreState.busy=false;scoreState.stale=false;renderScores();return}
+  renderScores();
+  fetch('https://v3.football.api-sports.io'+path,{headers:{'x-apisports-key':key}}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(function(j){if(j.errors&&Object.keys(j.errors).length)throw new Error(JSON.stringify(j.errors));scoreState.items=Array.isArray(j.response)?j.response:[];scoreState.updated=Date.now();scoreState.stale=false;sv(cacheId,{t:Date.now(),items:scoreState.items});}).catch(function(e){scoreState.stale=!!cached;if(cached)scoreState.items=cached.items||[];scoreState.error=scoreErr(e)}).finally(function(){scoreState.busy=false;if(page==='scores')renderScores();clearTimeout(scoreState.timer);if(day==='live')scoreState.timer=setTimeout(function(){if(page==='scores')scoreLoad(true)},60000)});
+}
+function scoreCard(m){var f=m.fixture,g=m.goals,st=f.status.short,started=scoreLive(m)||['FT','AET','PEN'].indexOf(st)>=0;var mid=started?(g.home==null?'0':g.home)+' - '+(g.away==null?'0':g.away):new Date(f.date).toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'});var card=el('div','score-card');var teams=el('div','score-teams');var h=el('div','score-team');var hi=el('img');hi.src=m.teams.home.logo||'';hi.alt='';h.appendChild(hi);h.appendChild(el('span','',m.teams.home.name));var a=el('div','score-team away');var ai=el('img');ai.src=m.teams.away.logo||'';ai.alt='';a.appendChild(ai);a.appendChild(el('span','',m.teams.away.name));teams.appendChild(h);teams.appendChild(el('div','score-value',mid));teams.appendChild(a);card.appendChild(teams);var meta=el('div','score-meta');meta.appendChild(el('span','',m.league.country+' · '+m.league.name));var status=el('span',scoreLive(m)?'score-live':'',scoreStatus(m));meta.appendChild(status);card.appendChild(meta);if(started){var ev=el('button','score-btn','الأحداث');ev.style.marginTop='9px';ev.onclick=function(){scoreEvents(f.id,card)};card.appendChild(ev)}return card}
+function scoreEvents(id,card){var old=card.querySelector('.score-events');if(old){old.remove();return}var box=el('div','score-events','جارٍ تحميل الأحداث…');card.appendChild(box);fetch('https://v3.football.api-sports.io/fixtures/events?fixture='+encodeURIComponent(id),{headers:{'x-apisports-key':scoreKey()}}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(function(j){if(j.errors&&Object.keys(j.errors).length)throw new Error(JSON.stringify(j.errors));var a=(j.response||[]).filter(function(x){return x.type==='Goal'||x.type==='Card'||x.type==='subst'});box.textContent=a.length?a.map(function(x){return (x.time.elapsed||0)+"' · "+(x.type==='Goal'?'⚽':x.type==='Card'?(String(x.detail).indexOf('Red')>=0?'🟥':'🟨'):'🔄')+' '+(x.player&&x.player.name||'')+' ('+(x.team&&x.team.name||'')+')'}).join('\n'):'لا توجد أحداث مسجلة.'}).catch(function(e){box.textContent=scoreErr(e)})}
+function renderScores(){var box=$('#pgScores');if(!box)return;box.textContent='';var head=el('div','score-head');head.appendChild(el('div','pgt','مركز المباريات'));var actions=el('div','score-actions');var refresh=el('button','score-btn','تحديث');refresh.onclick=function(){scoreLoad(true)};actions.appendChild(refresh);head.appendChild(actions);box.appendChild(head);
+  var tabs=el('div','score-tabs');[['live','مباشر'],[-1,'أمس'],[0,'اليوم'],[1,'غداً'],[2,'بعد غد']].forEach(function(x){var b=el('button',scoreState.day===String(x[0])?'on':'',x[1]);b.onclick=function(){scoreState.day=String(x[0]);scoreState.items=[];scoreState.error='';scoreLoad(true)};tabs.appendChild(b)});box.appendChild(tabs);
+  if(!scoreKey()){box.appendChild(el('div','score-empty','أدخل مفتاح API-Football لتفعيل النتائج المباشرة والمواعيد.'));var cfgBox=el('details','score-config');var sum=el('summary','','إعداد مفتاح API');cfgBox.appendChild(sum);var input=el('input');input.type='password';input.autocomplete='off';input.placeholder='الصق مفتاح API-Football هنا';cfgBox.appendChild(input);var save=el('button','score-btn primary','حفظ المفتاح');save.style.marginTop='8px';save.onclick=function(){var k=input.value.trim();if(k.length<12)return toast('تحقق من المفتاح');sv('fr_football_api_key',k);scoreState.error='';scoreLoad(true)};cfgBox.appendChild(save);cfgBox.appendChild(el('div','score-note','المفتاح محفوظ محلياً على هذا الجهاز داخل التطبيق، وليس ضمن ملفات المشروع.'));box.appendChild(cfgBox);return}
+  var tools=el('div','score-tools');var q=el('input');q.type='search';q.placeholder='ابحث عن فريق أو دوري';q.value=scoreState.query;q.oninput=function(){scoreState.query=q.value;renderScores()};tools.appendChild(q);var leagues=Array.from(new Set(scoreState.items.map(function(m){return m.league.name}))).sort();var sel=el('select');var op=el('option','','كل الدوريات');op.value='';sel.appendChild(op);leagues.forEach(function(n){var o=el('option','',n);o.value=n;if(n===scoreState.league)o.selected=true;sel.appendChild(o)});sel.onchange=function(){scoreState.league=sel.value;renderScores()};tools.appendChild(sel);box.appendChild(tools);
+  if(scoreState.busy&&!scoreState.items.length){box.appendChild(el('div','score-empty','جارٍ تحميل المباريات…'));return}if(scoreState.stale)box.appendChild(el('div','score-note','الاتصال غير متاح؛ نعرض آخر بيانات محفوظة.'));if(scoreState.error)box.appendChild(el('div','score-note',scoreState.error));
+  var list=scoreState.items.filter(function(m){var q=scoreState.query.toLowerCase(),text=(m.teams.home.name+' '+m.teams.away.name+' '+m.league.name+' '+m.league.country).toLowerCase();return(!scoreState.league||m.league.name===scoreState.league)&&(!q||text.indexOf(q)>=0)}).sort(function(a,b){return a.fixture.timestamp-b.fixture.timestamp});
+  if(!list.length){box.appendChild(el('div','score-empty',scoreState.busy?'جارٍ تحديث النتائج…':'لا توجد مباريات في هذا القسم حالياً.'));return}var groups={};list.forEach(function(m){(groups[m.league.name]||(groups[m.league.name]=[])).push(m)});Object.keys(groups).forEach(function(n){box.appendChild(el('div','score-league','🏆 '+n));groups[n].forEach(function(m){box.appendChild(scoreCard(m))})});if(scoreState.updated)box.appendChild(el('div','score-note','آخر تحديث: '+new Date(scoreState.updated).toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'})));
+}
+
 /* discover */
 function renderDisc(){
   var box=$('#pgDisc');box.textContent='';
