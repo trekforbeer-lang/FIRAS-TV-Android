@@ -478,6 +478,58 @@ body{background:#070a08}
 }
 @media(prefers-reduced-motion:reduce){.ctl{transition:none}}
 
+
+/* ===== RAHMANI TV UI refinement ===== */
+:root{--radius-card:18px;--shadow-soft:0 12px 34px #0006}
+button:focus-visible,[role=button]:focus-visible,input:focus-visible{outline:2px solid #e50918;outline-offset:2px}
+#cats{scrollbar-width:thin;scrollbar-color:#343846 transparent}
+#cats button{min-height:58px;margin:2px 6px 2px 0;padding:10px 12px;border:1px solid transparent;border-radius:0 15px 15px 0;font-size:15px;transition:background .18s,border-color .18s}
+#cats button.on{background:linear-gradient(90deg,#e5091824,#252936);border-color:#e5091840;box-shadow:inset 3px 0 #e50918}
+#cats .ci{flex-basis:36px;height:36px;box-shadow:0 4px 12px #0005}
+#side{border-left:1px solid #ffffff0d}
+#list{scrollbar-width:thin;scrollbar-color:#353947 transparent}
+.ch{min-height:68px;margin:3px 0;padding:10px 12px;border:1px solid transparent;border-radius:15px}
+.ch.on{background:linear-gradient(110deg,#e5091820,#252936);border-color:#e5091844}
+.ch .lg{box-shadow:0 4px 12px #0005}
+.ch .nm{font-size:15px;letter-spacing:.05px}
+.ch .st{min-width:34px;min-height:38px;border-radius:12px}
+.ch .st:active{background:#ffffff18}
+#q,.sq{min-height:46px;border-radius:14px;background:#090b11;border-color:#ffffff18}
+#wk{border-radius:13px}
+#wk.on{background:#42d392;color:#07140e;border-color:#42d392}
+#pl{box-shadow:0 10px 30px #0008}
+#pl video{background:#000}
+#pp,#pv,#nx,#fs,#bk{border-radius:50%;background:#1119;backdrop-filter:blur(8px)}
+#pp{width:66px;height:66px;padding:13px;border:1px solid #ffffff35}
+#pv,#nx{padding:9px;border:1px solid #ffffff22}
+#fs{border:1px solid #ffffff25}
+#msg{backdrop-filter:blur(8px)}
+#ovp{background:#000}
+#ovp #pl{min-height:100dvh}
+#bn button{min-height:54px}
+#bn button .i{width:25px;height:25px}
+.mi{border:1px solid #ffffff0d;box-shadow:0 6px 18px #0003}
+.rh h3{font-weight:850}
+.sl{box-shadow:var(--shadow-soft)}
+.pc .pw,.cc .cl{box-shadow:0 8px 20px #0005}
+.maint-badge{border:1px solid #ffbd8640}
+@media(max-width:380px){
+ #cats{flex-basis:34%;max-width:132px}
+ #cats button{gap:8px;padding:9px 7px;font-size:13px}
+ #cats .ci{flex-basis:30px;height:30px}
+ .ch{gap:9px;padding:8px}
+ .ch .lg{flex-basis:52px;height:42px}
+ .ch .nm{font-size:13px}
+}
+@media(orientation:landscape) and (min-width:700px){
+ #cats{flex-basis:230px;max-width:280px}
+ #cats button{min-height:62px;font-size:16px}
+ #list{padding:6px 12px}
+ .ch{min-height:76px}
+}
+@media(prefers-reduced-motion:reduce){
+ *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
 </style>
 </head>
 <body>
