@@ -116,8 +116,18 @@ class PlayerActivity : AppCompatActivity() {
         setContentView(R.layout.activity_player)
         applyFullscreenSystemUi()
         playerView = findViewById(R.id.playerView)
-        // Restore the last selected scaling mode; default to Zoom to remove side bars.
-        resizeModeIndex = playerPrefs.getInt("resize_mode_index", 2).coerceIn(0, resizeModes.lastIndex)
+        // One-time migration: make full-frame stretch the initial mode for existing installs too.
+        // After migration, preserve the viewer's later manual selection.
+        val fillModeMigrated = playerPrefs.getBoolean("fill_mode_default_migrated", false)
+        if (!fillModeMigrated) {
+            resizeModeIndex = 2
+            playerPrefs.edit()
+                .putInt("resize_mode_index", resizeModeIndex)
+                .putBoolean("fill_mode_default_migrated", true)
+                .apply()
+        } else {
+            resizeModeIndex = playerPrefs.getInt("resize_mode_index", 2).coerceIn(0, resizeModes.lastIndex)
+        }
         playerView.resizeMode = resizeModes[resizeModeIndex]
         title = findViewById(R.id.channelTitle)
         watermark = findViewById(R.id.channelWatermark)
