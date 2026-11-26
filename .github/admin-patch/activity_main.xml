@@ -22,7 +22,7 @@
             android:layout_marginStart="8dp"
             android:gravity="center"
             android:text="☰"
-            android:textColor="#D9B45B"
+            android:textColor="#E50914"
             android:textSize="23sp"
             android:background="@drawable/rahmani_action_button"
             android:contentDescription="فتح القائمة الجانبية"
@@ -39,7 +39,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="RAHMANI TV"
-                android:textColor="#D9B45B"
+                android:textColor="#E50914"
                 android:textSize="25sp"
                 android:textStyle="bold|italic"
                 android:letterSpacing="0.06"
@@ -120,7 +120,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="RAHMANI TV  /  PREMIUM STREAMING"
-                        android:textColor="#D9B45B"
+                        android:textColor="#E50914"
                         android:textStyle="bold"
                         android:textSize="9sp"
                         android:letterSpacing="0.12"
@@ -270,7 +270,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="RAHMANI SPORTS"
-                        android:textColor="#D9B45B"
+                        android:textColor="#E50914"
                         android:textStyle="bold"
                         android:textSize="9sp"
                         android:letterSpacing="0.08"/>
@@ -363,7 +363,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="8dp"
                     android:text="0 قناة"
-                    android:textColor="#D9B45B"
+                    android:textColor="#E50914"
                     android:textStyle="bold"
                     android:textSize="11sp"/>
                 <Button
@@ -406,7 +406,7 @@
                         android:layout_height="34dp"
                         android:gravity="center"
                         android:text="الدول"
-                        android:textColor="#D9B45B"
+                        android:textColor="#E50914"
                         android:textStyle="bold"
                         android:textSize="12sp"/>
                     <ScrollView
