@@ -196,8 +196,8 @@
                         android:focusable="true"/>
                     <TextView
                         android:id="@+id/quickSportsButton"
-                        android:layout_width="118dp"
-                        android:layout_height="88dp"
+                        android:layout_width="122dp"
+                        android:layout_height="94dp"
                         android:layout_marginEnd="9dp"
                         android:gravity="center"
                         android:background="@drawable/rahmani_action_card"
@@ -210,8 +210,8 @@
                         android:focusable="true"/>
                     <TextView
                         android:id="@+id/quickMoviesButton"
-                        android:layout_width="118dp"
-                        android:layout_height="88dp"
+                        android:layout_width="122dp"
+                        android:layout_height="94dp"
                         android:layout_marginEnd="9dp"
                         android:gravity="center"
                         android:background="@drawable/rahmani_action_card"
@@ -462,7 +462,7 @@
         android:layout_width="match_parent"
         android:layout_height="68dp"
         android:layout_marginStart="8dp"
-        android:layout_marginEnd="4dp"
+        android:layout_marginEnd="8dp"
         android:layout_marginBottom="4dp"
         android:orientation="horizontal"
         android:gravity="center"
