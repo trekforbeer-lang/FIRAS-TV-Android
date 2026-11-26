@@ -10,8 +10,8 @@ android {
         applicationId 'com.firas.tv'
         minSdk 23
         targetSdk 35
-        versionCode 614
-        versionName '2.2.0'
+        versionCode 615
+        versionName '2.2.1'
     }
 
     compileOptions {
