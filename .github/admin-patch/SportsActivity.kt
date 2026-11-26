@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -109,9 +110,11 @@ class SportsActivity : AppCompatActivity() {
             var failure: String? = null
             val found = mutableListOf<MatchCard>()
             try {
-                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply { timeZone = TimeZone.getTimeZone("Europe/Madrid") }
+                val deviceTimeZone = TimeZone.getDefault().id
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply { timeZone = TimeZone.getDefault() }
                 val date = dateFormat.format(Date())
-                val url = URL("https://europe-west1-rahmani-tv.cloudfunctions.net/footballFixtures?date=$date")
+                val encodedTimeZone = URLEncoder.encode(deviceTimeZone, "UTF-8")
+                val url = URL("https://europe-west1-rahmani-tv.cloudfunctions.net/footballFixtures?date=$date&timezone=$encodedTimeZone")
                 val conn = (url.openConnection() as HttpURLConnection).apply {
                     requestMethod = "GET"
                     connectTimeout = 15000
