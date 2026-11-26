@@ -51,7 +51,7 @@ class MainActivity : AppCompatActivity() {
         Thread { StreamConfigStore.ensureLoaded(appCtx) }.start()
         adapter = ChannelAdapter(onClick = { c ->
             if (c.url.isBlank()) {
-                Toast.makeText(this, "رابط البث غير مضاف لهذه القناة بعد. أضفه من لوحة الإدارة.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "هذه القناة قيد الصيانة حالياً، وسيتم إتاحتها عند تحديث البث.", Toast.LENGTH_LONG).show()
                 return@ChannelAdapter
             }
             val now = SystemClock.elapsedRealtime()
@@ -194,7 +194,7 @@ class MainActivity : AppCompatActivity() {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { topMargin = dp(top) })
         }
-        addWelcomeText("فراس", 29f, Color.WHITE, true, 17)
+        addWelcomeText("RAHMANI", 29f, Color.WHITE, true, 17)
         addWelcomeText("مرحباً بك في عالم الترفيه", 19f, Color.rgb(255, 214, 130), true, 9)
         addWelcomeText("قنوات مباشرة • أفلام • مسلسلات • رياضة", 13f, Color.rgb(218, 224, 238), false, 12)
         addWelcomeText("كل ما تحب مشاهدته، في مكان واحد", 12f, Color.rgb(169, 182, 204), false, 8)
