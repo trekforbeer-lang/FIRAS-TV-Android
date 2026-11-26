@@ -45,64 +45,67 @@
     <LinearLayout
         android:id="@+id/topBar"
         android:layout_width="match_parent"
-        android:layout_height="60dp"
+        android:layout_height="56dp"
         android:layout_gravity="top"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginTop="4dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="18dp"
+        android:layout_marginTop="6dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="0dp"
-        android:paddingEnd="0dp"
         android:background="@android:color/transparent"
         android:elevation="8dp">
 
         <Button
             android:id="@+id/playerBackButton"
-            android:layout_width="42dp"
-            android:layout_height="42dp"
+            android:layout_width="38dp"
+            android:layout_height="40dp"
             android:minWidth="0dp"
             android:minHeight="0dp"
             android:background="@android:color/transparent"
             android:backgroundTint="@null"
             android:stateListAnimator="@null"
             android:text="‹"
-            android:textSize="30sp"
+            android:textSize="28sp"
             android:textColor="#FFFFFF" />
 
-        <LinearLayout
+        <Button
+            android:id="@+id/qualityButton"
+            android:layout_width="48dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="4dp"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:background="@drawable/rahmani_player_chip"
+            android:backgroundTint="@null"
+            android:stateListAnimator="@null"
+            android:text="HD"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="13sp" />
+
+        <View
             android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/channelTitle"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:paddingStart="12dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text=" "
-                android:visibility="gone"
-                android:textColor="#FFFFFF"
-                android:textStyle="bold"
-                android:textSize="13sp"
-                android:letterSpacing="0.12" />
-
-            <TextView
-                android:id="@+id/channelTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="اختر قناة"
-                android:textColor="#FFFFFF"
-                android:textStyle="bold"
-                android:textSize="16sp"
-                android:maxLines="1" />
-        </LinearLayout>
+            android:maxWidth="260dp"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:text="اختر قناة"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="17sp"
+            android:gravity="end" />
 
         <Button
             android:id="@+id/lockButton"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:layout_marginEnd="7dp"
+            android:visibility="gone"
             android:minWidth="0dp"
             android:minHeight="0dp"
             android:background="@android:color/transparent"
@@ -114,9 +117,9 @@
 
         <Button
             android:id="@+id/fullscreenButton"
-            android:layout_width="42dp"
-            android:layout_height="40dp"
-            android:layout_marginEnd="7dp"
+            android:layout_width="1dp"
+            android:layout_height="1dp"
+            android:visibility="gone"
             android:minWidth="0dp"
             android:minHeight="0dp"
             android:background="@android:color/transparent"
@@ -125,20 +128,6 @@
             android:text="▣"
             android:textColor="#FFFFFF"
             android:textSize="20sp" />
-
-        <Button
-            android:id="@+id/qualityButton"
-            android:layout_width="48dp"
-            android:layout_height="40dp"
-            android:minWidth="0dp"
-            android:minHeight="0dp"
-            android:background="@drawable/rahmani_player_chip"
-            android:backgroundTint="@null"
-            android:stateListAnimator="@null"
-            android:text="HD"
-            android:textColor="#FFFFFF"
-            android:textStyle="bold"
-            android:textSize="13sp" />
     </LinearLayout>
 
     <LinearLayout
@@ -250,107 +239,91 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="42dp"
+            android:layout_height="44dp"
             android:gravity="center"
             android:orientation="horizontal">
 
             <Button
-                android:id="@+id/subtitleButton"
-                android:layout_width="0dp"
-                android:layout_height="38dp"
-                android:layout_weight="1.15"
-                android:layout_marginEnd="5dp"
-                android:minWidth="0dp"
-                android:minHeight="0dp"
-                android:text="▤  الترجمة والصوت"
-                android:textAllCaps="false"
-                android:textSize="13sp"
-                android:background="@android:color/transparent"
-                android:backgroundTint="@null"
-                android:stateListAnimator="@null"
-                android:textColor="#E8EDF5" />
-
-            <Button
-                android:id="@+id/zoomButton"
-                android:layout_width="0dp"
-                android:layout_height="38dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="5dp"
-                android:minWidth="0dp"
-                android:minHeight="0dp"
-                android:text="□  نسبة العرض"
-                android:textAllCaps="false"
-                android:textSize="13sp"
-                android:background="@android:color/transparent"
-                android:backgroundTint="@null"
-                android:stateListAnimator="@null"
-                android:textColor="#FFFFFF" />
-
-            <Button
                 android:id="@+id/channelListButton"
                 android:layout_width="0dp"
-                android:layout_height="38dp"
-                android:layout_weight="0.85"
-                android:layout_marginEnd="5dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
                 android:minWidth="0dp"
                 android:minHeight="0dp"
                 android:text="♧  قائمتي"
                 android:textAllCaps="false"
-                android:textSize="13sp"
+                android:textSize="14sp"
                 android:background="@android:color/transparent"
                 android:backgroundTint="@null"
                 android:stateListAnimator="@null"
                 android:textColor="#FFFFFF" />
+
+            <Button
+                android:id="@+id/fullscreenButton"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:text="⤢  ملء الشاشة"
+                android:textAllCaps="false"
+                android:textSize="14sp"
+                android:background="@android:color/transparent"
+                android:backgroundTint="@null"
+                android:stateListAnimator="@null"
+                android:textColor="#FFFFFF" />
+
+            <Button
+                android:id="@+id/subtitleButton"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1.15"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:text="▤  الترجمة والصوت"
+                android:textAllCaps="false"
+                android:textSize="14sp"
+                android:background="@android:color/transparent"
+                android:backgroundTint="@null"
+                android:stateListAnimator="@null"
+                android:textColor="#FFFFFF" />
+
+            <Button
+                android:id="@+id/zoomButton"
+                android:layout_width="1dp"
+                android:layout_height="1dp"
+                android:visibility="gone"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:text="نسبة العرض"
+                android:background="@android:color/transparent" />
 
             <Button
                 android:id="@+id/pictureInPictureButton"
-                android:layout_width="0dp"
-                android:layout_height="38dp"
+                android:layout_width="1dp"
+                android:layout_height="1dp"
                 android:visibility="gone"
-                android:layout_weight="0.85"
-                android:layout_marginEnd="5dp"
                 android:minWidth="0dp"
                 android:minHeight="0dp"
-                android:text="مصغّر"
-                android:textAllCaps="false"
-                android:textSize="13sp"
-                android:background="@android:color/transparent"
-                android:backgroundTint="@null"
-                android:stateListAnimator="@null"
-                android:textColor="#FFFFFF" />
+                android:text="مصغّر" />
 
             <Button
                 android:id="@+id/retryButton"
-                android:layout_width="0dp"
-                android:layout_height="38dp"
+                android:layout_width="1dp"
+                android:layout_height="1dp"
                 android:visibility="gone"
-                android:layout_weight="0.75"
-                android:layout_marginEnd="5dp"
                 android:minWidth="0dp"
                 android:minHeight="0dp"
-                android:text="إعادة"
-                android:textAllCaps="false"
-                android:textSize="13sp"
-                android:background="@android:color/transparent"
-                android:backgroundTint="@null"
-                android:stateListAnimator="@null"
-                android:textColor="#FFFFFF" />
+                android:text="إعادة" />
 
             <Button
                 android:id="@+id/serverButton"
-                android:layout_width="0dp"
-                android:layout_height="38dp"
+                android:layout_width="1dp"
+                android:layout_height="1dp"
                 android:visibility="gone"
-                android:layout_weight="0.75"
                 android:minWidth="0dp"
                 android:minHeight="0dp"
-                android:text="المصدر"
-                android:textAllCaps="false"
-                android:textSize="13sp"
-                android:background="@android:color/transparent"
-                android:backgroundTint="@null"
-                android:stateListAnimator="@null"
-                android:textColor="#FFFFFF" />
+                android:text="المصدر" />
         </LinearLayout>
     </LinearLayout>
 
