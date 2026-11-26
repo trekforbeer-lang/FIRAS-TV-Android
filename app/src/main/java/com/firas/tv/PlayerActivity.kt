@@ -87,7 +87,11 @@ class PlayerActivity : AppCompatActivity() {
     private var isFullscreen = true
     private var resumePlaybackOnResume = false
     private var recoveryAttempts = 0
-    private var zoomed = false
+    private var zoomed = true
+    private val resizeModes = intArrayOf(AspectRatioFrameLayout.RESIZE_MODE_FIT, AspectRatioFrameLayout.RESIZE_MODE_ZOOM, AspectRatioFrameLayout.RESIZE_MODE_FILL)
+    private val resizeLabels = arrayOf("ملاءمة", "ملء", "تمديد")
+    private var resizeModeIndex = 1
+    private val playerPrefs by lazy { getSharedPreferences("rahmani_player_settings", MODE_PRIVATE) }
     private var recoveryTask: Runnable? = null
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private var networkWasLost = false
@@ -110,10 +114,9 @@ class PlayerActivity : AppCompatActivity() {
         setContentView(R.layout.activity_player)
         applyFullscreenSystemUi()
         playerView = findViewById(R.id.playerView)
-        // Use the full landscape viewport; the viewer can switch to Fit when desired.
-        zoomed = true
-        // Stretch video to fill the complete player frame, even if aspect ratio changes.
-        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
+        // Restore the last selected scaling mode; default to Zoom to remove side bars.
+        resizeModeIndex = playerPrefs.getInt("resize_mode_index", 1).coerceIn(0, resizeModes.lastIndex)
+        playerView.resizeMode = resizeModes[resizeModeIndex]
         title = findViewById(R.id.channelTitle)
         watermark = findViewById(R.id.channelWatermark)
         status = findViewById(R.id.statusText)
@@ -122,7 +125,7 @@ class PlayerActivity : AppCompatActivity() {
         playPause = findViewById(R.id.playPauseButton)
         fullscreen = findViewById(R.id.fullscreenButton)
         zoom = findViewById(R.id.zoomButton)
-        zoom.text = "ملاءمة"
+        zoom.text = resizeLabels[resizeModeIndex]
         fullscreen.text = "⤢"
         retry = findViewById(R.id.retryButton)
         server = findViewById(R.id.serverButton)
@@ -173,10 +176,11 @@ class PlayerActivity : AppCompatActivity() {
         }
         fullscreen.setOnClickListener { toggleFullscreen() }
         zoom.setOnClickListener {
-            // Keep the requested full-frame stretch mode; no crop or letterboxing.
-            zoomed = true
-            playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
-            zoom.text = "تمديد"
+            resizeModeIndex = (resizeModeIndex + 1) % resizeModes.size
+            playerView.resizeMode = resizeModes[resizeModeIndex]
+            playerPrefs.edit().putInt("resize_mode_index", resizeModeIndex).apply()
+            zoom.text = resizeLabels[resizeModeIndex]
+            Toast.makeText(this, "وضع الصورة: ${resizeLabels[resizeModeIndex]}", Toast.LENGTH_SHORT).show()
         }
         retry.setOnClickListener { hardRefreshCurrentStream(resetRecoveryAttempts = true) }
         server.setOnClickListener { nextCandidateOrRetry() }
@@ -679,10 +683,9 @@ class PlayerActivity : AppCompatActivity() {
         requestedOrientation = if (isFullscreen) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
             else ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         applyFullscreenSystemUi()
-        // Keep full-frame stretch in either fullscreen state; source proportions may change.
-        zoomed = true
-        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
-        zoom.text = "تمديد"
+        // Preserve the user's selected scaling mode when toggling fullscreen.
+        playerView.resizeMode = resizeModes[resizeModeIndex]
+        zoom.text = resizeLabels[resizeModeIndex]
         fullscreen.text = if (isFullscreen) "⤡" else "⛶"
         playerView.post {
             playerView.requestLayout()
@@ -697,9 +700,8 @@ class PlayerActivity : AppCompatActivity() {
             // Return to the normal phone portrait screen after leaving fullscreen.
             requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             applyFullscreenSystemUi()
-            zoomed = true
-            playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
-            zoom.text = "تمديد"
+            playerView.resizeMode = resizeModes[resizeModeIndex]
+            zoom.text = resizeLabels[resizeModeIndex]
             fullscreen.text = "⛶"
             handler.removeCallbacks(hideOverlayTask)
         } else {
