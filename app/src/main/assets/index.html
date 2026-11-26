@@ -1538,5 +1538,14 @@ function drawAdm(){
   a.scrollTop=keepY;
 }
 
+/* Android hardware-back handling: close the topmost app surface before leaving. */
+window.handleAndroidBack=function(){
+  if(admin){closeAdm();return true}
+  if(plFs()||v.webkitDisplayingFullscreen){exitFs();return true}
+  if(ovOpen){closeOv();return true}
+  if(page!=='home'){setPage('home');return true}
+  return false;
+};
+
 /* Do not force the whole document into fullscreen on the first tap.
    Fullscreen is requested only by the player's fullscreen button. */
