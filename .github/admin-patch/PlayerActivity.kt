@@ -330,7 +330,9 @@ class PlayerActivity : AppCompatActivity() {
                 buildUponParameters()
                     .setMaxVideoSize(3840, 2160)
                     .setMaxVideoBitrate(Int.MAX_VALUE)
-                    // Keep adaptive bitrate selection enabled for variable mobile connections.
+                    // Prefer the highest quality actually exposed by the stream; this cannot
+                    // create HD detail if the channel source itself is low resolution.
+                    .setForceHighestSupportedBitrate(true)
                     .build()
             )
         }
