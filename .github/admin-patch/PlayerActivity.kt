@@ -890,6 +890,7 @@ class PlayerActivity : AppCompatActivity() {
         playerView.resizeMode = selectedMode
 
         val forcedAspectRatio = when (displayMode) {
+            2 -> 0f
             3 -> 16f / 9f
             4 -> 4f / 3f
             else -> {
