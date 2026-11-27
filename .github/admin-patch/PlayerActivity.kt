@@ -925,7 +925,7 @@ class PlayerActivity : AppCompatActivity() {
         // The on-screen Zoom control must activate Zoom on its first tap.
         // Previously it cycled from the default Fill to Fit, which looked like
         // the button did nothing (or made the picture smaller).
-        displayMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM.let { 1 }
+        displayMode = 1
         playerPrefs.edit().putInt("display_mode_v12", displayMode).apply()
         applyDisplayMode()
         playerView.post {
