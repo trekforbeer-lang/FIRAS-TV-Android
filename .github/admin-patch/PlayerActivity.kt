@@ -10,6 +10,9 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkRequest
 import android.os.Bundle
+import android.graphics.Matrix
+import android.view.TextureView
+import android.view.ViewGroup
 import android.graphics.BitmapFactory
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -909,6 +912,41 @@ class PlayerActivity : AppCompatActivity() {
         }
         playerView.requestLayout()
         playerView.invalidate()
+        applyTextureViewportScale()
+    }
+
+    /**
+     * Media3 can leave a TextureView at the stream's 16:9 dimensions inside a wider
+     * phone viewport. Scale the actual video surface around its center so Zoom covers
+     * the complete player viewport; the parent clips the overflow cleanly.
+     */
+    private fun applyTextureViewportScale() {
+        texturePlayerView.post {
+            val viewportWidth = texturePlayerView.width.toFloat()
+            val viewportHeight = texturePlayerView.height.toFloat()
+            if (viewportWidth <= 0f || viewportHeight <= 0f) return@post
+
+            fun update(view: View) {
+                if (view is TextureView) {
+                    val surfaceWidth = view.width.toFloat()
+                    val surfaceHeight = view.height.toFloat()
+                    if (surfaceWidth <= 0f || surfaceHeight <= 0f) return
+                    val sx = viewportWidth / surfaceWidth
+                    val sy = viewportHeight / surfaceHeight
+                    val scale = when (displayMode) {
+                        0 -> 1f // Fit: preserve the full frame.
+                        1 -> maxOf(sx, sy) // Zoom: cover the viewport, crop overflow.
+                        else -> 1f // Fill/other modes are handled by Media3 resize mode.
+                    }
+                    val matrix = Matrix()
+                    matrix.setScale(scale, scale, surfaceWidth / 2f, surfaceHeight / 2f)
+                    view.setTransform(matrix)
+                } else if (view is ViewGroup) {
+                    for (index in 0 until view.childCount) update(view.getChildAt(index))
+                }
+            }
+            update(texturePlayerView)
+        }
     }
 
     private fun showDisplayModePicker() {
