@@ -141,7 +141,7 @@ class PlayerActivity : AppCompatActivity() {
         zoom = findViewById(R.id.zoomButton)
         // Default to Fill on a fresh install; preserve the viewer's last selected mode.
         // Mode order: Fit, Zoom, Fill, 16:9, 4:3.
-        displayMode = playerPrefs.getInt("display_mode_v7", 1).coerceIn(0, 2)
+        displayMode = playerPrefs.getInt("display_mode_v9", 1).coerceIn(0, 2)
         applyDisplayMode()
         title = findViewById(R.id.channelTitle)
         status = findViewById(R.id.statusText)
@@ -846,8 +846,9 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun applyFullscreenSystemUi() {
-        window.statusBarColor = Color.BLACK
-        window.navigationBarColor = Color.BLACK
+        // Immersive edge-to-edge player: draw behind system bars and the display cutout.
+        window.statusBarColor = Color.TRANSPARENT
+        window.navigationBarColor = Color.TRANSPARENT
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             window.attributes = window.attributes.apply {
@@ -860,18 +861,24 @@ class PlayerActivity : AppCompatActivity() {
         }
 
         androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, !isFullscreen)
-        val insetsController = androidx.core.view.WindowInsetsControllerCompat(window, window.decorView)
-        if (isFullscreen) {
-            insetsController.systemBarsBehavior =
-                androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            insetsController.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
-        } else {
-            insetsController.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+        androidx.core.view.WindowInsetsControllerCompat(window, window.decorView).apply {
+            if (isFullscreen) {
+                systemBarsBehavior =
+                    androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            } else {
+                show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            }
         }
 
         window.decorView.post {
             window.decorView.requestLayout()
-            findViewById<View>(R.id.playerView)?.requestLayout()
+            findViewById<View>(R.id.playerView)?.apply {
+                setPadding(0, 0, 0, 0)
+                requestLayout()
+                invalidate()
+            }
+            findViewById<View>(R.id.playerViewSurface)?.requestLayout()
         }
     }
 
@@ -898,7 +905,7 @@ class PlayerActivity : AppCompatActivity() {
         zoom.text = when (displayMode) {
             0 -> "Fit"
             1 -> "Zoom"
-            else -> "Stretch"
+            else -> "Fill"
         }
         playerView.requestLayout()
         playerView.invalidate()
@@ -906,13 +913,13 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun showDisplayModePicker() {
         displayMode = (displayMode + 1) % 3
-        playerPrefs.edit().putInt("display_mode_v7", displayMode).apply()
+        playerPrefs.edit().putInt("display_mode_v9", displayMode).apply()
         applyDisplayMode()
 
         val label = when (displayMode) {
             0 -> "Fit"
             1 -> "Zoom"
-            else -> "Stretch"
+            else -> "Fill"
         }
         Toast.makeText(this, "وضع العرض: $label", Toast.LENGTH_SHORT).show()
     }
