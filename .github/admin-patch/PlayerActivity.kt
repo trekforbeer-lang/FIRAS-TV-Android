@@ -141,7 +141,7 @@ class PlayerActivity : AppCompatActivity() {
         zoom = findViewById(R.id.zoomButton)
         // Default to Fill on a fresh install; preserve the viewer's last selected mode.
         // Mode order: Fit, Zoom, Fill, 16:9, 4:3.
-        displayMode = playerPrefs.getInt("display_mode_v5", 2).coerceIn(0, 4)
+        displayMode = playerPrefs.getInt("display_mode_v6", 1).coerceIn(0, 2)
         applyDisplayMode()
         title = findViewById(R.id.channelTitle)
         status = findViewById(R.id.statusText)
@@ -845,31 +845,30 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
-    @Suppress("DEPRECATION")
     private fun applyFullscreenSystemUi() {
-        // Use the complete physical display area on phones with different
-        // aspect ratios, status/navigation bars and camera cutouts.
         window.statusBarColor = Color.BLACK
         window.navigationBarColor = Color.BLACK
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val attributes = window.attributes
-            attributes.layoutInDisplayCutoutMode = if (isFullscreen) {
-                android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-            } else {
-                android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
+            window.attributes = window.attributes.apply {
+                layoutInDisplayCutoutMode = if (isFullscreen) {
+                    android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+                } else {
+                    android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
+                }
             }
-            window.attributes = attributes
         }
-        window.decorView.systemUiVisibility = if (isFullscreen) {
-            (View.SYSTEM_UI_FLAG_FULLSCREEN
-                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION)
+
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, !isFullscreen)
+        val insetsController = androidx.core.view.WindowInsetsControllerCompat(window, window.decorView)
+        if (isFullscreen) {
+            insetsController.systemBarsBehavior =
+                androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            insetsController.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
         } else {
-            View.SYSTEM_UI_FLAG_VISIBLE
+            insetsController.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
         }
+
         window.decorView.post {
             window.decorView.requestLayout()
             findViewById<View>(R.id.playerView)?.requestLayout()
@@ -877,60 +876,43 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun applyDisplayMode() {
-        // PlayerView and its surface always occupy the full phone viewport.
-        // Only the video content frame changes its sizing policy.
+        // Keep the PlayerView and its content frame free of a manually imposed
+        // source aspect ratio. Media3 applies the video ratio itself; forcing
+        // exo_content_frame to the source ratio cancels the effect of ZOOM.
         val selectedMode = when (displayMode) {
             0 -> AspectRatioFrameLayout.RESIZE_MODE_FIT
             1 -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-            2 -> AspectRatioFrameLayout.RESIZE_MODE_FILL
-            else -> AspectRatioFrameLayout.RESIZE_MODE_FIT
+            else -> AspectRatioFrameLayout.RESIZE_MODE_FILL
         }
+
         texturePlayerView.resizeMode = selectedMode
         surfacePlayerView.resizeMode = selectedMode
         playerView.resizeMode = selectedMode
 
-        val forcedAspectRatio = when (displayMode) {
-            2 -> 0f
-            3 -> 16f / 9f
-            4 -> 4f / 3f
-            else -> {
-                val videoSize = player?.videoSize
-                if (videoSize != null && videoSize.width > 0 && videoSize.height > 0) {
-                    (videoSize.width * videoSize.pixelWidthHeightRatio) / videoSize.height.toFloat()
-                } else {
-                    0f
-                }
-            }
-        }
-        // Media3's content frame is inside PlayerView; setting its ratio does not
-        // constrain the full-screen root or the overlay controls.
         listOf(texturePlayerView, surfacePlayerView).forEach { view ->
             view.findViewById<AspectRatioFrameLayout>(androidx.media3.ui.R.id.exo_content_frame)
-                ?.setAspectRatio(forcedAspectRatio)
+                ?.setAspectRatio(0f)
             view.requestLayout()
         }
 
         zoom.text = when (displayMode) {
             0 -> "Fit"
             1 -> "Zoom"
-            2 -> "Fill"
-            3 -> "16:9"
-            else -> "4:3"
+            else -> "Stretch"
         }
         playerView.requestLayout()
+        playerView.invalidate()
     }
 
-    // The button cycles through all five display modes and remembers the selection.
     private fun showDisplayModePicker() {
-        displayMode = (displayMode + 1) % 5
-        playerPrefs.edit().putInt("display_mode_v5", displayMode).apply()
+        displayMode = (displayMode + 1) % 3
+        playerPrefs.edit().putInt("display_mode_v6", displayMode).apply()
         applyDisplayMode()
+
         val label = when (displayMode) {
             0 -> "Fit"
             1 -> "Zoom"
-            2 -> "Fill"
-            3 -> "16:9"
-            else -> "4:3"
+            else -> "Stretch"
         }
         Toast.makeText(this, "وضع العرض: $label", Toast.LENGTH_SHORT).show()
     }
