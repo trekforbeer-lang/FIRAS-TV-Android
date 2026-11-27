@@ -139,10 +139,9 @@ class PlayerActivity : AppCompatActivity() {
         surfacePlayerView.visibility = View.GONE
         // Initialize every view used by applyDisplayMode before calling it.
         zoom = findViewById(R.id.zoomButton)
-        // Always open live playback in full-frame stretch, including upgrades
-        // from installs that previously saved FIT or ZOOM.
-        displayMode = 1
-        playerPrefs.edit().putInt("display_mode", displayMode).apply()
+        // Default to Zoom on a fresh install; preserve the viewer's last selected mode.
+        // Mode order: Fit, Zoom, Fill, 16:9, 4:3.
+        displayMode = playerPrefs.getInt("display_mode", 1).coerceIn(0, 4)
         applyDisplayMode()
         title = findViewById(R.id.channelTitle)
         status = findViewById(R.id.statusText)
@@ -878,52 +877,68 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun applyDisplayMode() {
-        // FIT shows the whole frame; FILL stretches video to the entire view,
-        // allowing the image aspect ratio to change as requested.
-        val modes = intArrayOf(
-            AspectRatioFrameLayout.RESIZE_MODE_FIT,
-            AspectRatioFrameLayout.RESIZE_MODE_FILL,
-            AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-        )
-        val selectedMode = modes[displayMode.coerceIn(0, modes.lastIndex)]
-        // Keep both render targets in sync so TextureView -> SurfaceView fallback
-        // cannot unexpectedly restore a different aspect-ratio policy.
+        // PlayerView and its surface always occupy the full phone viewport.
+        // Only the video content frame changes its sizing policy.
+        val selectedMode = when (displayMode) {
+            0 -> AspectRatioFrameLayout.RESIZE_MODE_FIT
+            1 -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+            2 -> AspectRatioFrameLayout.RESIZE_MODE_FILL
+            else -> AspectRatioFrameLayout.RESIZE_MODE_FIT
+        }
         texturePlayerView.resizeMode = selectedMode
         surfacePlayerView.resizeMode = selectedMode
         playerView.resizeMode = selectedMode
+
+        val forcedAspectRatio = when (displayMode) {
+            3 -> 16f / 9f
+            4 -> 4f / 3f
+            else -> {
+                val videoSize = player?.videoSize
+                if (videoSize != null && videoSize.width > 0 && videoSize.height > 0) {
+                    (videoSize.width * videoSize.pixelWidthHeightRatio) / videoSize.height.toFloat()
+                } else {
+                    0f
+                }
+            }
+        }
+        // Media3's content frame is inside PlayerView; setting its ratio does not
+        // constrain the full-screen root or the overlay controls.
+        listOf(texturePlayerView, surfacePlayerView).forEach { view ->
+            view.findViewById<AspectRatioFrameLayout>(androidx.media3.ui.R.id.exo_content_frame)
+                ?.setAspectRatio(forcedAspectRatio)
+            view.requestLayout()
+        }
+
         zoom.text = when (displayMode) {
-            1 -> "تمديد"
-            2 -> "ملء"
-            else -> "ملاءمة"
+            0 -> "Fit"
+            1 -> "Zoom"
+            2 -> "Fill"
+            3 -> "16:9"
+            else -> "4:3"
         }
         playerView.requestLayout()
     }
 
+    // The button cycles through all five display modes and remembers the selection.
     private fun showDisplayModePicker() {
-        val options = arrayOf(
-            "ملاءمة — إظهار الصورة كاملة مع الحفاظ على النسبة",
-            "تمديد كامل — ملء الإطار حتى لو تغيرت الأبعاد",
-            "ملء الشاشة — تكبير الصورة وقص الأطراف عند الحاجة"
-        )
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("اختر طريقة عرض الفيديو")
-            .setSingleChoiceItems(options, displayMode) { dialog, which ->
-                displayMode = which
-                playerPrefs.edit().putInt("display_mode", displayMode).apply()
-                applyDisplayMode()
-                dialog.dismiss()
-            }
-            .setNegativeButton("إغلاق", null)
-            .show()
+        displayMode = (displayMode + 1) % 5
+        playerPrefs.edit().putInt("display_mode", displayMode).apply()
+        applyDisplayMode()
+        val label = when (displayMode) {
+            0 -> "Fit"
+            1 -> "Zoom"
+            2 -> "Fill"
+            3 -> "16:9"
+            else -> "4:3"
+        }
+        Toast.makeText(this, "وضع العرض: $label", Toast.LENGTH_SHORT).show()
     }
 
     private fun toggleFullscreen() {
         isFullscreen = !isFullscreen
-        requestedOrientation = if (isFullscreen) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            else ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        // Keep the player in landscape in both immersive and controls-visible states.
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         applyFullscreenSystemUi()
-        // Fullscreen changes the available display area, not the video crop.
-        // Keep the selected Fit/Zoom mode so channel logos and the full frame remain visible.
         applyDisplayMode()
         fullscreen.text = if (isFullscreen) "⤡" else "⛶"
         playerView.post {
@@ -936,8 +951,8 @@ class PlayerActivity : AppCompatActivity() {
     private fun handleBackAction() {
         if (isFullscreen) {
             isFullscreen = false
-            // Return to the normal phone portrait screen after leaving fullscreen.
-            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            // Exit immersive mode without rotating the phone player into portrait.
+            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
             applyFullscreenSystemUi()
             applyDisplayMode()
             fullscreen.text = "⛶"
