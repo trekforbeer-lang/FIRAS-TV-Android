@@ -123,10 +123,10 @@ jobs:
           ! grep -R '127.0.0.1' app/src/main
           # Normalize the APK version for this v4 build, regardless of the
           # previous source bundle's versionCode.
-          sed -i -E 's/versionCode = [0-9]+/versionCode = 406/' app/build.gradle.kts
-          sed -i 's/versionName = "[^"]*"/versionName = "4.0.6"/' app/build.gradle.kts
-          grep -q 'versionCode = 406' app/build.gradle.kts
-          grep -q 'versionName = "4.0.6"' app/build.gradle.kts
+          sed -i -E 's/versionCode = [0-9]+/versionCode = 407/' app/build.gradle.kts
+          sed -i 's/versionName = "[^"]*"/versionName = "4.0.7"/' app/build.gradle.kts
+          grep -q 'versionCode = 407' app/build.gradle.kts
+          grep -q 'versionName = "4.0.7"' app/build.gradle.kts
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
