@@ -922,16 +922,19 @@ class PlayerActivity : AppCompatActivity() {
         playerView.invalidate()
     }
     private fun showDisplayModePicker() {
-        displayMode = (displayMode + 1) % 3
+        // The on-screen Zoom control must activate Zoom on its first tap.
+        // Previously it cycled from the default Fill to Fit, which looked like
+        // the button did nothing (or made the picture smaller).
+        displayMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM.let { 1 }
         playerPrefs.edit().putInt("display_mode_v12", displayMode).apply()
         applyDisplayMode()
-
-        val label = when (displayMode) {
-            0 -> "Fit"
-            1 -> "Zoom"
-            else -> "Fill"
+        playerView.post {
+            playerView.requestLayout()
+            playerView.invalidate()
+            playerView.findViewById<AspectRatioFrameLayout>(androidx.media3.ui.R.id.exo_content_frame)
+                ?.requestLayout()
         }
-        Toast.makeText(this, "وضع العرض: $label", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "وضع العرض: Zoom", Toast.LENGTH_SHORT).show()
     }
 
     private fun toggleFullscreen() {
