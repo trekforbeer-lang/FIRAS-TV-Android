@@ -141,7 +141,7 @@ class PlayerActivity : AppCompatActivity() {
         zoom = findViewById(R.id.zoomButton)
         // Default to Fill on a fresh install; preserve the viewer's last selected mode.
         // Mode order: Fit, Zoom, Fill, 16:9, 4:3.
-        displayMode = playerPrefs.getInt("display_mode_v6", 1).coerceIn(0, 2)
+        displayMode = playerPrefs.getInt("display_mode_v7", 1).coerceIn(0, 2)
         applyDisplayMode()
         title = findViewById(R.id.channelTitle)
         status = findViewById(R.id.statusText)
@@ -906,7 +906,7 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun showDisplayModePicker() {
         displayMode = (displayMode + 1) % 3
-        playerPrefs.edit().putInt("display_mode_v6", displayMode).apply()
+        playerPrefs.edit().putInt("display_mode_v7", displayMode).apply()
         applyDisplayMode()
 
         val label = when (displayMode) {
