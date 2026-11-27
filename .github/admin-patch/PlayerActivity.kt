@@ -874,13 +874,22 @@ class PlayerActivity : AppCompatActivity() {
         }
 
         window.decorView.post {
+            // Re-apply full-window bounds after system-bar insets change. Keep both
+            // rendering surfaces attached to the same full-screen container.
             window.decorView.requestLayout()
-            findViewById<View>(R.id.playerView)?.apply {
-                setPadding(0, 0, 0, 0)
-                requestLayout()
-                invalidate()
+            listOf(
+                findViewById<View>(R.id.playerView),
+                findViewById<View>(R.id.playerViewSurface)
+            ).forEach { view ->
+                view.layoutParams = view.layoutParams.apply {
+                    width = ViewGroup.LayoutParams.MATCH_PARENT
+                    height = ViewGroup.LayoutParams.MATCH_PARENT
+                }
+                view.setPadding(0, 0, 0, 0)
+                view.requestLayout()
+                view.invalidate()
             }
-            findViewById<View>(R.id.playerViewSurface)?.requestLayout()
+            applyDisplayMode()
         }
     }
 
