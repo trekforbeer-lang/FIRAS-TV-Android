@@ -139,9 +139,9 @@ class PlayerActivity : AppCompatActivity() {
         surfacePlayerView.visibility = View.GONE
         // Initialize every view used by applyDisplayMode before calling it.
         zoom = findViewById(R.id.zoomButton)
-        // Default to Zoom on a fresh install; preserve the viewer's last selected mode.
+        // Default to Fill on a fresh install; preserve the viewer's last selected mode.
         // Mode order: Fit, Zoom, Fill, 16:9, 4:3.
-        displayMode = playerPrefs.getInt("display_mode_v4", 1).coerceIn(0, 4)
+        displayMode = playerPrefs.getInt("display_mode_v5", 2).coerceIn(0, 4)
         applyDisplayMode()
         title = findViewById(R.id.channelTitle)
         status = findViewById(R.id.statusText)
@@ -922,7 +922,7 @@ class PlayerActivity : AppCompatActivity() {
     // The button cycles through all five display modes and remembers the selection.
     private fun showDisplayModePicker() {
         displayMode = (displayMode + 1) % 5
-        playerPrefs.edit().putInt("display_mode_v4", displayMode).apply()
+        playerPrefs.edit().putInt("display_mode_v5", displayMode).apply()
         applyDisplayMode()
         val label = when (displayMode) {
             0 -> "Fit"
