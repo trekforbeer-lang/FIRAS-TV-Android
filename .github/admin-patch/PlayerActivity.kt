@@ -907,9 +907,11 @@ class PlayerActivity : AppCompatActivity() {
         surfacePlayerView.resizeMode = selectedMode
         playerView.resizeMode = selectedMode
 
+        // Do not force exo_content_frame to 0f: Media3 must retain the
+        // actual video aspect ratio so FIT and ZOOM can calculate their geometry.
         listOf(texturePlayerView, surfacePlayerView).forEach { view ->
             view.findViewById<AspectRatioFrameLayout>(androidx.media3.ui.R.id.exo_content_frame)
-                ?.setAspectRatio(0f)
+                ?.requestLayout()
             view.requestLayout()
         }
 
@@ -945,8 +947,13 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun toggleFullscreen() {
         isFullscreen = !isFullscreen
-        // Keep the player in landscape in both immersive and controls-visible states.
-        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        // Enter fullscreen in landscape; when leaving, let the device return
+        // to its natural/user-selected orientation.
+        requestedOrientation = if (isFullscreen) {
+            ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        } else {
+            ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
         applyFullscreenSystemUi()
         applyDisplayMode()
         fullscreen.text = if (isFullscreen) "⤡" else "⛶"
@@ -960,8 +967,8 @@ class PlayerActivity : AppCompatActivity() {
     private fun handleBackAction() {
         if (isFullscreen) {
             isFullscreen = false
-            // Exit immersive mode without rotating the phone player into portrait.
-            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            // Restore the device's natural/user-selected orientation on exit.
+            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
             applyFullscreenSystemUi()
             applyDisplayMode()
             fullscreen.text = "⛶"
