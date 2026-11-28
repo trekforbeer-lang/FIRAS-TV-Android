@@ -922,19 +922,25 @@ class PlayerActivity : AppCompatActivity() {
         playerView.invalidate()
     }
     private fun showDisplayModePicker() {
-        // The on-screen Zoom control must activate Zoom on its first tap.
-        // Previously it cycled from the default Fill to Fit, which looked like
-        // the button did nothing (or made the picture smaller).
-        displayMode = 1
-        playerPrefs.edit().putInt("display_mode_v12", displayMode).apply()
-        applyDisplayMode()
-        playerView.post {
-            playerView.requestLayout()
-            playerView.invalidate()
-            playerView.findViewById<AspectRatioFrameLayout>(androidx.media3.ui.R.id.exo_content_frame)
-                ?.requestLayout()
-        }
-        Toast.makeText(this, "وضع العرض: Zoom", Toast.LENGTH_SHORT).show()
+        // Let each viewer choose the presentation mode; persist their choice.
+        val labels = arrayOf("Fit — عرض الصورة كاملة", "Zoom — تكبير مع قص", "Fill — تمديد لملء الإطار")
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("طريقة عرض الفيديو")
+            .setSingleChoiceItems(labels, displayMode) { dialog, which ->
+                displayMode = which.coerceIn(0, 2)
+                playerPrefs.edit().putInt("display_mode_v12", displayMode).apply()
+                applyDisplayMode()
+                playerView.post {
+                    playerView.requestLayout()
+                    playerView.invalidate()
+                    playerView.findViewById<AspectRatioFrameLayout>(androidx.media3.ui.R.id.exo_content_frame)
+                        ?.requestLayout()
+                }
+                dialog.dismiss()
+                Toast.makeText(this, "وضع العرض: ${labels[displayMode]}", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("إلغاء", null)
+            .show()
     }
 
     private fun toggleFullscreen() {
